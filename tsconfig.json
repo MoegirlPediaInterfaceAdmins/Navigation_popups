@@ -1,23 +1,32 @@
 {
     "$schema": "https://json.schemastore.org/tsconfig",
     "compilerOptions": {
-        // Syntax gate for the concatenated artifact only (checkJs is off on purpose:
-        // the artifact is plain browser JS, we only care that it parses as ES2020).
+        // One program for both gates:
+        //  - src/**: strict type checking (checkJs is off, these are .ts)
+        //  - dist/**: syntax gate for the bundled artifact (allowJs + checkJs off)
         "allowJs": true,
         "checkJs": false,
         "noEmit": true,
-        "target": "es2020",
+        "target": "es2022",
         "lib": [
             "ESNext",
             "DOM",
         ],
         "module": "preserve",
         "moduleResolution": "bundler",
-        "types": [],
+        "allowImportingTsExtensions": true,
+        "types": [
+            "jquery",
+        ],
         "skipLibCheck": true,
+        "strict": true,
+        "noImplicitOverride": true,
+        "noFallthroughCasesInSwitch": true,
         "newLine": "lf",
     },
     "include": [
+        "src",
+        "node_modules/types-mediawiki",
         "dist",
     ],
 }
