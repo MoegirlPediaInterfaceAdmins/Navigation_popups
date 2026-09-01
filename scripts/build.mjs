@@ -1,76 +1,50 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { rollup } from "rollup";
+import rollupOptions from "../rollup.config.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await fs.promises.readFile(path.join(root, "build", "fragments.json"), "utf8"));
-const srcDir = path.join(root, "src");
 const distFile = path.join(root, manifest.artifact.output);
+const { input, plugins, treeshake, onwarn, output } = rollupOptions;
 
-// The gadget body is wrapped in a jQuery-ready callback that lives in the
-// build layer (fragments must each be syntactically complete files). The
-// double-load guard used to sit in main.js after the pg literal; it moves to
-// the top of the wrapper — evaluating the pg literal has no side effects.
-const WRAPPER_PREFIX = [
-    "$(() => {",
-    "    if (window.pg && !(window.pg instanceof HTMLElement)) {",
-    "        return;",
-    "    }",
-    "",
-].join("\n");
-const WRAPPER_SUFFIX = "});\n";
-
-const readFragment = async (name) => {
-    const file = path.join(srcDir, name);
-    const buf = await fs.promises.readFile(file);
-    if (buf.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf]))) {
-        throw new Error(`${name}: BOM detected, fragments must be plain UTF-8`);
-    }
-    if (buf.includes(0x0d)) {
-        throw new Error(`${name}: CR (0x0d) detected, fragments must use LF line endings`);
-    }
-    if (buf.length === 0 || buf.at(-1) !== 0x0a) {
-        throw new Error(`${name}: fragment must end with exactly one newline`);
-    }
-    if (buf.length >= 2 && buf.at(-2) === 0x0a) {
-        throw new Error(`${name}: fragment must not end with a blank line, fragments join with no separator`);
-    }
-    return buf;
-};
+const bundle = await rollup({ input, plugins, treeshake, onwarn });
 
 export const build = async () => {
-    const declared = manifest.fragments.map(({ file }) => file);
-    const actual = (await fs.promises.readdir(srcDir)).filter((f) => f.endsWith(".js")).sort();
-    const missing = declared.filter((f) => !actual.includes(f));
-    const extra = actual.filter((f) => !declared.includes(f));
-    if (missing.length > 0 || extra.length > 0) {
-        const problems = [];
-        if (missing.length > 0) {
-            problems.push(`missing from src/: ${missing.join(", ")}`);
-        }
-        if (extra.length > 0) {
-            problems.push(`present in src/ but not in the manifest: ${extra.join(", ")}`);
-        }
-        throw new Error(`src/ does not match build/fragments.json — ${problems.join("; ")}`);
+    // Every module listed in the manifest must be part of the bundle graph —
+    // a module nobody imports would silently drop out otherwise.
+    const moduleIds = bundle.cache.modules.map((m) => m.id.replaceAll("\\", "/"));
+    const missing = manifest.modules
+        .filter(({ file }) => !moduleIds.some((id) => id.endsWith(`/${file}`)))
+        .map(({ file }) => file);
+    if (missing.length > 0) {
+        throw new Error(`modules missing from the bundle graph (add them to entry.ts imports): ${missing.join(", ")}`);
     }
-    const buffers = [];
-    for (const [index, { file }] of manifest.fragments.entries()) {
-        buffers.push(await readFragment(file));
-        // The wrapper opens right after _header.js (comment header and the
-        // global "use strict") — exactly where the original file had it —
-        // and closes at the very end.
-        if (index === 0) {
-            buffers.push(Buffer.from(WRAPPER_PREFIX));
-        }
+    const generated = await bundle.generate(output);
+    if (generated.output.length !== 1 || generated.output[0].type !== "chunk") {
+        throw new Error(`expected a single output chunk, got ${generated.output.length}`);
     }
-    buffers.push(Buffer.from(WRAPPER_SUFFIX));
-    return Buffer.concat(buffers);
+    const code = generated.output[0].code;
+    if (code.startsWith("﻿")) {
+        throw new Error("BOM detected in artifact");
+    }
+    if (code.includes("\r")) {
+        throw new Error("CR (0x0d) detected in artifact");
+    }
+    if (/^\s*(?:import|export)\b/m.test(code)) {
+        throw new Error("leftover module syntax in artifact");
+    }
+    if (!code.endsWith("\n")) {
+        throw new Error("artifact must end with a newline");
+    }
+    return Buffer.from(code, "utf8");
 };
 
 const write = async (buf) => {
     await fs.promises.mkdir(path.dirname(distFile), { recursive: true });
     await fs.promises.writeFile(distFile, buf);
-    console.log(`Built ${path.relative(root, distFile)} (${buf.length} bytes) from ${manifest.fragments.length} fragments`);
+    console.log(`Built ${path.relative(root, distFile)} (${buf.length} bytes) from ${manifest.modules.length} modules`);
 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

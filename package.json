@@ -11,7 +11,6 @@
     },
     "scripts": {
         "build": "node scripts/build.mjs",
-        "migrate": "node scripts/migrate.mjs",
         "test": "npm run build && npm run test:eslint && npm run test:tsc && npm run test:terser && npm run test:idempotent",
         "test:eslint": "eslint . --max-warnings 0",
         "test:tsc": "tsc -p tsconfig.json",
@@ -23,5 +22,11 @@
         "eslint": "^10.9.1",
         "terser": "^5.51.2",
         "typescript": "^6.0.3"
+    },
+    "devDependencies": {
+        "@types/jquery": "^4.0.1",
+        "rollup": "^4.63.1",
+        "rollup-plugin-esbuild": "^6.2.1",
+        "types-mediawiki": "^2.1.0"
     }
 }
