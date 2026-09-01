@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        // Syntax gate for the concatenated artifact only (checkJs is off on purpose:
+        // the artifact is plain browser JS, we only care that it parses as ES2020).
+        "allowJs": true,
+        "checkJs": false,
+        "noEmit": true,
+        "target": "es2020",
+        "lib": [
+            "ESNext",
+            "DOM",
+        ],
+        "module": "preserve",
+        "moduleResolution": "bundler",
+        "types": [],
+        "skipLibCheck": true,
+        "newLine": "lf",
+    },
+    "include": [
+        "dist",
+    ],
+}
