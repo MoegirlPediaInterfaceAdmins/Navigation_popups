@@ -1,0 +1,54 @@
+{
+    "artifact": {
+        "name": "Gadget-popups.js",
+        "output": "dist/Gadget-popups.js",
+        "targetPathInInterfaceCodes": "src/gadgets/Navigation_popups/Gadget-popups.js",
+        "encoding": "utf-8",
+        "lineEndings": "lf"
+    },
+    "source": {
+        "repository": "https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes",
+        "commit": "5adc9438f079d6b77157ff9f3649008f60ac915a",
+        "path": "src/gadgets/Navigation_popups/Gadget-popups.js",
+        "lines": 6529,
+        "upstream": {
+            "page": "https://en.wikipedia.org/wiki/MediaWiki:Gadget-popups.js",
+            "oldid": 1322962085
+        }
+    },
+    "fragments": [
+        { "file": "_header.js", "lines": [1, 12], "upstream": null, "note": "moegirl-only prologue: eslint directives, @source oldid, do-not-copy warning, \"use strict\", the opening $(() => {" },
+        { "file": "_popupStrings.js", "lines": [13, 298], "upstream": null, "note": "moegirl-only builtin i18n table (upstream expects window.popupStrings to be provided externally)" },
+        { "file": "main.js", "lines": [299, 326], "upstream": "main.js", "note": "pg object, double-load guard, window.pg, escapeRegExp fallback, log/errlog moved here from upstream debug.js" },
+        { "file": "actions.js", "lines": [327, 764], "upstream": "actions.js", "note": "adds Moeskin/vector-2022 container selector chains" },
+        { "file": "domdrag.js", "lines": [765, 873], "upstream": "domdrag.js", "note": "class Drag; also holds pg.structures.original moved from upstream structures.js head" },
+        { "file": "structures.js", "lines": [874, 1005], "upstream": "structures.js" },
+        { "file": "autoedit.js", "lines": [1006, 1239], "upstream": "autoedit.js", "note": "adds wpChangeTags (Popups / Automation tool)" },
+        { "file": "downloader.js", "lines": [1240, 1376], "upstream": "downloader.js" },
+        { "file": "livepreview.js", "lines": [1377, 1769], "upstream": "livepreview.js" },
+        { "file": "pageinfo.js", "lines": [1770, 1916], "upstream": "pageinfo.js", "note": "formatAge rewritten with moment calendar diff" },
+        { "file": "titles.js", "lines": [1917, 2364], "upstream": "titles.js", "note": "namespaceId wrapped in try/catch" },
+        { "file": "getpage.js", "lines": [2365, 2405], "upstream": "getpage.js" },
+        { "file": "parensplit.js", "lines": [2406, 2431], "upstream": "parensplit.js", "note": "String.prototype.parenSplit polyfill; nonGlobalRegex moved out to tools.js" },
+        { "file": "tools.js", "lines": [2432, 2542], "upstream": "tools.js", "note": "nonGlobalRegex moved in from upstream parensplit.js; findInArray/nextOne/isNumber/isObject/isFunction/repeatString dropped" },
+        { "file": "dab.js", "lines": [2543, 2624], "upstream": "dab.js" },
+        { "file": "htmloutput.js", "lines": [2625, 2789], "upstream": "htmloutput.js" },
+        { "file": "mouseout.js", "lines": [2790, 2869], "upstream": "mouseout.js" },
+        { "file": "previewmaker.js", "lines": [2870, 3173], "upstream": "previewmaker.js", "note": "previewSteps dropped" },
+        { "file": "querypreview.js", "lines": [3174, 3708], "upstream": "querypreview.js", "note": "group-no-autoconfirmed bold display, Chinese enumeration punctuation" },
+        { "file": "debug.js", "lines": [3709, 3712], "upstream": "debug.js", "note": "stubbed to a one-liner; log/errlog live in main.js" },
+        { "file": "images.js", "lines": [3713, 3838], "upstream": "images.js" },
+        { "file": "namespaces.js", "lines": [3839, 3912], "upstream": "namespaces.js", "note": "interwiki trimmed to zh/en/ja" },
+        { "file": "selpop.js", "lines": [3913, 4086], "upstream": "selpop.js", "note": "also holds class Mousetracker moved from upstream navpopup.js" },
+        { "file": "navpopup.js", "lines": [4087, 4335], "upstream": "navpopup.js", "note": "class Navpopup only (Mousetracker moved to selpop.js)" },
+        { "file": "diff.js", "lines": [4336, 4520], "upstream": "diff.js" },
+        { "file": "init.js", "lines": [4521, 4694], "upstream": "init.js", "note": "deps via ResourceLoader, Api-User-Agent, uselang content, maxage 3600" },
+        { "file": "navlinks.js", "lines": [4695, 5171], "upstream": "navlinks.js" },
+        { "file": "shortcutkeys.js", "lines": [5172, 5241], "upstream": "shortcutkeys.js" },
+        { "file": "diffpreview.js", "lines": [5242, 5498], "upstream": "diffpreview.js", "note": "async/await; also holds titledDiffLink moved from upstream links.js" },
+        { "file": "links.js", "lines": [5499, 6104], "upstream": "links.js", "note": "edit-counter/arin/google links adjusted for zh" },
+        { "file": "options.js", "lines": [6105, 6248], "upstream": "options.js", "note": "useDefaultOptions dropped" },
+        { "file": "strings.js", "lines": [6249, 6486], "upstream": "strings.js", "note": "popupString now uses popupNoTranslation Set + console.info" },
+        { "file": "run.js", "lines": [6487, 6529], "upstream": "run.js", "note": "run() calls autoEdit()+setupPopups(); wikipage.content/echo hooks IIFE; closing }); of the prologue wrapper" }
+    ]
+}
