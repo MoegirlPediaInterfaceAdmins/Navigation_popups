@@ -9,4 +9,3 @@
  */
 /* global wikEdUseWikEd, WikEdUpdateFrame */
 "use strict";
-$(() => {

@@ -17,9 +17,6 @@
         fn: {},
         endoflist: null,
     };
-    if (window.pg && !(window.pg instanceof HTMLElement)) {
-        return;
-    }
     window.pg = pg;
     if (!mw.util.escapeRegExp) {
         mw.util.escapeRegExp = mw.RegExp.escape;

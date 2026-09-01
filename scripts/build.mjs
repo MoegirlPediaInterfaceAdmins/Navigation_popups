@@ -7,6 +7,19 @@ const manifest = JSON.parse(await fs.promises.readFile(path.join(root, "build", 
 const srcDir = path.join(root, "src");
 const distFile = path.join(root, manifest.artifact.output);
 
+// The gadget body is wrapped in a jQuery-ready callback that lives in the
+// build layer (fragments must each be syntactically complete files). The
+// double-load guard used to sit in main.js after the pg literal; it moves to
+// the top of the wrapper — evaluating the pg literal has no side effects.
+const WRAPPER_PREFIX = [
+    "$(() => {",
+    "    if (window.pg && !(window.pg instanceof HTMLElement)) {",
+    "        return;",
+    "    }",
+    "",
+].join("\n");
+const WRAPPER_SUFFIX = "});\n";
+
 const readFragment = async (name) => {
     const file = path.join(srcDir, name);
     const buf = await fs.promises.readFile(file);
@@ -41,9 +54,16 @@ export const build = async () => {
         throw new Error(`src/ does not match build/fragments.json — ${problems.join("; ")}`);
     }
     const buffers = [];
-    for (const { file } of manifest.fragments) {
+    for (const [index, { file }] of manifest.fragments.entries()) {
         buffers.push(await readFragment(file));
+        // The wrapper opens right after _header.js (comment header and the
+        // global "use strict") — exactly where the original file had it —
+        // and closes at the very end.
+        if (index === 0) {
+            buffers.push(Buffer.from(WRAPPER_PREFIX));
+        }
     }
+    buffers.push(Buffer.from(WRAPPER_SUFFIX));
     return Buffer.concat(buffers);
 };
 
