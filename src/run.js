@@ -40,4 +40,3 @@
             dynamicContentHandler($overlay.find(".mw-echo-state"));
         });
     })();
-});
