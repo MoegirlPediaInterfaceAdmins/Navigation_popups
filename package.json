@@ -1,0 +1,27 @@
+{
+    "name": "navigation-popups",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/MoegirlPediaInterfaceAdmins/Navigation_popups.git"
+    },
+    "type": "module",
+    "private": true,
+    "engines": {
+        "node": "^24.11"
+    },
+    "scripts": {
+        "build": "node scripts/build.mjs",
+        "migrate": "node scripts/migrate.mjs",
+        "test": "npm run build && npm run test:eslint && npm run test:tsc && npm run test:terser && npm run test:idempotent",
+        "test:eslint": "eslint . --max-warnings 0",
+        "test:tsc": "tsc -p tsconfig.json",
+        "test:terser": "node scripts/terser-check.mjs",
+        "test:idempotent": "node scripts/build.mjs --check-idempotent"
+    },
+    "dependencies": {
+        "@annangela/eslint-config": "^15.0.0",
+        "eslint": "^10.9.1",
+        "terser": "^5.51.2",
+        "typescript": "^6.0.3"
+    }
+}

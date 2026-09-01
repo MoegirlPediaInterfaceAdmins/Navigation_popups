@@ -1,0 +1,5 @@
+# Normalize text files and always check them out with LF.
+* text=auto eol=lf
+
+# Fragments are byte-exact slices; never let git rewrite line endings or diff them smartly.
+src/*.js -diff merge=binary linguist-language=javascript
