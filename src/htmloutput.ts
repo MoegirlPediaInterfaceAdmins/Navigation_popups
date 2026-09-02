@@ -65,9 +65,9 @@ export const fillEmptySpans = (args: FillEmptySpansArgs) => {
         navpop: args.navpopup,
         params: params,
     };
-    const structure = pg.structures[String(getValueOf("popupStructure"))] as typeof pg.structures[string] | undefined;
+    const structure = pg.structures[getValueOf("popupStructure") as string] as typeof pg.structures[string] | undefined;
     if (typeof structure !== "object") {
-        setPopupHTML("popupError", `Unknown structure (this should never happen): ${pg.option.popupStructure}`, args.navpopup.idNumber);
+        setPopupHTML("popupError", `Unknown structure (this should never happen): ${pg.option.popupStructure as string}`, args.navpopup.idNumber);
         return;
     }
     const spans = flatten(pg.misc.layout ?? []) as string[];
@@ -90,8 +90,8 @@ export const fillEmptySpans = (args: FillEmptySpansArgs) => {
         }
         switch (typeof structurefn) {
             case "function":
-                log(`running ${spans[i]}({article:${x.article}, hint:${x.hint}, oldid: ${x.oldid}})`);
-                setfn(structurefn(x), spans[i], args.navpopup.idNumber);
+                log(`running ${spans[i]}({article:${String(x.article)}, hint:${String(x.hint)}, oldid: ${String(x.oldid)}})`);
+                setfn((structurefn as (c: unknown) => string | Node | null)(x), spans[i], args.navpopup.idNumber);
                 break;
             case "string":
                 setfn(structurefn, spans[i], args.navpopup.idNumber);
@@ -118,7 +118,7 @@ const flatten = (list: unknown[], _start?: number): unknown[] => {
 };
 export const popupHTML = (a: { navpopup?: Navpopup | null }): string => {
     getValueOf("popupStructure");
-    const structure = pg.structures[String(pg.option.popupStructure)] as typeof pg.structures[string] | undefined;
+    const structure = pg.structures[pg.option.popupStructure as string] as typeof pg.structures[string] | undefined;
     if (typeof structure !== "object") {
         pg.option.popupStructure = pg.optionDefault.popupStructure;
         return popupHTML(a);
@@ -128,7 +128,7 @@ export const popupHTML = (a: { navpopup?: Navpopup | null }): string => {
     }
     pg.misc.layout = structure.popupLayout();
     if (typeof structure.popupRedirSpans === "function") {
-        pg.misc.redirSpans = structure.popupRedirSpans();
+        pg.misc.redirSpans = (structure.popupRedirSpans as () => string[])();
     } else {
         pg.misc.redirSpans = [];
     }

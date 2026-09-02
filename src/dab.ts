@@ -7,13 +7,13 @@ import { Title, isDisambig } from "./titles.ts";
 import type { Navpopup } from "./navpopup.ts";
 import { simplePrintf } from "./tools.ts";
 const retargetDab = (newTarget: string, oldTarget: unknown, friendlyCurrentArticleName: string, titleToEdit: string | undefined) => {
-    log(`retargetDab: newTarget=${newTarget} oldTarget=${oldTarget}`);
+    log(`retargetDab: newTarget=${newTarget} oldTarget=${String(oldTarget)}`);
     return changeLinkTargetLink({
         newTarget: newTarget,
         text: newTarget.split(" ").join("&nbsp;"),
         hint: tprintf("disambigHint", [newTarget]),
-        summary: simplePrintf(String(getValueOf("popupFixDabsSummary")), [friendlyCurrentArticleName, newTarget]),
-        clickButton: String(getValueOf("popupDabsAutoClick")),
+        summary: simplePrintf((getValueOf("popupFixDabsSummary") as string), [friendlyCurrentArticleName, newTarget]),
+        clickButton: (getValueOf("popupDabsAutoClick") as string),
         minor: true,
         oldTarget: oldTarget as string,
         watch: getValueOf("popupWatchDisambiggedPages") as boolean | null,
@@ -47,9 +47,9 @@ const listLinks = (wikitext: string, oldTarget: unknown, titleToEdit: string | u
         newTarget: null,
         text: popupString("remove this link").split(" ").join("&nbsp;"),
         hint: popupString("remove all links to this disambig page from this article"),
-        clickButton: String(getValueOf("popupDabsAutoClick")),
+        clickButton: (getValueOf("popupDabsAutoClick") as string),
         oldTarget: oldTarget as string,
-        summary: simplePrintf(String(getValueOf("popupRmDabLinkSummary")), [friendlyCurrentArticleName]),
+        summary: simplePrintf((getValueOf("popupRmDabLinkSummary") as string), [friendlyCurrentArticleName]),
         watch: getValueOf("popupWatchDisambiggedPages") as boolean | null,
         title: titleToEdit,
     }));
@@ -84,7 +84,7 @@ export const popupRedlinkHTML = (article: unknown) => changeLinkTargetLink({
     newTarget: null,
     text: popupString("remove this link").split(" ").join("&nbsp;"),
     hint: popupString("remove all links to this page from this article"),
-    clickButton: String(getValueOf("popupRedlinkAutoClick")),
+    clickButton: (getValueOf("popupRedlinkAutoClick") as string),
     oldTarget: String(article),
-    summary: simplePrintf(String(getValueOf("popupRedlinkSummary")), [String(article)]),
+    summary: simplePrintf((getValueOf("popupRedlinkSummary") as string), [String(article)]),
 });

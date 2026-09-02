@@ -114,8 +114,9 @@ export class Mousetracker {
     }
     track(_e?: MouseEvent) {
         let e = _e;
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
         e ||= window.event as MouseEvent | undefined;
-        let x = 0, y = 0;
+        let x: number, y: number;
         if (e) {
             if (e.pageX) {
                 x = e.pageX;

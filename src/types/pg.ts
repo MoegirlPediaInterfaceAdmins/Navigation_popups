@@ -8,6 +8,7 @@ import type { Downloader } from "../downloader.ts";
 import type { Navpopup } from "../navpopup.ts";
 import type { Title } from "../titles.ts";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- pg domains carry heterogeneous runtime data
 export type AnyRecord = Record<string, any>;
 
 export interface SpecialPageAlias {

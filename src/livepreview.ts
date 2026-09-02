@@ -84,7 +84,7 @@ Insta.convert = (wiki: string | string[]): string => {
             if ((p = f.indexOf("?")) + 1) {
                 i -= c = f.charAt(p + 1) === "?" ? 1 : 0;
                 o += f.substring(0, p) + (c ? "?" : String(a[i]));
-                f = f.substr(p + 1 + c);
+                f = f.slice(p + 1 + c);
             } else {
                 break;
             }
@@ -106,7 +106,7 @@ Insta.convert = (wiki: string | string[]): string => {
     };
     const compareLineStringOrReg = (c: string | RegExp): boolean | RegExpMatchArray | null => {
         if (typeof c === "string") {
-            return ll[0]?.substr(0, c.length) === c;
+            return ll[0]?.startsWith(c);
         }
         r = ll[0] ? ll[0].match(c) : null;
         return r;
@@ -190,7 +190,7 @@ Insta.convert = (wiki: string | string[]): string => {
         }
     };
     const parse_table_data = () => {
-        let td_line: string[] = [];
+        let td_line: string[];
         let match_i: number;
         const td_match = /^(\|\+|\||!)((?:([^[|]*?)\|(?!\|))?(.*))$/.exec(sh());
         if (!td_match) {
@@ -254,11 +254,11 @@ Insta.convert = (wiki: string | string[]): string => {
             let last_attr: string | undefined;
             for (let i = tag.length - 1; i > 0; i--) {
                 if (tag.charAt(i) === "|" && !nesting) {
-                    last_attr = tag.substr(i + 1);
+                    last_attr = tag.slice(i + 1);
                     tag = tag.substring(0, i);
                     break;
                 } else {
-                    switch (tag.substr(i - 1, 2)) {
+                    switch (tag.slice(i - 1, i + 1)) {
                         case "]]":
                             nesting++;
                             i--;
@@ -291,7 +291,7 @@ Insta.convert = (wiki: string | string[]): string => {
                 close = str.indexOf("</nowiki>", substart);
                 if (close <= open || open === -1) {
                     if (close === -1) {
-                        return html + html_entities(str.substr(start));
+                        return html + html_entities(str.slice(start));
                     }
                     substart = close + 9;
                     if (nestlev) {
@@ -307,7 +307,7 @@ Insta.convert = (wiki: string | string[]): string => {
                 }
             } while (subloop);
         }
-        return html + parse_inline_wiki(str.substr(lastend));
+        return html + parse_inline_wiki(str.slice(lastend));
     };
     const parse_inline_images = (_str: string): string => {
         let str = _str;
@@ -315,7 +315,7 @@ Insta.convert = (wiki: string | string[]): string => {
             nestlev = 0;
         let loop: boolean, close: number, open: number, wiki: string, html: string;
         while (-1 !== (start = str.indexOf("[[", substart))) {
-            if (RegExp(`^(Image|File|${Insta.conf.locale.image}):`, "i").exec(str.substr(start + 2))) {
+            if (RegExp(`^(Image|File|${Insta.conf.locale.image}):`, "i").exec(str.slice(start + 2))) {
                 loop = true;
                 substart = start;
                 do {
@@ -361,7 +361,7 @@ Insta.convert = (wiki: string | string[]): string => {
                 o += italic ? "<i>" : "</i>";
             }
         }
-        return o + str.substr(li);
+        return o + str.slice(li);
     };
     const parse_inline_wiki = (_str: string): string => {
         let str = _str;
@@ -374,7 +374,7 @@ Insta.convert = (wiki: string | string[]): string => {
         }
         const dateStr = f("?:?, ? ? ? (UTC)", date.getUTCHours(), minutes, date.getUTCDate(), Insta.conf.locale.months[date.getUTCMonth()], date.getUTCFullYear());
         str = str
-            .replace(/~{5}(?!~)/g, dateStr).replace(/~{4}(?!~)/g, `${Insta.conf.user.name} ${dateStr}`).replace(/~{3}(?!~)/g, String(Insta.conf.user.name))
+            .replace(/~{5}(?!~)/g, dateStr).replace(/~{4}(?!~)/g, `${String(Insta.conf.user.name)} ${dateStr}`).replace(/~{3}(?!~)/g, String(Insta.conf.user.name))
             .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):[^|]*?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
             .replace(RegExp(`\\[\\[(?:${Insta.conf.locale.category}|${Insta.conf.wiki.interwiki}):.*?\\]\\]`, "gi"), "")
             .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):.*?)\\|([^\\]]+?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))

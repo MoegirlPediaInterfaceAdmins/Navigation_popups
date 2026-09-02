@@ -14,8 +14,8 @@ const newOption = (x: string, def: string | number | boolean | null | object | u
     pg.optionDefault[x] = def;
 };
 export const setDefault = (x: string, def: string | number | boolean | null | object | undefined) => {
-        newOption(x, def);
-    };
+    newOption(x, def);
+};
 export const getValueOf = (varName: string) => {
     defaultize(varName);
     return pg.option[varName];

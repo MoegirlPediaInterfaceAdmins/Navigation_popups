@@ -297,6 +297,7 @@ export class Title extends Stringwrapper {
             }
             const extracted = m[2] + (m[3] ? `#${m[3]}` : "");
             if (pg.flag.isSafari && /%25[0-9A-Fa-f]{2}/.test(extracted)) {
+                // eslint-disable-next-line @typescript-eslint/no-deprecated -- unescape is required for the Safari %25 path
                 this.setUtf(decodeURIComponent(unescape(extracted)));
             } else {
                 this.setUtf(this.decodeNasties(extracted));

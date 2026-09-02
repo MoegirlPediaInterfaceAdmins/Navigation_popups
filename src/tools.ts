@@ -89,14 +89,12 @@ const isArray = (x: unknown): x is unknown[] => Array.isArray(x);
 export const assume = <T>(value: T | null | undefined): T => value as unknown as T;
 
 export const zeroFill = (n: number, l = 2) => `${n}`.padStart(l, "0");
-export function map<T, U>(f: (x: T) => U, o: T[]): U[];
-export function map<T, U>(f: (x: T) => U, o: Record<string, T>): Record<string, U>;
-export function map<T, U>(f: (x: T) => U, o: T[] | Record<string, T>): U[] | Record<string, U> {
+export const map = <T, U>(f: (x: T) => U, o: T[] | Record<string, T>): U[] | Record<string, U> => {
     if (isArray(o)) {
         return map_array(f, o);
     }
     return map_object(f, o as Record<string, never>);
-}
+};
 const map_array = <T, U>(f: (x: T) => U, o: T[]): U[] => {
     const ret: U[] = [];
     for (const item of o) {
@@ -108,6 +106,7 @@ const map_object = <T, U>(f: (x: T) => U, o: Record<string, T>): Record<string, 
     const ret: Record<string, U> = {};
     for (const i in o) {
         // upstream indexes by the object itself (implicit string key); kept verbatim
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string -- upstream bug kept verbatim: keys by the object itself
         ret[String(o)] = f(o[i]);
     }
     return ret;

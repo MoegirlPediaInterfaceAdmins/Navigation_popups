@@ -19,7 +19,8 @@ import { Title, anchorContainsImage, isPopupLink, parseParams } from "./titles.t
 import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
 export const setupTooltips = (_container?: unknown, remove = false, force = false, popData: { owner?: Navpopup } & Record<string, unknown> | null = null) => {
     let container = _container as Element | Document;
-    log(`setupTooltips, container=${container}, remove=${remove}`);
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string -- debug log stringifies the container node on purpose
+    log(`setupTooltips, container=${String(container)}, remove=${String(remove)}`);
     if (!container) {
         if (getValueOf("popupOnEditSelection") && document.editform?.wpTextbox1) {
             document.editform.wpTextbox1.onmouseup = doSelectionPopup;
@@ -46,7 +47,7 @@ const setupTooltipsLoop = (anchors: HTMLCollectionOf<HTMLAnchorElement>, begin: 
     const finish = begin + howmany;
     const loopend = Math.min(finish, anchors.length);
     let j = loopend - begin;
-    log(`setupTooltips: anchors.length=${anchors.length}, begin=${begin}, howmany=${howmany}, loopend=${loopend}, remove=${remove}`);
+    log(`setupTooltips: anchors.length=${anchors.length}, begin=${begin}, howmany=${howmany}, loopend=${loopend}, remove=${String(remove)}`);
     const doTooltip: (a: HTMLAnchorElement, popData: { owner?: Navpopup } & Record<string, unknown> | null) => void = remove ? removeTooltip : addTooltip;
     if (j > 0) {
         do {
@@ -131,9 +132,8 @@ export const removeModifierKeyHandler = (a: HTMLAnchorElement) => {
 function mouseOverWikiLink(this: GlobalEventHandlers, _evt?: MouseEvent) {
     const self = this as HTMLAnchorElement;
     let evt = _evt;
-    if (!evt && window.event) {
-        evt = window.event as MouseEvent;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
+    evt ||= window.event as MouseEvent | undefined;
     if (getValueOf("popupModifier")) {
         const action = getValueOf("popupModifierAction");
         const key = action === "disable" ? "keyup" : "keydown";
@@ -179,10 +179,9 @@ const modifierPressed = (_evt?: MouseEvent) => {
     if (!mod) {
         return false;
     }
-    if (!evt && window.event) {
-        evt = window.event as MouseEvent;
-    }
-    return Boolean(evt && mod && (evt as unknown as Record<string, unknown>)[`${String(mod).toLowerCase()}Key`]);
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
+    evt ||= window.event as MouseEvent | undefined;
+    return Boolean(evt && mod && (evt as unknown as Record<string, unknown>)[`${String(mod as string | number | boolean).toLowerCase()}Key`]);
 };
 const isCorrectModifier = (a: HTMLAnchorElement, evt?: MouseEvent) => {
     if (!getValueOf("popupModifier")) {
@@ -225,7 +224,7 @@ export const mouseOverWikiLink2 = (a: HTMLAnchorElement, evt?: MouseEvent) => {
             const s = document.createElement("span");
             d.appendChild(s);
             s.className = "popupPreviewButton";
-            (s as unknown as Record<string, unknown>)[`on${String(getValueOf("popupPreviewButtonEvent"))}`] = () => {
+            (s as unknown as Record<string, unknown>)[`on${getValueOf("popupPreviewButtonEvent") as string}`] = () => {
                 a.simpleNoMore = true;
                 d.style.display = "none";
                 nonsimplePopupContent(a, article);
@@ -258,12 +257,12 @@ const simplePopupContent = (a: HTMLAnchorElement, article: Title) => {
         }, 150);
     }
     if (getValueOf("popupRedlinkRemoval") && a.className === "new") {
-        setPopupHTML(`<br>${popupRedlinkHTML(article)}`, "popupRedlink", navpop.idNumber);
+        setPopupHTML(`<br>${String(popupRedlinkHTML(article))}`, "popupRedlink", navpop.idNumber);
     }
 };
 const debugData = (navpopup: Navpopup) => {
     if (getValueOf("popupDebugging") && navpopup.idNumber) {
-        setPopupHTML(`idNumber=${navpopup.idNumber}, pending=${navpopup.pending}`, "popupError", navpopup.idNumber);
+        setPopupHTML(`idNumber=${navpopup.idNumber}, pending=${String(navpopup.pending)}`, "popupError", navpopup.idNumber);
     }
 };
 const newNavpopup = (a: HTMLAnchorElement, article: Title) => {
@@ -435,7 +434,7 @@ const anchorize = (d: string, anch: string): string => {
     if (!anch) {
         return d;
     }
-    const anchRe = RegExp(`(?:=+\\s*${literalizeRegex(anch).replace(/[_ ]/g, "[_ ]")}\\s*=+|\\{\\{\\s*${String(getValueOf("popupAnchorRegexp"))}\\s*(?:\\|[^|}]*)*?\\s*${literalizeRegex(anch)}\\s*(?:\\|[^}]*)?}})`);
+    const anchRe = RegExp(`(?:=+\\s*${literalizeRegex(anch).replace(/[_ ]/g, "[_ ]")}\\s*=+|\\{\\{\\s*${getValueOf("popupAnchorRegexp") as string}\\s*(?:\\|[^|}]*)*?\\s*${literalizeRegex(anch)}\\s*(?:\\|[^}]*)?}})`);
     const match = d.match(anchRe);
     if (match && match.length > 0 && match[0]) {
         return d.substring(d.indexOf(match[0]));

@@ -57,9 +57,9 @@ const setTitleBase = () => {
     pg.wiki.wikibase = `${protocol}//${pg.wiki.sitebase}${pg.wiki.botInterfacePath}`;
     pg.wiki.apiwikibase = `${protocol}//${pg.wiki.sitebase}${pg.wiki.APIPath}`;
     pg.wiki.articlebase = `${protocol}//${pg.wiki.sitebase}${pg.wiki.articlePath}`;
-    pg.wiki.commonsbase = `${protocol}//${pg.wiki.commons}${pg.wiki.botInterfacePath}`;
-    pg.wiki.apicommonsbase = `${protocol}//${pg.wiki.commons}${pg.wiki.APIPath}`;
-    pg.re.basenames = RegExp(`^(${map(literalizeRegex, [pg.wiki.titlebase, pg.wiki.articlebase]).join("|")})`);
+    pg.wiki.commonsbase = `${protocol}//${String(pg.wiki.commons)}${pg.wiki.botInterfacePath}`;
+    pg.wiki.apicommonsbase = `${protocol}//${String(pg.wiki.commons)}${pg.wiki.APIPath}`;
+    pg.re.basenames = RegExp(`^(${(map(literalizeRegex, [pg.wiki.titlebase, pg.wiki.articlebase]) as string[]).join("|")})`);
 };
 const setMainRegex = () => {
     const reStart = "[^:]*://";
@@ -94,7 +94,7 @@ const setRegexps = () => {
         }
     });
     const im = nsReImage();
-    pg.re.image = RegExp(`(^|\\[\\[)${im}: *([^|\\]]*[^|\\] ])([^0-9\\]]*([0-9]+) *px)?|(?:\\n *[|]?|[|]) *(${getValueOf("popupImageVarsRegexp")}) *= *(?:\\[\\[ *)?(?:${im}:)?([^|]*?)(?:\\]\\])? *[|]? *\\n`, "img");
+    pg.re.image = RegExp(`(^|\\[\\[)${im}: *([^|\\]]*[^|\\] ])([^0-9\\]]*([0-9]+) *px)?|(?:\\n *[|]?|[|]) *(${getValueOf("popupImageVarsRegexp") as string}) *= *(?:\\[\\[ *)?(?:${im}:)?([^|]*?)(?:\\]\\])? *[|]? *\\n`, "img");
     pg.re.imageBracketCount = 6;
     pg.re.category = RegExp(`\\[\\[${nsRe(pg.nsCategoryId)}: *([^|\\]]*[^|\\] ]) *`, "i");
     pg.re.categoryBracketCount = 1;
@@ -146,9 +146,13 @@ interface SetupPopups {
     (callback?: () => void): Promise<void>;
     completed?: boolean;
 }
-export const setupPopups: SetupPopups = async (callback?: () => void) => {
+export const setupPopups: SetupPopups = async (
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- setup API hands control to the caller callback
+    callback?: () => void,
+) => {
     if (setupPopups.completed) {
         if (typeof callback === "function") {
+            // eslint-disable-next-line promise/prefer-await-to-callbacks -- init API hands results to caller callbacks
             callback();
         }
         return;
@@ -169,7 +173,7 @@ export const setupPopups: SetupPopups = async (callback?: () => void) => {
     setSiteInfo();
     setTitleBase();
     setOptions();
-    setUserInfo();
+    void setUserInfo();
     setNamespaces();
     setInterwiki();
     setRegexps();
@@ -180,8 +184,10 @@ export const setupPopups: SetupPopups = async (callback?: () => void) => {
     log("In setupPopups(), just called setupTooltips()");
     Navpopup.tracker.enable();
 
+    // eslint-disable-next-line require-atomic-updates -- single-shot init; the assignment happens after async setup by design
     setupPopups.completed = true;
     if (typeof callback === "function") {
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- init API hands results to caller callbacks
         callback();
     }
 };
