@@ -109,8 +109,8 @@ import { popupString } from "./strings.ts";
         s.push("if(admin){<menurow><<unblock|unblockShort>>|<<block|shortcut=b|block user>></menurow>}");
         s.push("<<blocklog|shortcut=B|block log>>");
         s.push(`</menu>${enddiv}}`);
-        if (getValueOf("popupSetupMenu") && !x.navpop.hasPopupMenu) {
-            x.navpop.hasPopupMenu = true;
+        if (getValueOf("popupSetupMenu") && !x.navpop?.hasPopupMenu) {
+            x.navpop!.hasPopupMenu = true;
             s.push(`*${menuTitle(dropclass, "popupsMenu")}<menu>`);
             s.push("<<togglePreviews|toggle previews>>");
             s.push("<<purgePopups|reset>>");

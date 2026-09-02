@@ -15,7 +15,8 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
     export interface LinkSpec {
         article: Title;
         action?: string;
-        text: string;
+        actionName?: string;
+        text?: string;
         newWin?: boolean | null;
         title?: string | null;
         oldid?: string | null;
@@ -27,7 +28,8 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         sep?: string | null;
         rcid?: string;
         diff?: string | null;
-        [key: string]: unknown;
+        from?: string | number | null;
+        to?: string | null;
     }
     // the subset generalLink/generalNavLink actually consume (no article)
     export interface GeneralLinkSpec {
@@ -38,9 +40,8 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         className?: string | null;
         noPopup?: boolean | number | null;
         onclick?: string;
-        [key: string]: unknown;
     }
-    export const wikiLink = (l: LinkSpec & { action: string }): string | null => {
+    export const wikiLink = (l: LinkSpec): string | null => {
         if (!(typeof l.article === typeof {} && typeof l.action === typeof "" && typeof l.text === typeof "")) {
             return null;
         }
@@ -61,9 +62,9 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
                 break;
             case "edit&undo=":
                 if (l.diff && l.diff !== "prev" && savedOldid) {
-                    l.action += `${l.diff}&undoafter=${savedOldid}`;
+                    l.action = `${l.action}${l.diff}&undoafter=${savedOldid}`;
                 } else if (savedOldid) {
-                    l.action += savedOldid;
+                    l.action = `${l.action}${savedOldid}`;
                 }
                 hint = popupString("undoHint");
                 break;
@@ -124,7 +125,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         }
         return `${ret}&autorv=${oldid}`;
     };
-    export const titledWikiLink = (l: LinkSpec & { action: string }): string | null => {
+    export const titledWikiLink = (l: LinkSpec): string | null => {
         if (typeof l.article === "undefined" || typeof l.action === "undefined") {
             errlog("got undefined article or action in titledWikiLink");
             return null;
@@ -253,7 +254,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         pg.option.simplePopups = !pg.option.simplePopups;
         abortAllDownloads();
     };
-    export function magicWatchLink(this: { id?: string }, l: LinkSpec & { action: string }): string | null {
+    export function magicWatchLink(this: { id?: string }, l: LinkSpec): string | null {
         l.onclick = simplePrintf("pg.fn.modifyWatchlist('%s','%s');return false;", [l.article.toString(true).split("\\").join("\\\\").split("'").join("\\'"), this.id]);
         return wikiLink(l);
     }
@@ -428,7 +429,6 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         watch?: boolean | string | null;
         alsoChangeLabel?: boolean;
         summary: string;
-        [key: string]: unknown;
     }): string | null => {
         if (x.newTarget) {
             log(`changeLinkTargetLink: newTarget=${x.newTarget}`);

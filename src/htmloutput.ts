@@ -5,7 +5,7 @@ import { checkPopupPosition } from "./mouseout.ts";
 import { getValueOf } from "./options.ts";
 import { Title, parseParams } from "./titles.ts";
 import { isString, simplePrintf } from "./tools.ts";
-    export const setPopupHTML = (str: string | Node | null, elementId: string, _popupId?: number, onSuccess?: (() => void) | null, append?: boolean) => {
+    export const setPopupHTML = (str: string | Node | null | undefined, elementId: string, _popupId?: number, onSuccess?: (() => void) | null, append?: boolean) => {
         let popupId = _popupId;
         if (typeof popupId === "undefined") {
             popupId = pg.idNumber;
@@ -31,7 +31,7 @@ import { isString, simplePrintf } from "./tools.ts";
         }, 600);
         return null;
     };
-    export const setPopupTrailer = (str: string | Node | null, id: number | undefined) => setPopupHTML(str, "popupData", id);
+    export const setPopupTrailer = (str: string | Node | null | undefined, id: number | undefined) => setPopupHTML(str, "popupData", id);
     type FillEmptySpansArgs = {
         navpopup: Navpopup;
         redir?: boolean;
@@ -181,6 +181,6 @@ import { isString, simplePrintf } from "./tools.ts";
             setTimeout(popTips, when, popData);
         };
     };
-    export const setPopupTipsAndHTML = (html: string | Node | null, divname: string, idnumber?: number, popData?: { owner?: Navpopup } & Record<string, unknown> | null): void => {
+    export const setPopupTipsAndHTML = (html: string | Node | null | undefined, divname: string, idnumber?: number, popData?: { owner?: Navpopup } & Record<string, unknown> | null): void => {
         setPopupHTML(html, divname, idnumber, getValueOf("popupSubpopups") ? popTipsSoonFn(divname + String(idnumber), null, popData) : null);
     };

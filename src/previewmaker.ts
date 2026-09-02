@@ -1,14 +1,23 @@
 import { log, pg } from "./globals.ts";
 import { setPopupHTML, setPopupTipsAndHTML } from "./htmloutput.ts";
 import { Insta, wiki2html } from "./livepreview.ts";
+import type { Navpopup } from "./navpopup.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
 import { Title } from "./titles.ts";
 import { isRegExp, isString, literalizeRegex } from "./tools.ts";
     export class Previewmaker {
-        maxCharacters = getValueOf("popupMaxPreviewCharacters");
-        maxSentences = getValueOf("popupMaxPreviewSentences");
-        constructor(wikiText, baseUrl, owner) {
+        maxCharacters = Number(getValueOf("popupMaxPreviewCharacters"));
+        maxSentences = Number(getValueOf("popupMaxPreviewSentences"));
+        originalData!: string;
+        // a Title sneaks in here via APIsharedImagePagePreviewHTML (upstream
+        // passes the article where a URL belongs); it stringifies fine
+        baseUrl!: string | Title;
+        owner?: Navpopup;
+        data!: string;
+        html?: string;
+        fullLength = 0;
+        constructor(wikiText: string, baseUrl: string | Title, owner?: Navpopup) {
             this.originalData = wikiText;
             this.baseUrl = baseUrl;
             this.owner = owner;
@@ -27,7 +36,7 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
         killGalleries() {
             this.data = this.data.replace(/< *gallery[^>]* *>[\s\S]*?< *\/ *gallery *>/ig, "");
         }
-        kill(opening, closing, subopening, subclosing, repl) {
+        kill(opening: string | RegExp, closing: string | RegExp, subopening?: string | RegExp, subclosing?: string | RegExp, repl?: string) {
             let oldk = this.data;
             let k = this.killStuff(this.data, opening, closing, subopening, subclosing, repl);
             while (k.length < oldk.length) {
@@ -36,7 +45,7 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             }
             this.data = k;
         }
-        killStuff(_txt, opening, closing, subopening, subclosing, repl) {
+        killStuff(_txt: string, opening: string | RegExp, closing: string | RegExp, subopening?: string | RegExp, subclosing?: string | RegExp, repl?: string): string {
             let txt = _txt;
             const op = this.makeRegexp(opening);
             const cl = this.makeRegexp(closing, "^");
@@ -44,12 +53,12 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             const sc = subclosing ? this.makeRegexp(subclosing, "^") : cl;
             if (!op || !cl) {
                 alert("Navigation Popups error: op or cl is null! something is wrong.");
-                return;
+                return "";
             }
             if (!op.test(txt)) {
                 return txt;
             }
-            const opResult = op.exec(txt);
+            const opResult = op.exec(txt) as RegExpExecArray;
             const ret = txt.substring(0, opResult.index);
             txt = txt.substring(opResult.index + opResult[0].length);
             let depth = 1;
@@ -57,13 +66,13 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
                 let removal = 0;
                 if (depth === 1 && cl.test(txt)) {
                     depth--;
-                    removal = cl.exec(txt)[0].length;
+                    removal = (cl.exec(txt) as RegExpExecArray)[0].length;
                 } else if (depth > 1 && sc.test(txt)) {
                     depth--;
-                    removal = sc.exec(txt)[0].length;
+                    removal = (sc.exec(txt) as RegExpExecArray)[0].length;
                 } else if (sb && sb.test(txt)) {
                     depth++;
-                    removal = sb.exec(txt)[0].length;
+                    removal = (sb.exec(txt) as RegExpExecArray)[0].length;
                 }
                 if (!removal) {
                     removal = 1;
@@ -75,7 +84,7 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             }
             return ret + (repl || "") + txt;
         }
-        makeRegexp = (x, _prefix, _suffix) => {
+        makeRegexp = (x: string | RegExp, _prefix?: string, _suffix?: string): RegExp => {
             const prefix = _prefix || "";
             const suffix = _suffix || "";
             let reStr = "";
@@ -109,8 +118,8 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             this.data = this.data.replace(RegExp("^[|].*$", "mg"), "");
         }
         killImages() {
-            const forbiddenNamespaceAliases = [];
-            $.each(mw.config.get("wgNamespaceIds"), (_localizedNamespaceLc, _namespaceId) => {
+            const forbiddenNamespaceAliases: string[] = [];
+            $.each(mw.config.get("wgNamespaceIds"), (_localizedNamespaceLc: string, _namespaceId: number) => {
                 if (_namespaceId !== pg.nsImageId && _namespaceId !== pg.nsCategoryId) {
                     return;
                 }
@@ -146,7 +155,7 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             this.data = this.data.replace(/^__[A-Z_]*__ *$/img, "");
         }
         firstBit() {
-            let d = this.data;
+            let d: string | string[] = this.data;
             if (getValueOf("popupPreviewCutHeadings")) {
                 this.data = this.data.replace(/\s*(==+[^=]*==+)\s*/g, "\n\n$1 ");
                 this.data = this.data.replace(/([:;]) *\n{2,}/g, "$1\n");
@@ -166,17 +175,17 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             d = this.fixSentenceEnds(d, notSentenceEnds);
             this.fullLength = d.join("").length;
             let n = this.maxSentences;
-            let dd;
+            let dd: string;
             do {
                 dd = this.firstSentences(d, n);
                 --n;
             } while (dd.length > this.maxCharacters && n !== 0);
             this.data = dd;
         }
-        fixSentenceEnds(strs, reg) {
+        fixSentenceEnds(strs: string[], reg: RegExp): string[] {
             for (let i = 0; i < strs.length - 2; ++i) {
                 if (reg.test(strs[i])) {
-                    const a = [];
+                    const a: string[] = [];
                     for (let j = 0; j < strs.length; ++j) {
                         if (j < i) {
                             a[j] = strs[j];
@@ -193,7 +202,7 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             }
             return strs;
         }
-        firstSentences = (strs, howmany) => {
+        firstSentences = (strs: string[], howmany: number): string => {
             const t = strs.slice(0, 2 * howmany);
             return t.join("");
         };
@@ -201,7 +210,7 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             this.data = this.data.replace(/^ *'+ *$/gm, "");
         }
         makePreview() {
-            if (this.owner.article.namespaceId() !== pg.nsTemplateId && this.owner.article.namespaceId() !== pg.nsImageId) {
+            if (this.owner?.article?.namespaceId() !== pg.nsTemplateId && this.owner?.article?.namespaceId() !== pg.nsImageId) {
                 this.killComments();
                 this.killDivs();
                 this.killGalleries();
@@ -221,25 +230,25 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             } else {
                 this.killHTML();
             }
-            this.html = wiki2html(this.data, this.baseUrl);
+            this.html = wiki2html(this.data, this.baseUrl as string);
             this.fixHTML();
             this.stripLongTemplates();
         }
-        esWiki2HtmlPart = (data) => {
+        esWiki2HtmlPart = (data: string): string => {
             const reLinks = /(?:\[\[([^|\]]*)(?:\|([^|\]]*))*]]([a-z]*))/gi;
             reLinks.lastIndex = 0;
             let result = "";
             let postfixIndex = 0;
             let match = reLinks.exec(data);
             while (match) {
-                result += `${pg.escapeQuotesHTML(data.substring(postfixIndex, match.index))}<a href="${Insta.conf.paths.articles}${pg.escapeQuotesHTML(match[1])}">${pg.escapeQuotesHTML((match[2] ? match[2] : match[1]) + match[3])}</a>`;
+                result += `${pg.escapeQuotesHTML?.(data.substring(postfixIndex, match.index)) ?? ""}<a href="${Insta.conf.paths.articles}${pg.escapeQuotesHTML?.(match[1]) ?? ""}">${pg.escapeQuotesHTML?.((match[2] ? match[2] : match[1]) + match[3]) ?? ""}</a>`;
                 postfixIndex = reLinks.lastIndex;
                 match = reLinks.exec(data);
             }
-            result += pg.escapeQuotesHTML(data.substring(postfixIndex));
+            result += pg.escapeQuotesHTML?.(data.substring(postfixIndex)) ?? "";
             return result;
         };
-        editSummaryPreview() {
+        editSummaryPreview(): string {
             const reAes = /\/\* *(.*?) *\*\//g;
             reAes.lastIndex = 0;
             const match = reAes.exec(this.data);
@@ -257,8 +266,8 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
                 }
                 const t = new Title().fromURL(this.baseUrl);
                 t.anchorFromUtf(section);
-                const sectionLink = `${Insta.conf.paths.articles + pg.escapeQuotesHTML(t.toString(true))}#${pg.escapeQuotesHTML(t.anchor)}`;
-                return `${start}<a href="${sectionLink}">&rarr;</a> ${pg.escapeQuotesHTML(section)}${end}`;
+                const sectionLink = `${Insta.conf.paths.articles + (pg.escapeQuotesHTML?.(t.toString(true)) ?? "")}#${pg.escapeQuotesHTML?.(t.anchor) ?? ""}`;
+                return `${start}<a href="${sectionLink}">&rarr;</a> ${pg.escapeQuotesHTML?.(section) ?? ""}${end}`;
             }
             return this.esWiki2HtmlPart(this.data);
         }
@@ -276,17 +285,17 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             if (typeof this.html !== typeof "") {
                 return;
             }
-            if (RegExp("^\\s*$").test(this.html)) {
+            if (RegExp("^\\s*$").test(this.html ?? "")) {
                 return;
             }
-            setPopupHTML("<hr />", "popupPrePreviewSep", this.owner.idNumber);
-            setPopupTipsAndHTML(this.html, "popupPreview", this.owner.idNumber, {
+            setPopupHTML("<hr />", "popupPrePreviewSep", this.owner?.idNumber);
+            setPopupTipsAndHTML(this.html, "popupPreview", this.owner?.idNumber, {
                 owner: this.owner,
             });
             const more = this.fullLength > this.data.length ? this.moreLink() : "";
-            setPopupHTML(more, "popupPreviewMore", this.owner.idNumber);
+            setPopupHTML(more, "popupPreviewMore", this.owner?.idNumber);
         }
-        moreLink() {
+        moreLink(): HTMLAnchorElement {
             const a = document.createElement("a");
             a.className = "popupMoreLink";
             a.innerHTML = popupString("more...");
@@ -300,9 +309,9 @@ import { isRegExp, isString, literalizeRegex } from "./tools.ts";
             return a;
         }
         stripLongTemplates() {
-            this.html = this.html.replace(/^.{0,1000}[{][{][^}]*?(<(p|br)( \/)?>\s*){2,}([^{}]*?[}][}])?/ig, "");
-            this.html = this.html.split("\n").join(" ");
-            this.html = this.html.replace(/[{][{][^}]*<pre>[^}]*[}][}]/ig, "");
+            this.html = (this.html ?? "").replace(/^.{0,1000}[{][{][^}]*?(<(p|br)( \/)?>\s*){2,}([^{}]*?[}][}])?/ig, "");
+            this.html = (this.html ?? "").split("\n").join(" ");
+            this.html = (this.html ?? "").replace(/[{][{][^}]*<pre>[^}]*[}][}]/ig, "");
         }
         killMultilineTemplates() {
             this.kill("{{{", "}}}");
