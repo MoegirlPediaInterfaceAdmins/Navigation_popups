@@ -37,9 +37,9 @@ export interface PopupStructure {
 // descriptor; kept loose until navlinks.ts is fully typed).
 export interface StructureContext {
     a?: unknown;
-    article?: unknown;
+    article: import("../titles.ts").Title;
     hint?: string | null;
-    navpop?: Navpopup;
+    navpop?: import("../navpopup.ts").Navpopup;
     params?: Record<string, string | null>;
     [key: string]: unknown;
 }

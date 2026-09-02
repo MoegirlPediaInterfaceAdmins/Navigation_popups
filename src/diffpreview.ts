@@ -304,13 +304,12 @@ import { getJsObj, simplePrintf } from "./tools.ts";
     };
     export type DiffLinkSpec = {
         article: Title;
-        to: string;
-        from: string | number;
+        to?: string | null;
+        from?: string | number | null;
         newWin?: boolean | null;
-        noPopup?: boolean | null;
-        text: string;
+        noPopup?: boolean | number | null;
+        text?: string;
         title?: string | null;
-        [key: string]: unknown;
     };
     export const titledDiffLink = (l: DiffLinkSpec) => titledWikiLink({
         article: l.article,

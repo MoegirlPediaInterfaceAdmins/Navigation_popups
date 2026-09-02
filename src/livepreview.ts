@@ -1,5 +1,36 @@
 import { pg } from "./globals.ts";
-    export const Insta = {};
+    interface InstaConfUser {
+        name?: string;
+        signature?: string;
+    }
+    interface InstaConf {
+        baseUrl?: string;
+        user: InstaConfUser;
+        wiki: {
+            lang: string;
+            interwiki: string;
+            default_thumb_width: number;
+        };
+        paths: {
+            articles: string;
+            math: string;
+            images: string;
+            images_fallback: string;
+        };
+        locale: {
+            user: string;
+            image: string;
+            category: string;
+            months: string[];
+        };
+    }
+    interface InstaObject {
+        conf: InstaConf;
+        BLOCK_IMAGE: RegExp;
+        dump: (this: InstaObject, _from: string | HTMLTextAreaElement, _to: string | HTMLTextAreaElement) => void;
+        convert: (wiki: string | string[]) => string;
+    }
+    export const Insta: InstaObject = {} as InstaObject;
     export const setupLivePreview = () => {
         Insta.conf = {
             baseUrl: "",
@@ -16,9 +47,9 @@ import { pg } from "./globals.ts";
                 images_fallback: "//upload.wikimedia.org/wikipedia/commons/",
             },
             locale: {
-                user: mw.config.get("wgFormattedNamespaces")[pg.nsUserId],
-                image: mw.config.get("wgFormattedNamespaces")[pg.nsImageId],
-                category: mw.config.get("wgFormattedNamespaces")[pg.nsCategoryId],
+                user: mw.config.get("wgFormattedNamespaces")[pg.nsUserId ?? -1],
+                image: mw.config.get("wgFormattedNamespaces")[pg.nsImageId ?? -1],
+                category: mw.config.get("wgFormattedNamespaces")[pg.nsCategoryId ?? -1],
                 months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
             },
         };
@@ -26,35 +57,32 @@ import { pg } from "./globals.ts";
         Insta.conf.user.signature = `[[${Insta.conf.locale.user}:${Insta.conf.user.name}|${Insta.conf.user.name}]]`;
         Insta.BLOCK_IMAGE = new RegExp(`^\\[\\[(?:File|Image|${Insta.conf.locale.image}):.*?\\|.*?(?:frame|thumbnail|thumb|none|right|left|center)`, "i");
     };
-    Insta.dump = function (_from, _to) {
-        let from = _from, to = _to;
-        if (typeof from === "string") {
-            from = document.getElementById(from);
+    Insta.dump = function (_from: string | HTMLTextAreaElement, _to: string | HTMLTextAreaElement) {
+        const from: HTMLTextAreaElement | null = typeof _from === "string" ? document.getElementById(_from) as HTMLTextAreaElement | null : _from;
+        const to: HTMLTextAreaElement | null = typeof _to === "string" ? document.getElementById(_to) as HTMLTextAreaElement | null : _to;
+        if (to && from) {
+            to.innerHTML = this.convert(from.value);
         }
-        if (typeof to === "string") {
-            to = document.getElementById(to);
-        }
-        to.innerHTML = this.convert(from.value);
     };
-    Insta.convert = (wiki) => {
+    Insta.convert = (wiki: string | string[]): string => {
         const ll = typeof wiki === "string" ? wiki.replace(/\r/g, "").split(/\n/) : wiki;
         let o = "",
-            p = 0,
-            r;
+            p: number | boolean = 0,
+            r: RegExpMatchArray | null = null;
         const remain = () => ll.length;
-        const sh = () => ll.shift();
-        const ps = (s) => {
+        const sh = (): string => ll.shift() ?? "";
+        const ps = (s: string) => {
             o += s;
         };
-        const f = (...a) => {
+        const f = (...a: unknown[]): string => {
             let i = 1,
-                f = a[0],
+                f = a[0] as string,
                 o = "",
-                c, p;
+                c: number, p: number;
             for (; i < a.length; i++) {
                 if ((p = f.indexOf("?")) + 1) {
                     i -= c = f.charAt(p + 1) === "?" ? 1 : 0;
-                    o += f.substring(0, p) + (c ? "?" : a[i]);
+                    o += f.substring(0, p) + (c ? "?" : String(a[i]));
                     f = f.substr(p + 1 + c);
                 } else {
                     break;
@@ -62,10 +90,10 @@ import { pg } from "./globals.ts";
             }
             return o + f;
         };
-        const html_entities = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const htmlescape_text = (s) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/:/g, "&#58;").replace(/\[/g, "&#91;").replace(/]/g, "&#93;");
-        const htmlescape_attr = (s) => htmlescape_text(s).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-        const str_imatch = (a, b) => {
+        const html_entities = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const htmlescape_text = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/:/g, "&#58;").replace(/\[/g, "&#91;").replace(/]/g, "&#93;");
+        const htmlescape_attr = (s: string) => htmlescape_text(s).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+        const str_imatch = (a: string, b: string) => {
             const l = Math.min(a.length, b.length);
             let i;
             for (i = 0; i < l; i++) {
@@ -75,17 +103,23 @@ import { pg } from "./globals.ts";
             }
             return i;
         };
-        const compareLineStringOrReg = (c) => typeof c === "string" ? ll[0] && ll[0].substr(0, c.length) === c : r = ll[0] && ll[0].match(c);
-        const compareLineString = (c) => ll[0] === c;
-        const charAtPoint = (p) => ll[0].charAt(p);
-        const endl = (s) => {
+        const compareLineStringOrReg = (c: string | RegExp): boolean | RegExpMatchArray | null => {
+            if (typeof c === "string") {
+                return Boolean(ll[0] && ll[0].substr(0, c.length) === c);
+            }
+            r = ll[0] ? ll[0].match(c) : null;
+            return r;
+        };
+        const compareLineString = (c: string) => ll[0] === c;
+        const charAtPoint = (p: number) => ll[0].charAt(p);
+        const endl = (s: string) => {
             ps(s);
             sh();
         };
         const parse_list = () => {
             let prev = "";
             while (remain() && compareLineStringOrReg(/^([*#:;]+)(.*)$/)) {
-                const l_match = r;
+                const l_match = r as RegExpMatchArray;
                 sh();
                 const ipos = str_imatch(prev, l_match[1]);
                 for (let prevPos = prev.length - 1; prevPos >= ipos; prevPos--) {
@@ -134,7 +168,7 @@ import { pg } from "./globals.ts";
             }
         };
         const parse_table = () => {
-            endl(f("<table>", compareLineStringOrReg(/^\{\|( .*)$/) ? r[1] : ""));
+            endl(f("<table>", compareLineStringOrReg(/^\{\|( .*)$/) ? (r as RegExpMatchArray)[1] : ""));
             while (remain()) {
                 if (compareLineStringOrReg("|")) {
                     switch (charAtPoint(1)) {
@@ -142,7 +176,7 @@ import { pg } from "./globals.ts";
                             endl("</table>");
                             return;
                         case "-":
-                            endl(f("<tr>", compareLineStringOrReg(/\|-*(.*)/)[1]));
+                            endl(f("<tr>", (compareLineStringOrReg(/\|-*(.*)/) as RegExpMatchArray)[1]));
                             break;
                         default:
                             parse_table_data();
@@ -155,8 +189,12 @@ import { pg } from "./globals.ts";
             }
         };
         const parse_table_data = () => {
-            let td_line, match_i;
+            let td_line: string[] = [];
+            let match_i: number;
             const td_match = sh().match(/^(\|\+|\||!)((?:([^[|]*?)\|(?!\|))?(.*))$/);
+            if (!td_match) {
+                return;
+            }
             if (td_match[1] === "|+") {
                 ps("<caption");
             } else {
@@ -170,15 +208,15 @@ import { pg } from "./globals.ts";
             ps(">");
             if (td_match[1] !== "|+") {
                 td_line = td_match[match_i].split(td_match[1] === "|" ? "||" : /(?:\|\||!!)/);
-                ps(parse_inline_nowiki(td_line.shift()));
+                ps(parse_inline_nowiki(td_line.shift() ?? ""));
                 while (td_line.length) {
-                    ll.unshift(td_match[1] + td_line.pop());
+                    ll.unshift(td_match[1] + (td_line.pop() ?? ""));
                 }
             } else {
                 ps(parse_inline_nowiki(td_match[match_i]));
             }
             let tc = 0;
-            const td = [];
+            const td: string[] = [];
             while (remain()) {
                 td.push(sh());
                 if (compareLineStringOrReg("|")) {
@@ -207,12 +245,12 @@ import { pg } from "./globals.ts";
         const parse_block_image = () => {
             ps(parse_image(sh()));
         };
-        const parse_image = (str) => {
+        const parse_image = (str: string): string => {
             let tag = str.substring(str.indexOf(":") + 1, str.length - 2);
-            const attr = [];
+            const attr: unknown[] = [];
             if (tag.match(/\|/)) {
                 let nesting = 0;
-                let last_attr;
+                let last_attr: string | undefined;
                 for (let i = tag.length - 1; i > 0; i--) {
                     if (tag.charAt(i) === "|" && !nesting) {
                         last_attr = tag.substr(i + 1);
@@ -236,11 +274,11 @@ import { pg } from "./globals.ts";
             }
             return "";
         };
-        const parse_inline_nowiki = (str) => {
-            let start, lastend = 0;
+        const parse_inline_nowiki = (str: string): string => {
+            let start: number, lastend = 0;
             let substart = 0,
                 nestlev = 0,
-                open, close, subloop;
+                open: number, close: number, subloop: boolean;
             let html = "";
             while (-1 !== (start = str.indexOf("<nowiki>", substart))) {
                 html += parse_inline_wiki(str.substring(lastend, start));
@@ -270,11 +308,11 @@ import { pg } from "./globals.ts";
             }
             return html + parse_inline_wiki(str.substr(lastend));
         };
-        const parse_inline_images = (_str) => {
+        const parse_inline_images = (_str: string): string => {
             let str = _str;
-            let start, substart = 0,
+            let start: number, substart = 0,
                 nestlev = 0;
-            let loop, close, open, wiki, html;
+            let loop: boolean, close: number, open: number, wiki: string, html: string;
             while (-1 !== (start = str.indexOf("[[", substart))) {
                 if (str.substr(start + 2).match(RegExp(`^(Image|File|${Insta.conf.locale.image}):`, "i"))) {
                     loop = true;
@@ -308,8 +346,8 @@ import { pg } from "./globals.ts";
             }
             return str;
         };
-        const parse_inline_formatting = (str) => {
-            let italic, bold, i, li, o = "";
+        const parse_inline_formatting = (str: string): string => {
+            let italic: boolean | undefined, bold: boolean | undefined, i: number, li = 0, o = "";
             while ((i = str.indexOf("''", li)) + 1) {
                 o += str.substring(li, i);
                 li = i + 2;
@@ -324,37 +362,38 @@ import { pg } from "./globals.ts";
             }
             return o + str.substr(li);
         };
-        const parse_inline_wiki = (_str) => {
+        const parse_inline_wiki = (_str: string): string => {
             let str = _str;
             str = parse_inline_images(str);
             str = str.replace(/<(?:)math>(.*?)<\/math>/gi, "");
-            let date = new Date();
-            let minutes = date.getUTCMinutes();
+            const date = new Date();
+            let minutes: number | string = date.getUTCMinutes();
             if (minutes < 10) {
                 minutes = `0${minutes}`;
             }
-            date = f("?:?, ? ? ? (UTC)", date.getUTCHours(), minutes, date.getUTCDate(), Insta.conf.locale.months[date.getUTCMonth()], date.getUTCFullYear());
+            const dateStr = f("?:?, ? ? ? (UTC)", date.getUTCHours(), minutes, date.getUTCDate(), Insta.conf.locale.months[date.getUTCMonth()], date.getUTCFullYear());
             str = str
-                .replace(/~{5}(?!~)/g, date).replace(/~{4}(?!~)/g, `${Insta.conf.user.name} ${date}`).replace(/~{3}(?!~)/g, Insta.conf.user.name)
-                .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):[^|]*?)\\]\\](\\w*)`, "gi"), ($0, $1, $2) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
+                .replace(/~{5}(?!~)/g, dateStr).replace(/~{4}(?!~)/g, `${Insta.conf.user.name} ${dateStr}`).replace(/~{3}(?!~)/g, String(Insta.conf.user.name))
+                .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):[^|]*?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
                 .replace(RegExp(`\\[\\[(?:${Insta.conf.locale.category}|${Insta.conf.wiki.interwiki}):.*?\\]\\]`, "gi"), "")
-                .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):.*?)\\|([^\\]]+?)\\]\\](\\w*)`, "gi"), ($0, $1, $2, $3) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
-                .replace(/\[\[(\/[^|]*?)\]\]/g, ($0, $1) => f("<a href='?'>?</a>", Insta.conf.baseUrl + htmlescape_attr($1), htmlescape_text($1)))
-                .replace(/\[\[(\/.*?)\|(.+?)\]\]/g, ($0, $1, $2) => f("<a href='?'>?</a>", Insta.conf.baseUrl + htmlescape_attr($1), htmlescape_text($2)))
-                .replace(/\[\[([^[|]*?)\]\](\w*)/g, ($0, $1, $2) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
-                .replace(/\[\[([^[]*?)\|([^\]]+?)\]\](\w*)/g, ($0, $1, $2, $3) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
-                .replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, ($0, $1, $2, $3) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1) + htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($2)))
-                .replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, ($0, $1, $2, $3, $4) => f("<a class='external' href='?:?'>?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($4)))
-                .replace(/\[http:\/\/(.*?)\]/g, ($0, $1) => f("<a class='external' href='http://?'>[#]</a>", htmlescape_attr($1)))
-                .replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, ($0, $1, $2, $3) => f("<a class='external' href='?:?'>?:?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($1), htmlescape_text($2) + htmlescape_text($3)))
-                .replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*[^.,!?;: $])/g, ($0, $1, $2, $3, $4) => f("?<a class='external' href='?:?'>?:?</a>", htmlescape_text($1), htmlescape_attr($2), htmlescape_attr($3) + htmlescape_attr($4), htmlescape_text($2), htmlescape_text($3) + htmlescape_text($4)))
+                .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):.*?)\\|([^\\]]+?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
+                .replace(/\[\[(\/[^|]*?)\]\]/g, ($0: string, $1: string) => f("<a href='?'>?</a>", Insta.conf.baseUrl + htmlescape_attr($1), htmlescape_text($1)))
+                .replace(/\[\[(\/.*?)\|(.+?)\]\]/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.baseUrl + htmlescape_attr($1), htmlescape_text($2)))
+                .replace(/\[\[([^[|]*?)\]\](\w*)/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
+                .replace(/\[\[([^[]*?)\|([^\]]+?)\]\](\w*)/g, ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
+                .replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, ($0: string, $1: string | undefined, $2: string, $3: string | undefined) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1 ?? "") + htmlescape_attr($2) + htmlescape_attr($3 ?? ""), htmlescape_text($2)))
+                .replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, ($0: string, $1: string, $2: string, $3: string, $4: string) => f("<a class='external' href='?:?'>?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($4)))
+                .replace(/\[http:\/\/(.*?)\]/g, ($0: string, $1: string) => f("<a class='external' href='http://?'>[#]</a>", htmlescape_attr($1)))
+                .replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, ($0: string, $1: string, $2: string, $3: string) => f("<a class='external' href='?:?'>?:?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($1), htmlescape_text($2) + htmlescape_text($3)))
+                .replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*[^.,!?;: $])/g, ($0: string, $1: string, $2: string, $3: string, $4: string) => f("?<a class='external' href='?:?'>?:?</a>", htmlescape_text($1), htmlescape_attr($2), htmlescape_attr($3) + htmlescape_attr($4), htmlescape_text($2), htmlescape_text($3) + htmlescape_text($4)))
                 .replace("__NOTOC__", "").replace("__NOINDEX__", "").replace("__INDEX__", "").replace("__NOEDITSECTION__", "");
             return parse_inline_formatting(str);
         };
         while (remain()) {
             if (compareLineStringOrReg(/^(={1,6})(.*)\1(.*)$/)) {
                 p = 0;
-                endl(f("<h?>?</h?>?", r[1].length, parse_inline_nowiki(r[2]), r[1].length, r[3]));
+                const m = r as unknown as RegExpMatchArray;
+                endl(f("<h?>?</h?>?", m[1].length, parse_inline_nowiki(m[2]), m[1].length, m[3]));
             } else if (compareLineStringOrReg(/^[*#:;]/)) {
                 p = 0;
                 parse_list();

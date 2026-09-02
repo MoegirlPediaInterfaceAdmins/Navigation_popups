@@ -2,10 +2,12 @@ import { autoClickToken } from "./autoedit.ts";
 import { titledDiffLink } from "./diffpreview.ts";
 import { errlog, pg } from "./globals.ts";
 import { arinLink, editCounterLink, editorListLink, globalSearchLink, googleLink, magicHistoryLink, magicWatchLink, popupMenuLink, specialLink, titledWikiLink, wikiLink } from "./links.ts";
+import type { LinkSpec } from "./links.ts";
 import { getValueOf } from "./options.ts";
 import { addPopupShortcut } from "./shortcutkeys.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./titles.ts";
+import { Title } from "./titles.ts";
     const defaultNavlinkSpec = () => {
         let str = "";
         str += "<b><<mainlink|shortcut= >></b>";
@@ -24,16 +26,16 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
         str += "if(admin){<br><<unprotect|unprotectShort>>|<<protect|shortcut=p>>|<<protectlog|log>>*<<undelete|undeleteShort>>|<<delete|shortcut=d>>|<<deletelog|log>>}";
         return str;
     };
-    export const navLinksHTML = (article, hint, params) => {
+    export const navLinksHTML = (article: Title, hint?: string | null, params?: Record<string, string | null>) => {
         const str = `<span class="popupNavLinks">${defaultNavlinkSpec()}</span>`;
         return navlinkStringToHTML(str, article, params);
     };
-    const expandConditionalNavlinkString = (s, article, z, _recursionCount) => {
+    const expandConditionalNavlinkString = (s: string, article: Title, z: Record<string, string | null>, _recursionCount?: number): string => {
         const oldid = z.oldid,
             rcid = z.rcid,
             diff = z.diff;
         let recursionCount = _recursionCount;
-        if (typeof recursionCount !== typeof 0) {
+        if (typeof recursionCount !== "number") {
             recursionCount = 0;
         }
         const conditionalSplitRegex = RegExp("(;?\\s*if\\s*\\(\\s*([\\w]*)\\s*\\)\\s*\\{([^{}]*)\\}(\\s*else\\s*\\{([^{}]*?)\\}|))", "i");
@@ -47,7 +49,7 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
             if (typeof falseString === "undefined" || !falseString) {
                 falseString = "";
             }
-            let testResult = null;
+            let testResult: boolean | null = null;
             switch (testString) {
                 case "user":
                     testResult = !!article.userName();
@@ -95,10 +97,10 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
         }
         return ret;
     };
-    const navlinkStringToArray = (_s, article, params) => {
+    const navlinkStringToArray = (_s: string, article: Title, params: Record<string, string | null>) => {
         const s = expandConditionalNavlinkString(_s, article, params);
         const splitted = s.parenSplit(/<<(.*?)>>/);
-        const ret = [];
+        const ret: (NavlinkTag | string)[] = [];
         for (let i = 0; i < splitted.length; ++i) {
             if (i % 2) {
                 const t = new NavlinkTag();
@@ -135,35 +137,55 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
         }
         return ret;
     };
-    const navlinkSubstituteHTML = (s) => s.split("*").join(getValueOf("popupNavLinkSeparator")).split("<menurow>").join('<li class="popup_menu_row">').split("</menurow>").join("</li>").split("<menu>").join('<ul class="popup_menu">').split("</menu>").join("</ul>");
-    const navlinkDepth = (magic, s) => s.split(`<${magic}>`).length - s.split(`</${magic}>`).length;
-    export const navlinkStringToHTML = (s, article, params) => {
-        const p = navlinkStringToArray(s, article, params);
+    const navlinkSubstituteHTML = (s: string) => s.split("*").join(String(getValueOf("popupNavLinkSeparator"))).split("<menurow>").join('<li class="popup_menu_row">').split("</menurow>").join("</li>").split("<menu>").join('<ul class="popup_menu">').split("</menu>").join("</ul>");
+    const navlinkDepth = (magic: string, s: string) => s.split(`<${magic}>`).length - s.split(`</${magic}>`).length;
+    export const navlinkStringToHTML = (s: string, article: Title, params?: Record<string, string | null>) => {
+        const p = navlinkStringToArray(s, article, params ?? {});
         let html = "";
         let menudepth = 0;
         let menurowdepth = 0;
         for (let i = 0; i < p.length; ++i) {
-            if (typeof p[i] === typeof "") {
-                html += navlinkSubstituteHTML(p[i]);
-                menudepth += navlinkDepth("menu", p[i]);
-                menurowdepth += navlinkDepth("menurow", p[i]);
-            } else if (typeof p[i].type !== "undefined" && p[i].type === "navlinkTag") {
+            const item = p[i];
+            if (typeof item === "string") {
+                html += navlinkSubstituteHTML(item);
+                menudepth += navlinkDepth("menu", item);
+                menurowdepth += navlinkDepth("menurow", item);
+            } else if (typeof item.type !== "undefined" && item.type === "navlinkTag") {
                 if (menudepth > 0 && menurowdepth === 0) {
-                    html += `<li class="popup_menu_item">${p[i].html()}</li>`;
+                    html += `<li class="popup_menu_item">${item.html()}</li>`;
                 } else {
-                    html += p[i].html();
+                    html += item.html();
                 }
             }
         }
         return html;
     };
-    class NavlinkTag {
+    type NavlinkPrintFn = (this: NavlinkTag, l: LinkSpec) => string | null;
+    class NavlinkTag implements LinkSpec {
         type = "navlinkTag";
+        id!: string;
+        article!: Title;
+        text?: string;
+        title?: string | null;
+        oldid?: string | null;
+        rcid?: string;
+        diff?: string | null;
+        newWin?: boolean | null;
+        noPopup?: boolean | number | null;
+        specialpage?: string;
+        sep?: string | null;
+        action?: string;
+        actionName?: string;
+        from?: string | number | null;
+        to?: string | null;
+        shortcut?: string;
+        print?: NavlinkPrintFn;
+        [key: string]: unknown;
         html() {
             this.getNewWin();
             this.getPrintFunction();
-            let html = "";
-            let opening, closing;
+            let html: string | null = "";
+            let opening: string, closing: string;
             const tagType = "span";
             if (!tagType) {
                 opening = "";
@@ -176,20 +198,21 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                 errlog(`Oh dear - invalid print function for a navlinkTag, id=${this.id}`);
             } else {
                 html = this.print(this);
-                if (typeof html !== typeof "") {
+                if (typeof html !== "string") {
                     html = "";
                 } else if (typeof this.shortcut !== "undefined") {
                     html = addPopupShortcut(html, this.shortcut);
                 }
             }
-            return opening + html + closing;
+            return opening + String(html) + closing;
         }
         getNewWin() {
             getValueOf("popupLinksNewWindow");
-            if (typeof pg.option.popupLinksNewWindow[this.id] === "undefined") {
+            const linksNewWin = pg.option.popupLinksNewWindow as Record<string, boolean | null> | undefined;
+            if (typeof linksNewWin?.[this.id] === "undefined") {
                 this.newWin = null;
             }
-            this.newWin = pg.option.popupLinksNewWindow[this.id];
+            this.newWin = linksNewWin?.[this.id];
         }
         getPrintFunction() {
             if (typeof this.id !== typeof "" || typeof this.article !== typeof {}) {
@@ -216,7 +239,7 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                 case "userlog":
                 case "userSpace":
                 case "deletedContribs":
-                    this.article = this.article.userName();
+                    this.article = this.article.userName() as Title;
             }
             switch (this.id) {
                 case "userTalk":
@@ -225,10 +248,10 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                 case "userPage":
                 case "monobook":
                 case "editMonobook":
-                case "blocklog": {
-                    this.article = this.article.userName(true);
-                    // falls through
-                }
+                case "blocklog":
+                    this.article = this.article.userName(true) as Title;
+                    Reflect.deleteProperty(this, "oldid");
+                    break;
                 case "pagelog":
                 case "deletelog":
                 case "protectlog":
@@ -320,7 +343,7 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                     this.print = specialLink;
                     this.specialpage = "Thanks";
                     this.sep = "/";
-                    this.article.value = this.diff !== "prev" ? this.diff : this.oldid;
+                    this.article.value = this.diff !== "prev" ? this.diff ?? null : this.oldid ?? null;
                     break;
                 case "unwatch":
                 case "watch":
@@ -343,10 +366,11 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                     }
                     break;
                 case "markpatrolled":
-                case "edit": {
+                case "edit":
                     Reflect.deleteProperty(this, "oldid");
-                    // falls through
-                }
+                    this.print = wikiLink;
+                    this.action = this.id;
+                    break;
                 case "view":
                 case "purge":
                 case "render":
@@ -374,7 +398,7 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                     }
                     this.print = titledWikiLink;
                     if (typeof this.title === "undefined" && pg.current.link && typeof pg.current.link.href !== "undefined") {
-                        this.title = safeDecodeURI(pg.current.link.originalTitle ? pg.current.link.originalTitle : this.article);
+                        this.title = safeDecodeURI(pg.current.link.originalTitle ? pg.current.link.originalTitle : this.article) as string;
                         if (typeof this.oldid !== "undefined" && this.oldid) {
                             this.title = tprintf("Revision %s of %s", [this.oldid, this.title]);
                         }
@@ -397,7 +421,7 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                     break;
                 case "userTalk":
                 case "talk":
-                    this.article = this.article.talkPage();
+                    this.article = this.article.talkPage() as Title;
                     Reflect.deleteProperty(this, "oldid");
                     this.print = wikiLink;
                     this.action = "view";
@@ -448,19 +472,19 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                 case "diffCur":
                     this.print = titledDiffLink;
                     this.title = tprintf("Show changes since revision %s", [this.oldid]);
-                    this.from = this.oldid;
+                    this.from = this.oldid ?? null;
                     this.to = "cur";
                     break;
                 case "editUserTalk":
                 case "editTalk":
                     Reflect.deleteProperty(this, "oldid");
-                    this.article = this.article.talkPage();
+                    this.article = this.article.talkPage() as Title;
                     this.action = "edit";
                     this.print = wikiLink;
                     break;
                 case "newUserTalk":
                 case "newTalk":
-                    this.article = this.article.talkPage();
+                    this.article = this.article.talkPage() as Title;
                     this.action = "edit&section=new";
                     this.print = wikiLink;
                     break;
@@ -468,10 +492,10 @@ import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./tit
                 case "sinceMe":
                     this.print = magicHistoryLink;
                     break;
-                case "togglePreviews": {
+                case "togglePreviews":
                     this.text = popupString(pg.option.simplePopups ? "enable previews" : "disable previews");
-                    // falls through
-                }
+                    this.print = popupMenuLink;
+                    break;
                 case "disablePopups":
                 case "purgePopups":
                     this.print = popupMenuLink;
