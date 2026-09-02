@@ -40,7 +40,7 @@ export interface StructureContext {
     article?: unknown;
     hint?: string | null;
     navpop?: Navpopup;
-    params?: Record<string, string>;
+    params?: Record<string, string | null>;
     [key: string]: unknown;
 }
 
@@ -70,8 +70,8 @@ export interface WikiInfo {
 export interface CurrentState {
     article?: import("../titles.ts").Title;
     link?: HTMLAnchorElement | null;
-    links?: { navpopup?: unknown }[];
-    linksHash?: Record<string, unknown>;
+    links: HTMLAnchorElement[];
+    linksHash: Record<string, unknown>;
 }
 
 export interface Pg {
@@ -109,7 +109,7 @@ export interface Pg {
     timer: Record<string, (() => void) | null | unknown>;
     counter: Record<string, number | unknown>;
     current: CurrentState;
-    fn: Record<string, (...args: unknown[]) => unknown>;
+    fn: AnyRecord;
     endoflist: null;
     // namespace ids and misc scalars assigned at init time
     nsSpecialId?: number;
@@ -119,7 +119,7 @@ export interface Pg {
     nsUsertalkId?: number;
     nsCategoryId?: number;
     nsTemplateId?: number;
-    idNumber?: number;
+    idNumber: number;
     escapeQuotesHTML?: (text: string) => string;
     unescapeQuotesHTML?: (html: string) => string;
     [key: string]: unknown;

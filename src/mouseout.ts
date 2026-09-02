@@ -21,8 +21,8 @@ import { getValueOf } from "./options.ts";
             pg.current.link.navpopup.limitHorizontalPosition();
         }
     };
-    export function mouseOutWikiLink(this: HTMLAnchorElement) {
-        const a = this;
+    export function mouseOutWikiLink(this: GlobalEventHandlers) {
+        const a = this as HTMLAnchorElement;
         removeModifierKeyHandler(a);
         if (a.navpopup === null || typeof a.navpopup === "undefined") {
             return;

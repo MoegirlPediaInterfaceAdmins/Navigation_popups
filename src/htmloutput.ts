@@ -47,7 +47,7 @@ import { isString, simplePrintf } from "./tools.ts";
         const a = args.navpopup.parentAnchor as HTMLAnchorElement;
         let article: Title, hint: string | null = null,
             oldid: string | null = null,
-            params: Record<string, string> = {};
+            params: Record<string, string | null> = {};
         if (redir && typeof args.redirTarget === typeof {}) {
             article = args.redirTarget as Title;
         } else {
@@ -116,7 +116,7 @@ import { isString, simplePrintf } from "./tools.ts";
         }
         return ret;
     };
-    export const popupHTML = (a: { navpop: Navpopup; [key: string]: unknown }): string => {
+    export const popupHTML = (a: { navpopup?: Navpopup | null }): string => {
         getValueOf("popupStructure");
         const structure = pg.structures[String(pg.option.popupStructure)] as typeof pg.structures[string] | undefined;
         if (typeof structure !== "object") {
@@ -132,7 +132,11 @@ import { isString, simplePrintf } from "./tools.ts";
         } else {
             pg.misc.redirSpans = [];
         }
-        return makeEmptySpans(pg.misc.layout, a.navpop);
+        const navpop = a.navpopup;
+        if (!navpop) {
+            return "";
+        }
+        return makeEmptySpans(pg.misc.layout ?? [], navpop);
     };
     const makeEmptySpans = (list: unknown[], navpop: Navpopup): string => {
         let ret = "";
@@ -165,7 +169,7 @@ import { isString, simplePrintf } from "./tools.ts";
         popupSecondPreview: "popupPreview",
     };
     export const imageHTML = (_article: unknown, idNumber: number | undefined) => simplePrintf('<a id="popupImageLink$1"><img align="right" valign="top" id="popupImg$1" style="display: none;"></img></a>', [String(idNumber)]);
-    export const popTipsSoonFn = (id: string, _when?: number | null, popData?: unknown): (() => void) => {
+    export const popTipsSoonFn = (id: string, _when?: number | null, popData?: { owner?: Navpopup } & Record<string, unknown> | null): (() => void) => {
         let when = _when;
         if (!when) {
             when = 250;
@@ -177,6 +181,6 @@ import { isString, simplePrintf } from "./tools.ts";
             setTimeout(popTips, when, popData);
         };
     };
-    export const setPopupTipsAndHTML = (html: string | Node | null, divname: string, idnumber?: number, popData?: unknown): void => {
+    export const setPopupTipsAndHTML = (html: string | Node | null, divname: string, idnumber?: number, popData?: { owner?: Navpopup } & Record<string, unknown> | null): void => {
         setPopupHTML(html, divname, idnumber, getValueOf("popupSubpopups") ? popTipsSoonFn(divname + String(idnumber), null, popData) : null);
     };

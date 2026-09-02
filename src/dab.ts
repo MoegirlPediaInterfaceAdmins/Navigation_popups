@@ -13,16 +13,16 @@ import { simplePrintf } from "./tools.ts";
             text: newTarget.split(" ").join("&nbsp;"),
             hint: tprintf("disambigHint", [newTarget]),
             summary: simplePrintf(String(getValueOf("popupFixDabsSummary")), [friendlyCurrentArticleName, newTarget]),
-            clickButton: getValueOf("popupDabsAutoClick"),
+            clickButton: String(getValueOf("popupDabsAutoClick")),
             minor: true,
-            oldTarget: oldTarget,
-            watch: getValueOf("popupWatchDisambiggedPages"),
+            oldTarget: oldTarget as string,
+            watch: getValueOf("popupWatchDisambiggedPages") as boolean | null,
             title: titleToEdit,
         });
     };
     const listLinks = (wikitext: string, oldTarget: unknown, titleToEdit: string | undefined) => {
         const reg = RegExp("\\[\\[([^|]*?) *(\\||\\]\\])", "gi");
-        let ret: string[] = [];
+        let ret: (string | null)[] = [];
         const splitted = wikitext.parenSplit(reg);
         const omitRegex = RegExp("^[a-z]*:|^[Ss]pecial:|^[Ii]mage|^[Cc]ategory");
         const friendlyCurrentArticleName = String(oldTarget);
@@ -47,16 +47,16 @@ import { simplePrintf } from "./tools.ts";
             newTarget: null,
             text: popupString("remove this link").split(" ").join("&nbsp;"),
             hint: popupString("remove all links to this disambig page from this article"),
-            clickButton: getValueOf("popupDabsAutoClick"),
-            oldTarget: oldTarget,
+            clickButton: String(getValueOf("popupDabsAutoClick")),
+            oldTarget: oldTarget as string,
             summary: simplePrintf(String(getValueOf("popupRmDabLinkSummary")), [friendlyCurrentArticleName]),
-            watch: getValueOf("popupWatchDisambiggedPages"),
+            watch: getValueOf("popupWatchDisambiggedPages") as boolean | null,
             title: titleToEdit,
         }));
         return ret;
     };
-    const rmDupesFromSortedList = (list: string[]) => {
-        const ret = [];
+    const rmDupesFromSortedList = (list: (string | null)[]) => {
+        const ret: (string | null)[] = [];
         for (let i = 0; i < list.length; ++i) {
             if (ret.length === 0 || list[i] !== ret[ret.length - 1]) {
                 ret.push(list[i]);
@@ -84,7 +84,7 @@ import { simplePrintf } from "./tools.ts";
         newTarget: null,
         text: popupString("remove this link").split(" ").join("&nbsp;"),
         hint: popupString("remove all links to this page from this article"),
-        clickButton: getValueOf("popupRedlinkAutoClick"),
+        clickButton: String(getValueOf("popupRedlinkAutoClick")),
         oldTarget: String(article),
         summary: simplePrintf(String(getValueOf("popupRedlinkSummary")), [String(article)]),
     });

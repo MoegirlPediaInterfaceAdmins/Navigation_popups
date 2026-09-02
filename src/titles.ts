@@ -1,40 +1,46 @@
 import { pg } from "./globals.ts";
 import { getValueOf } from "./options.ts";
     class Stringwrapper {
-        indexOf(x) {
+        value: string | null = null;
+        indexOf(x: string) {
             return this.toString().indexOf(x);
         }
         toString() {
-            return this.value;
+            // null-valued wrappers are a transient upstream state; the null
+            // flows through untouched at runtime
+            return this.value as unknown as string;
         }
-        parenSplit(x) {
+        parenSplit(x: RegExp | string) {
             return this.toString().parenSplit(x);
         }
-        substring(x, y) {
+        substring(x: number, y?: number) {
             if (typeof y === "undefined") {
                 return this.toString().substring(x);
             }
             return this.toString().substring(x, y);
         }
-        split(x) {
+        split(x: string) {
             return this.toString().split(x);
         }
-        replace(x, y) {
+        replace(x: RegExp, y: string) {
             return this.toString().replace(x, y);
         }
     }
     export class Title extends Stringwrapper {
-        value = null;
         anchor = "";
-        constructor(val?: unknown) {
+        // legacy marker assigned (and never read) by setUtf
+        ns?: null;
+        // revision anchor state attached by actions.ts loadPreview
+        oldid?: string | null;
+        constructor(val?: string | Stringwrapper | null) {
             super();
             this.setUtf(val);
         }
-        static fromURL = (h) => new Title().fromURL(h);
-        static fromAnchor = (a) => new Title().fromAnchor(a);
-        static fromWikiText = (txt) => new Title().fromWikiText(txt);
-        toString(omitAnchor?: unknown) {
-            return this.value + (!omitAnchor && this.anchor ? `#${this.anchorString()}` : "");
+        static fromURL = (h: string) => new Title().fromURL(h);
+        static fromAnchor = (a: HTMLAnchorElement | null) => new Title().fromAnchor(a);
+        static fromWikiText = (txt: string) => new Title().fromWikiText(txt);
+        override toString(omitAnchor?: unknown) {
+            return String(this.value) + (!omitAnchor && this.anchor ? `#${this.anchorString()}` : "");
         }
         anchorString() {
             if (!this.anchor) {
@@ -60,10 +66,10 @@ import { getValueOf } from "./options.ts";
             }
             return split.join("");
         }
-        anchorFromUtf(str) {
+        anchorFromUtf(str: string) {
             this.anchor = encodeURIComponent(str.split(" ").join("_")).split("%3A").join(":").split("'").join("%27").split("%").join(".");
         }
-        decodeNasties(txt) {
+        decodeNasties(txt: string | Stringwrapper) {
             try {
                 let ret = decodeURI(this.decodeEscapes(txt));
                 ret = ret.replace(/[_ ]*$/, "");
@@ -72,7 +78,7 @@ import { getValueOf } from "./options.ts";
                 return txt;
             }
         }
-        decodeEscapes = (txt) => {
+        decodeEscapes = (txt: string | Stringwrapper) => {
             const split = txt.parenSplit(/((?:[%][0-9A-Fa-f]{2})+)/);
             const len = split.length;
             if (len === 1) {
@@ -87,16 +93,16 @@ import { getValueOf } from "./options.ts";
             if (!this.value) {
                 return "";
             }
-            return safeDecodeURI(this.value);
+            return safeDecodeURI(this.value) as string;
         }
-        toUserName(withNs) {
+        toUserName(withNs?: boolean) {
             if (this.namespaceId() !== pg.nsUserId && this.namespaceId() !== pg.nsUsertalkId) {
                 this.value = null;
                 return;
             }
-            this.value = (withNs ? `${mw.config.get("wgFormattedNamespaces")[pg.nsUserId]}:` : "") + this.stripNamespace().split("/")[0];
+            this.value = (withNs ? `${mw.config.get("wgFormattedNamespaces")[pg.nsUserId ?? -1]}:` : "") + this.stripNamespace().split("/")[0];
         }
-        userName(withNs) {
+        userName(withNs?: boolean): Title | null {
             const t = new Title(this.value);
             t.toUserName(withNs);
             if (t.value) {
@@ -104,7 +110,7 @@ import { getValueOf } from "./options.ts";
             }
             return null;
         }
-        toTalkPage() {
+        toTalkPage(): string | null {
             if (this.value === null) {
                 return null;
             }
@@ -128,11 +134,11 @@ import { getValueOf } from "./options.ts";
         }
         namespaceId() {
             try {
-                const n = this.value.indexOf(":");
+                const n = (this.value as string).indexOf(":");
                 if (n < 0) {
                     return 0;
                 }
-                const namespaceId = mw.config.get("wgNamespaceIds")[this.value.substring(0, n).split(" ").join("_").toLowerCase()];
+                const namespaceId = mw.config.get("wgNamespaceIds")[(this.value as string).substring(0, n).split(" ").join("_").toLowerCase()];
                 if (typeof namespaceId === "undefined") {
                     return 0;
                 }
@@ -142,7 +148,7 @@ import { getValueOf } from "./options.ts";
                 return 0;
             }
         }
-        talkPage() {
+        talkPage(): Title | null {
             const t = new Title(this.value);
             t.toTalkPage();
             if (t.value) {
@@ -156,7 +162,7 @@ import { getValueOf } from "./options.ts";
             }
             return false;
         }
-        toArticleFromTalkPage() {
+        toArticleFromTalkPage(): string | null {
             if (this.value === null) {
                 return null;
             }
@@ -175,7 +181,7 @@ import { getValueOf } from "./options.ts";
             this.value = null;
             return null;
         }
-        articleFromTalkPage() {
+        articleFromTalkPage(): Title | null {
             const t = new Title(this.value);
             t.toArticleFromTalkPage();
             if (t.value) {
@@ -183,7 +189,7 @@ import { getValueOf } from "./options.ts";
             }
             return null;
         }
-        articleFromTalkOrArticle() {
+        articleFromTalkOrArticle(): Title {
             const t = new Title(this.value);
             if (t.toArticleFromTalkPage()) {
                 return t;
@@ -191,20 +197,20 @@ import { getValueOf } from "./options.ts";
             return this;
         }
         isIpUser() {
-            return pg.re.ipUser.test(this.userName());
+            return (pg.re.ipUser as RegExp).test(String(this.userName()));
         }
         stripNamespace() {
-            const n = this.value.indexOf(":");
+            const n = (this.value as string).indexOf(":");
             if (n < 0) {
-                return this.value;
+                return this.value as string;
             }
             const namespaceId = this.namespaceId();
             if (namespaceId === pg.nsMainspaceId) {
-                return this.value;
+                return this.value as string;
             }
-            return this.value.substring(n + 1);
+            return (this.value as string).substring(n + 1);
         }
-        setUtf(value) {
+        setUtf(value: string | Stringwrapper | null | undefined) {
             if (!value) {
                 this.value = "";
                 return;
@@ -219,16 +225,16 @@ import { getValueOf } from "./options.ts";
             this.anchor = value.substring(anch + 1);
             this.ns = null;
         }
-        setUrl(urlfrag) {
+        setUrl(urlfrag: string) {
             const anch = urlfrag.indexOf("#");
-            this.value = safeDecodeURI(urlfrag.substring(0, anch));
-            this.anchor = this.value.substring(anch + 1);
+            this.value = safeDecodeURI(urlfrag.substring(0, anch)) as string;
+            this.anchor = (this.value as string).substring(anch + 1);
         }
-        append(x) {
-            this.setUtf(this.value + x);
+        append(x: string) {
+            this.setUtf(String(this.value) + x);
         }
         urlString(_x?: unknown) {
-            let x = _x;
+            let x = _x as { omitAnchor?: boolean; keepSpaces?: boolean };
             if (!x) {
                 x = {};
             }
@@ -247,40 +253,40 @@ import { getValueOf } from "./options.ts";
         toUrl() {
             return pg.wiki.titlebase + this.urlString();
         }
-        fromURL(_h) {
-            let h = _h;
-            if (typeof h !== "string") {
+        fromURL(_h?: unknown) {
+            if (typeof _h !== "string") {
                 this.value = null;
                 return this;
             }
+            let h: string = _h;
             const splitted = h.split("?");
             splitted[0] = splitted[0].split("&").join("%26");
             h = splitted.join("?");
-            const contribs = pg.re.contribs.exec(h);
+            const contribs = (pg.re.contribs as RegExp).exec(h);
             if (contribs) {
                 if (contribs[1] === "title=") {
                     contribs[3] = contribs[3].split("+").join(" ");
                 }
                 const u = new Title(contribs[3]);
-                this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[pg.nsUserId]}:${u.stripNamespace()}`));
+                this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[pg.nsUserId ?? -1]}:${u.stripNamespace()}`));
                 return this;
             }
-            const email = pg.re.email.exec(h);
+            const email = (pg.re.email as RegExp).exec(h);
             if (email) {
-                this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[pg.nsUserId]}:${new Title(email[3]).stripNamespace()}`));
+                this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[pg.nsUserId ?? -1]}:${new Title(email[3]).stripNamespace()}`));
                 return this;
             }
-            const backlinks = pg.re.backlinks.exec(h);
+            const backlinks = (pg.re.backlinks as RegExp).exec(h);
             if (backlinks) {
                 this.setUtf(this.decodeNasties(new Title(backlinks[3])));
                 return this;
             }
-            const specialdiff = pg.re.specialdiff.exec(h);
+            const specialdiff = (pg.re.specialdiff as RegExp).exec(h);
             if (specialdiff) {
-                this.setUtf(this.decodeNasties(new Title(`${mw.config.get("wgFormattedNamespaces")[pg.nsSpecialId]}:Diff`)));
+                this.setUtf(this.decodeNasties(new Title(`${mw.config.get("wgFormattedNamespaces")[pg.nsSpecialId ?? -1]}:Diff`)));
                 return this;
             }
-            const m = pg.re.main.exec(h);
+            const m = (pg.re.main as RegExp).exec(h);
             if (m === null) {
                 this.value = null;
             } else {
@@ -297,23 +303,23 @@ import { getValueOf } from "./options.ts";
             }
             return this;
         }
-        fromAnchor(a) {
+        fromAnchor(a: HTMLAnchorElement | null) {
             if (!a) {
                 this.value = null;
                 return this;
             }
             return this.fromURL(a.href);
         }
-        fromWikiText(_txt) {
+        fromWikiText(_txt: string | Stringwrapper) {
             let txt = _txt;
-            txt = myDecodeURI(txt);
+            txt = myDecodeURI(txt) as string;
             this.setUtf(txt);
             return this;
         }
     }
-    export const parseParams = (_url) => {
+    export const parseParams = (_url: string): Record<string, string | null> => {
         let url = _url;
-        const specialDiff = pg.re.specialdiff.exec(url);
+        const specialDiff = (pg.re.specialdiff as RegExp).exec(url);
         if (specialDiff) {
             const split = specialDiff[1].split("/");
             if (split.length === 1) {
@@ -328,7 +334,7 @@ import { getValueOf } from "./options.ts";
                 };
             }
         }
-        const ret = {};
+        const ret: Record<string, string | null> = {};
         if (url.indexOf("?") === -1) {
             return ret;
         }
@@ -336,9 +342,9 @@ import { getValueOf } from "./options.ts";
         const s = url.split("?").slice(1).join();
         const t = s.split("&");
         for (let i = 0; i < t.length; ++i) {
-            const z = t[i].split("=");
+            const z: (string | null)[] = t[i].split("=");
             z.push(null);
-            ret[z[0]] = z[1];
+            ret[z[0] as string] = z[1];
         }
         if (ret.diff && typeof ret.oldid === "undefined") {
             ret.oldid = "prev";
@@ -350,21 +356,22 @@ import { getValueOf } from "./options.ts";
         }
         return ret;
     };
-    const myDecodeURI = (str) => {
+    const myDecodeURI = (str: string | Stringwrapper): string | Stringwrapper => {
         let ret;
         try {
             ret = decodeURI(str.toString());
         } catch (summat) {
             return str;
         }
-        for (let i = 0; i < pg.misc.decodeExtras.length; ++i) {
-            const from = pg.misc.decodeExtras[i].from;
-            const to = pg.misc.decodeExtras[i].to;
+        const extras = pg.misc.decodeExtras;
+        for (let i = 0; i < (extras?.length ?? 0); ++i) {
+            const from = extras![i].from;
+            const to = extras![i].to;
             ret = ret.split(from).join(to);
         }
         return ret;
     };
-    export const safeDecodeURI = (str) => {
+    export const safeDecodeURI = (str: string | Stringwrapper): string | Stringwrapper => {
         const ret = myDecodeURI(str);
         return ret || str;
     };
@@ -395,10 +402,10 @@ import { getValueOf } from "./options.ts";
             sect: sectStub,
         };
     };
-    export const isValidImageName = (str) => str.indexOf("{") === -1;
-    export const isInStrippableNamespace = (article) => article.namespaceId() !== 0;
-    export const isInMainNamespace = (article) => article.namespaceId() === 0;
-    export const anchorContainsImage = (a) => {
+    export const isValidImageName = (str: string | Stringwrapper) => str.indexOf("{") === -1;
+    export const isInStrippableNamespace = (article: Title) => article.namespaceId() !== 0;
+    export const isInMainNamespace = (article: Title) => article.namespaceId() === 0;
+    export const anchorContainsImage = (a: HTMLAnchorElement | null) => {
         if (a === null) {
             return false;
         }
@@ -410,7 +417,7 @@ import { getValueOf } from "./options.ts";
         }
         return false;
     };
-    export const isPopupLink = (a) => {
+    export const isPopupLink = (a: HTMLAnchorElement) => {
         if (!markNopopupSpanLinks.done) {
             markNopopupSpanLinks();
         }
@@ -424,15 +431,15 @@ import { getValueOf } from "./options.ts";
         if (h === `${document.location.href}#`) {
             return false;
         }
-        if (!pg.re.basenames.test(h)) {
+        if (!(pg.re.basenames as RegExp).test(h)) {
             return false;
         }
-        if (!pg.re.urlNoPopup.test(h)) {
+        if (!(pg.re.urlNoPopup as RegExp).test(h)) {
             return true;
         }
-        return (pg.re.email.test(h) || pg.re.contribs.test(h) || pg.re.backlinks.test(h) || pg.re.specialdiff.test(h)) && h.indexOf("&limit=") === -1;
+        return ((pg.re.email as RegExp).test(h) || (pg.re.contribs as RegExp).test(h) || (pg.re.backlinks as RegExp).test(h) || (pg.re.specialdiff as RegExp).test(h)) && h.indexOf("&limit=") === -1;
     };
-    const markNopopupSpanLinks = () => {
+    const markNopopupSpanLinks: (() => void) & { done?: boolean } = () => {
         if (!getValueOf("popupOnlyArticleLinks")) {
             fixVectorMenuPopups();
         }

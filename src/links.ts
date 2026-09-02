@@ -1,6 +1,7 @@
 import { setupTooltips } from "./actions.ts";
-import { autoClickToken, autoEdit } from "./autoedit.ts";
+import { autoClickToken } from "./autoedit.ts";
 import { abortAllDownloads, startDownload } from "./downloader.ts";
+import type { Downloader } from "./downloader.ts";
 import { errlog, log, pg } from "./globals.ts";
 import { getMwApi, setupCache } from "./init.ts";
 import { getValueOf } from "./options.ts";
@@ -8,7 +9,38 @@ import { addPopupShortcut } from "./shortcutkeys.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { Title, parseParams, safeDecodeURI } from "./titles.ts";
 import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
-    export const wikiLink = (l) => {
+    // A navlink spec as built by navlinks.ts: an article plus the display
+    // and target options of one popup navlink. Fields are optional because
+    // different builders consume different subsets.
+    export interface LinkSpec {
+        article: Title;
+        action?: string;
+        text: string;
+        newWin?: boolean | null;
+        title?: string | null;
+        oldid?: string | null;
+        noPopup?: boolean | number | null;
+        onclick?: string;
+        className?: string | null;
+        id?: string;
+        specialpage?: string;
+        sep?: string | null;
+        rcid?: string;
+        diff?: string | null;
+        [key: string]: unknown;
+    }
+    // the subset generalLink/generalNavLink actually consume (no article)
+    export interface GeneralLinkSpec {
+        url: string;
+        newWin?: boolean | null;
+        title?: string | null;
+        text?: string | null;
+        className?: string | null;
+        noPopup?: boolean | number | null;
+        onclick?: string;
+        [key: string]: unknown;
+    }
+    export const wikiLink = (l: LinkSpec & { action: string }): string | null => {
         if (!(typeof l.article === typeof {} && typeof l.action === typeof "" && typeof l.text === typeof "")) {
             return null;
         }
@@ -16,7 +48,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             l.oldid = null;
         }
         const savedOldid = l.oldid;
-        if (!/^(edit|view|revert|render)$|^raw/.test(l.action)) {
+        if (!/^(edit|view|revert|render)$|^raw/.test(l.action!)) {
             l.oldid = null;
         }
         let hint = popupString(`${l.action}Hint`);
@@ -39,7 +71,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
                 hint = popupString("rawHint");
                 break;
             case "revert": {
-                const p = parseParams(pg.current.link.href);
+                const p = parseParams(pg.current.link?.href ?? "");
                 l.action = `edit&autoclick=wpSave&actoken=${autoClickToken()}&autoimpl=${popupString("autoedit_version")}&autosummary=${revertSummary(l.oldid, p.diff)}`;
                 if (p.diff === "prev") {
                     l.action += "&direction=prev";
@@ -70,7 +102,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
                 hint = simplePrintf(hint, [safeDecodeURI(l.article)]);
             }
         } else {
-            hint = safeDecodeURI(`${l.article}&action=${l.action}`) + l.oldid ? `&oldid=${l.oldid}` : "";
+            hint = safeDecodeURI(`${l.article}&action=${l.action}`) as string + l.oldid ? `&oldid=${l.oldid}` : "";
         }
         return titledWikiLink({
             article: l.article,
@@ -83,7 +115,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             onclick: l.onclick,
         });
     };
-    const revertSummary = (oldid, diff) => {
+    const revertSummary = (oldid: string | null, diff: string | null | undefined) => {
         let ret;
         if (diff === "prev") {
             ret = getValueOf("popupQueriedRevertToPreviousSummary");
@@ -92,7 +124,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         }
         return `${ret}&autorv=${oldid}`;
     };
-    export const titledWikiLink = (l) => {
+    export const titledWikiLink = (l: LinkSpec & { action: string }): string | null => {
         if (typeof l.article === "undefined" || typeof l.action === "undefined") {
             errlog("got undefined article or action in titledWikiLink");
             return null;
@@ -125,7 +157,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             onclick: l.onclick,
         });
     };
-    pg.fn.getLastContrib = (wikipage, newWin) => {
+    pg.fn.getLastContrib = (wikipage: string, newWin: boolean): void => {
         getHistoryInfo(wikipage, (x) => {
             processLastContribInfo(x, {
                 page: wikipage,
@@ -133,7 +165,22 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             });
         });
     };
-    const processLastContribInfo = (info, stuff) => {
+    interface HistoryEdit {
+        oldid?: number;
+        editor?: string;
+    }
+    interface HistoryMarker {
+        index: number;
+        oldid?: number;
+        previd?: number | null;
+    }
+    export interface HistoryInfo {
+        edits: HistoryEdit[];
+        userName: string | null;
+        myLastEdit?: HistoryMarker;
+        firstNewEditor?: HistoryMarker;
+    }
+    const processLastContribInfo = (info: HistoryInfo, stuff: { page: string; newWin: boolean }): void => {
         if (!info.edits || !info.edits.length) {
             alert("Popups: an odd thing happened. Please retry.");
             return;
@@ -145,7 +192,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         const newUrl = `${pg.wiki.titlebase + new Title(stuff.page).urlString()}&diff=cur&oldid=${info.firstNewEditor.oldid}`;
         displayUrl(newUrl, stuff.newWin);
     };
-    pg.fn.getDiffSinceMyEdit = (wikipage, newWin) => {
+    pg.fn.getDiffSinceMyEdit = (wikipage: string, newWin: boolean): void => {
         getHistoryInfo(wikipage, (x) => {
             processDiffSinceMyEdit(x, {
                 page: wikipage,
@@ -153,7 +200,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             });
         });
     };
-    const processDiffSinceMyEdit = (info, stuff) => {
+    const processDiffSinceMyEdit = (info: HistoryInfo, stuff: { page: string; newWin: boolean }): void => {
         if (!info.edits || !info.edits.length) {
             alert("Popups: something fishy happened. Please try again.");
             return;
@@ -170,26 +217,26 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         const newUrl = `${pg.wiki.titlebase + new Title(stuff.page).urlString()}&diff=cur&oldid=${info.myLastEdit.oldid}`;
         displayUrl(newUrl, stuff.newWin);
     };
-    const displayUrl = (url, newWin) => {
+    const displayUrl = (url: string, newWin?: boolean | null) => {
         if (newWin) {
             window.open(url);
         } else {
             document.location = url;
         }
     };
-    pg.fn.purgePopups = () => {
+    pg.fn.purgePopups = (): void => {
         processAllPopups(true);
         setupCache();
         pg.option = {};
         abortAllDownloads();
     };
-    const processAllPopups = (nullify, banish) => {
+    const processAllPopups = (nullify?: boolean, banish?: boolean) => {
         for (let i = 0; pg.current.links && i < pg.current.links.length; ++i) {
             if (!pg.current.links[i].navpopup) {
                 continue;
             }
             if (nullify || banish) {
-                pg.current.links[i].navpopup.banish();
+                pg.current.links[i].navpopup!.banish();
             }
             pg.current.links[i].simpleNoMore = false;
             if (nullify) {
@@ -197,30 +244,36 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
         }
     };
-    pg.fn.disablePopups = () => {
+    pg.fn.disablePopups = (): void => {
         processAllPopups(false, true);
         setupTooltips(null, true);
     };
-    pg.fn.togglePreviews = () => {
+    pg.fn.togglePreviews = (): void => {
         processAllPopups(true, true);
         pg.option.simplePopups = !pg.option.simplePopups;
         abortAllDownloads();
     };
-    export function magicWatchLink(l) {
+    export function magicWatchLink(this: { id?: string }, l: LinkSpec & { action: string }): string | null {
         l.onclick = simplePrintf("pg.fn.modifyWatchlist('%s','%s');return false;", [l.article.toString(true).split("\\").join("\\\\").split("'").join("\\'"), this.id]);
         return wikiLink(l);
     }
-    pg.fn.modifyWatchlist = async (title, action) => {
-        const reqData = {
+    pg.fn.modifyWatchlist = async (title: string | null, action: string | null): Promise<void> => {
+        const reqData: {
+            action: string;
+            formatversion: number;
+            titles: string;
+            uselang: string;
+            unwatch?: boolean;
+        } = {
             action: "watch",
             formatversion: 2,
-            titles: title,
+            titles: title ?? "",
             uselang: mw.config.get("wgUserLanguage"),
         };
         if (action === "unwatch") {
             reqData.unwatch = true;
         }
-        const mwTitle = mw.Title.newFromText(title);
+        const mwTitle = mw.Title.newFromText(title ?? "");
         let messageName;
         if (mwTitle && mwTitle.getNamespaceId() > 0 && mwTitle.getNamespaceId() % 2 === 1) {
             messageName = action === "watch" ? "addedwatchtext-talk" : "removedwatchtext-talk";
@@ -232,9 +285,9 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             // mw.loader.using(["mediawiki.jqueryMsg"]),
             getMwApi().loadMessagesIfMissing([messageName]),
         ]);
-        mw.notify(mw.message(messageName, title).parseDom());
+        mw.notify(mw.message(messageName, title ?? "").parseDom() as unknown as JQuery<HTMLElement>);
     };
-    export const magicHistoryLink = (l) => {
+    export const magicHistoryLink = (l: LinkSpec): string | null => {
         let title = "",
             onClick = "";
         switch (l.id) {
@@ -258,7 +311,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             onclick: onClick,
         });
     };
-    export const popupMenuLink = (l) => {
+    export const popupMenuLink = (l: LinkSpec): string | null => {
         const jsUrl = simplePrintf("javascript:pg.fn.%s()", [l.id]);
         const title = popupString(simplePrintf("%sHint", [l.id]));
         const onClick = simplePrintf("pg.fn.%s();return false;", [l.id]);
@@ -271,11 +324,11 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             onclick: onClick,
         });
     };
-    export const specialLink = (l) => {
+    export const specialLink = (l: LinkSpec): string | null => {
         if (typeof l.specialpage === "undefined" || !l.specialpage) {
             return null;
         }
-        const base = `${pg.wiki.titlebase + mw.config.get("wgFormattedNamespaces")[pg.nsSpecialId]}:${l.specialpage}`;
+        const base = `${pg.wiki.titlebase + mw.config.get("wgFormattedNamespaces")[pg.nsSpecialId ?? -1]}:${l.specialpage}`;
         if (typeof l.sep === "undefined" || l.sep === null) {
             l.sep = "&target=";
         }
@@ -313,7 +366,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         if (hint) {
             hint = simplePrintf(hint, [safeDecodeURI(l.article)]);
         } else {
-            hint = safeDecodeURI(`${l.specialpage}:${l.article}`);
+            hint = safeDecodeURI(`${l.specialpage}:${l.article}`) as string;
         }
         const url = base + l.sep + article;
         return generalNavLink({
@@ -324,14 +377,14 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             noPopup: l.noPopup,
         });
     };
-    export const generalLink = (link) => {
+    export const generalLink = (link: GeneralLinkSpec): string | null => {
         if (typeof link.url === "undefined") {
             return null;
         }
         const elem = document.createElement("a");
         elem.href = link.url;
-        elem.title = link.title;
-        elem.setAttribute("onclick", link.onclick);
+        elem.title = String(link.title);
+        elem.setAttribute("onclick", String(link.onclick));
         if (link.noPopup) {
             elem.setAttribute("noPopup", "1");
         }
@@ -347,20 +400,36 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         if (link.className) {
             elem.className = link.className;
         }
-        elem.innerText = pg.unescapeQuotesHTML(link.text);
+        elem.innerText = pg.unescapeQuotesHTML?.(String(link.text)) ?? "";
         return elem.outerHTML;
     };
-    const appendParamsToLink = (linkstr, params) => {
+    const appendParamsToLink = (linkstr: string | null, params: string): string | null => {
+        if (!linkstr) {
+            return null;
+        }
         const sp = linkstr.parenSplit(/(href="[^"]+?)"/i);
         if (sp.length < 2) {
             return null;
         }
-        let ret = sp.shift() + sp.shift();
+        let ret = (sp.shift() ?? "") + (sp.shift() ?? "");
         ret += `&${params}"`;
         ret += sp.join("");
         return ret;
     };
-    export const changeLinkTargetLink = (x) => {
+    export const changeLinkTargetLink = (x: {
+        newTarget?: string | null;
+        oldTarget: string;
+        title?: string | null;
+        newWin?: boolean | null;
+        text: string;
+        hint?: string | null;
+        clickButton: string | number | boolean;
+        minor?: boolean | null;
+        watch?: boolean | string | null;
+        alsoChangeLabel?: boolean;
+        summary: string;
+        [key: string]: unknown;
+    }): string | null => {
         if (x.newTarget) {
             log(`changeLinkTargetLink: newTarget=${x.newTarget}`);
         }
@@ -401,39 +470,39 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         }
         cmd = `autoedit=${encodeURIComponent(cmd)}`;
         cmd += `&autoclick=${encodeURIComponent(x.clickButton)}&actoken=${encodeURIComponent(autoClickToken())}`;
-        cmd += x.minor === null ? "" : `&autominor=${encodeURIComponent(x.minor)}`;
-        cmd += x.watch === null ? "" : `&autowatch=${encodeURIComponent(x.watch)}`;
+        cmd += x.minor === null ? "" : `&autominor=${encodeURIComponent(String(x.minor))}`;
+        cmd += x.watch === null ? "" : `&autowatch=${encodeURIComponent(String(x.watch))}`;
         cmd += `&autosummary=${encodeURIComponent(x.summary)}`;
         cmd += `&autoimpl=${encodeURIComponent(popupString("autoedit_version"))}`;
         return appendParamsToLink(lk, cmd);
     };
-    export const redirLink = (redirMatch, article) => {
+    export const redirLink = (redirMatch: string | Title, article: Title): string => {
         let ret = "";
         if (getValueOf("popupAppendRedirNavLinks") && getValueOf("popupNavLinks")) {
             ret += "<hr />";
-            if (getValueOf("popupFixRedirs") && typeof autoEdit !== "undefined" && autoEdit) {
+            if (getValueOf("popupFixRedirs")) {
                 ret += popupString("Redirects to: (Fix ");
                 log(`redirLink: newTarget=${redirMatch}`);
                 ret += addPopupShortcut(changeLinkTargetLink({
-                    newTarget: redirMatch,
+                    newTarget: redirMatch as string,
                     text: popupString("target"),
                     hint: popupString("Fix this redirect, changing just the link target"),
-                    summary: simplePrintf(getValueOf("popupFixRedirsSummary"), [article.toString(), redirMatch]),
+                    summary: simplePrintf(String(getValueOf("popupFixRedirsSummary")), [article.toString(), redirMatch]),
                     oldTarget: article.toString(),
-                    clickButton: getValueOf("popupRedirAutoClick"),
+                    clickButton: String(getValueOf("popupRedirAutoClick")),
                     minor: true,
-                    watch: getValueOf("popupWatchRedirredPages"),
+                    watch: getValueOf("popupWatchRedirredPages") as boolean | null,
                 }), "R");
                 ret += popupString(" or ");
                 ret += addPopupShortcut(changeLinkTargetLink({
-                    newTarget: redirMatch,
+                    newTarget: redirMatch as string,
                     text: popupString("target & label"),
                     hint: popupString("Fix this redirect, changing the link target and label"),
-                    summary: simplePrintf(getValueOf("popupFixRedirsSummary"), [article.toString(), redirMatch]),
+                    summary: simplePrintf(String(getValueOf("popupFixRedirsSummary")), [article.toString(), redirMatch]),
                     oldTarget: article.toString(),
-                    clickButton: getValueOf("popupRedirAutoClick"),
+                    clickButton: String(getValueOf("popupRedirAutoClick")),
                     minor: true,
-                    watch: getValueOf("popupWatchRedirredPages"),
+                    watch: getValueOf("popupWatchRedirredPages") as boolean | null,
                     alsoChangeLabel: true,
                 }), "R");
                 ret += popupString(")");
@@ -445,11 +514,11 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         return `<br> ${popupString("Redirects")}${popupString(" to ")}${titledWikiLink({
             article: new Title().fromWikiText(redirMatch),
             action: "view",
-            text: safeDecodeURI(redirMatch),
+            text: safeDecodeURI(redirMatch) as string,
             title: popupString("Bypass redirect"),
         })}`;
     };
-    export const arinLink = (l) => {
+    export const arinLink = (l: LinkSpec): string | null => {
         if (!saneLinkCheck(l)) {
             return null;
         }
@@ -458,27 +527,27 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         }
         const uN = l.article.userName();
         return generalNavLink({
-            url: `http://ws.arin.net/cgi-bin/whois.pl?queryinput=${encodeURIComponent(uN)}`,
+            url: `http://ws.arin.net/cgi-bin/whois.pl?queryinput=${encodeURIComponent(String(uN))}`,
             newWin: l.newWin,
             title: tprintf("Look up %s in ARIN whois database", [uN]),
             text: l.text,
             noPopup: 1,
         });
     };
-    const toolDbName = (cookieStyle) => {
+    const toolDbName = (cookieStyle?: boolean) => {
         let ret = mw.config.get("wgDBname");
         if (!cookieStyle) {
             ret += "_p";
         }
         return ret;
     };
-    const saneLinkCheck = (l) => {
+    const saneLinkCheck = (l: { article?: unknown; text?: unknown }) => {
         if (typeof l.article !== typeof {} || typeof l.text !== typeof "") {
             return false;
         }
         return true;
     };
-    export const editCounterLink = (l) => {
+    export const editCounterLink = (l: LinkSpec): string | null => {
         if (!saneLinkCheck(l)) {
             return null;
         }
@@ -491,7 +560,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         const defaultToolUrl = `https://xtools.wmflabs.org/ec?user=$1&project=$2.$3&uselang=${mw.config.get("wgUserLanguage")}`;
         switch (tool) {
             case "custom":
-                url = simplePrintf(getValueOf("popupEditCounterUrl"), [encodeURIComponent(uN), toolDbName()]);
+                url = simplePrintf(String(getValueOf("popupEditCounterUrl")), [encodeURIComponent(String(uN)), toolDbName()]);
                 break;
             case "soxred":
             case "kate":
@@ -499,7 +568,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             case "supercount":
             default: {
                 const theWiki = pg.wiki.hostname.split(".");
-                url = simplePrintf(defaultToolUrl, [encodeURIComponent(uN), theWiki[0], theWiki[1]]);
+                url = simplePrintf(defaultToolUrl, [encodeURIComponent(String(uN)), theWiki[0], theWiki[1]]);
             }
         }
         return generalNavLink({
@@ -510,7 +579,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             noPopup: 1,
         });
     };
-    export const globalSearchLink = (l) => {
+    export const globalSearchLink = (l: LinkSpec): string | null => {
         if (!saneLinkCheck(l)) {
             return null;
         }
@@ -526,7 +595,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             noPopup: 1,
         });
     };
-    export const googleLink = (l) => {
+    export const googleLink = (l: LinkSpec): string | null => {
         if (!saneLinkCheck(l)) {
             return null;
         }
@@ -542,7 +611,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             noPopup: 1,
         });
     };
-    export const editorListLink = (l) => {
+    export const editorListLink = (l: LinkSpec): string | null => {
         if (!saneLinkCheck(l)) {
             return null;
         }
@@ -556,11 +625,11 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             noPopup: 1,
         });
     };
-    const generalNavLink = (l) => {
+    const generalNavLink = (l: GeneralLinkSpec): string | null => {
         l.className = l.className === null ? "popupNavLink" : l.className;
         return generalLink(l);
     };
-    const getHistoryInfo = (wikipage, whatNext) => {
+    const getHistoryInfo = (wikipage: string, whatNext?: (x: HistoryInfo) => void) => {
         log("getHistoryInfo");
         getHistory(wikipage, whatNext
             ? (d) => {
@@ -568,17 +637,22 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
             : processHistory);
     };
-    const getHistory = (wikipage, onComplete) => {
+    const getHistory = (wikipage: string, onComplete: (d: Downloader) => void): Downloader | string => {
         log("getHistory");
         const url = `${pg.wiki.apiwikibase}?format=json&formatversion=2&action=query&prop=revisions&titles=${new Title(wikipage).urlString()}&rvlimit=${getValueOf("popupHistoryLimit")}`;
         log(`getHistory: url=${url}`);
         return startDownload(url, `${pg.idNumber}history`, onComplete);
     };
-    const processHistory = (download) => {
-        const jsobj = getJsObj(download.data);
+    const processHistory = (download: Downloader): HistoryInfo => {
+        const jsobj = getJsObj<{ query?: { pages?: Record<string, { revisions?: HistoryEdit[] }> } }>(download.data ?? "") as { query?: { pages?: Record<string, { revisions?: HistoryEdit[] }> } };
         try {
-            const revisions = anyChild(jsobj.query.pages).revisions;
-            const edits = [];
+            const page = anyChild(jsobj.query?.pages ?? {}) as { revisions?: { revid?: number; user?: string }[] } | null;
+            const revisions = page?.revisions;
+            if (!revisions) {
+                log("Something went wrong with JSON business");
+                return finishProcessHistory([], mw.config.get("wgUserName"));
+            }
+            const edits: HistoryEdit[] = [];
             for (let i = 0; i < revisions.length; ++i) {
                 edits.push({
                     oldid: revisions[i].revid,
@@ -587,15 +661,16 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
             log(`processed ${edits.length} edits`);
             return finishProcessHistory(edits, mw.config.get("wgUserName"));
-        } catch (someError) {
+        } catch {
             log("Something went wrong with JSON business");
-            return finishProcessHistory([]);
+            return finishProcessHistory([], mw.config.get("wgUserName"));
         }
     };
-    const finishProcessHistory = (edits, userName) => {
-        const histInfo = {};
-        histInfo.edits = edits;
-        histInfo.userName = userName;
+    const finishProcessHistory = (edits: HistoryEdit[], userName: string | null): HistoryInfo => {
+        const histInfo: HistoryInfo = {
+            edits: edits,
+            userName: userName,
+        };
         for (let i = 0; i < edits.length; ++i) {
             if (typeof histInfo.myLastEdit === "undefined" && userName && edits[i].editor === userName) {
                 histInfo.myLastEdit = {
