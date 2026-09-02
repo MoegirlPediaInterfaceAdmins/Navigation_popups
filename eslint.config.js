@@ -48,6 +48,15 @@ export default [
                 },
             ],
             "@eslint-community/eslint-comments/no-unlimited-disable": "off",
+            // Upstream source shape is preserved verbatim where rewriting it
+            // would hurt the sync workflow or change module-init order:
+            // - no-use-before-define: upstream orders helpers bottom-up; const
+            //   arrows cannot be reordered without changing module evaluation
+            //   order (the dist banner has always disabled this rule too).
+            // - camelcase: upstream identifiers (wpTextbox1, wikEdUseWikEd,
+            //   last_attr…) are kept 1:1 so upstream patches still apply.
+            "no-use-before-define": "off",
+            "camelcase": "off",
         },
     },
     {
