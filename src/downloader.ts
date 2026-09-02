@@ -1,7 +1,7 @@
 import { pg } from "./globals.ts";
     import type { Navpopup } from "./navpopup.ts";
     export class Downloader {
-        id: number | null = null;
+        id: number | string | null = null;
         lastModified: Date | string | null = null;
         callbackFunction: ((downloader: Downloader) => void) | null = null;
         onFailure: ((downloader: Downloader) => void) | null = null;
@@ -87,7 +87,7 @@ import { pg } from "./globals.ts";
         }
     }
     pg.misc.downloadsInProgress = {};
-    const newDownload = (url: string, id: number | ((d: Downloader) => void) | null | undefined, callback?: (d: Downloader) => void, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void) => void)): Downloader | string => {
+    const newDownload = (url: string, id: number | string | ((d: Downloader) => void) | null | undefined, callback?: (d: Downloader) => void, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void) => void)): Downloader | string => {
         let onfailure = _onfailure;
         const d = new Downloader(url);
         if (!d.http) {
@@ -130,7 +130,7 @@ import { pg } from "./globals.ts";
         d.lastModified = lastModified ?? null;
         return callback(d);
     };
-    export const startDownload = (url: string, id: number | null | undefined, callback: (d: Downloader) => void): Downloader | string => {
+    export const startDownload = (url: string, id: number | string | null | undefined, callback: (d: Downloader) => void): Downloader | string => {
         const d = newDownload(url, id, callback);
         if (typeof d === "string") {
             return d;

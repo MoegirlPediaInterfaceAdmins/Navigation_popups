@@ -16,9 +16,10 @@ export const pg: Pg = {
     structures: {},
     timer: {},
     counter: {},
-    current: {},
+    current: { links: [], linksHash: {} },
     fn: {},
     endoflist: null,
+    idNumber: 0,
 };
 
 /*

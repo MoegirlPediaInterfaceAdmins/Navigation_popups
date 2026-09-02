@@ -26,7 +26,7 @@ import { Mousetracker } from "./selpop.ts";
         stable_y = 0;
         showSoonStableTimer?: number;
         className?: string;
-        pending = null;
+        pending: number | null = null;
         fuzz = 5;
         constrained = true;
         width = 0;
@@ -37,7 +37,7 @@ import { Mousetracker } from "./selpop.ts";
         tooWide?: boolean;
         maxWidth?: number;
         article?: Title;
-        originalArticle?: unknown;
+        originalArticle?: Title;
         // per-popup diff state, filled by diffpreview.ts (loadDiff/doneDiff)
         diffData?: { oldRev: DiffSide; newRev: DiffSide };
         parentPopup?: Navpopup | null;
@@ -45,6 +45,11 @@ import { Mousetracker } from "./selpop.ts";
         mouseLeavingTime?: number | null;
         stopPopupTimer?: number;
         idNumber?: number;
+        delay = 0;
+        hasPopupMenu?: boolean;
+        // redirect-following state driven by actions.ts loadPreviewFromRedir
+        redir = 0;
+        redirTarget?: Title;
         constructor() {
             this.createMainDiv();
         }
@@ -193,7 +198,7 @@ import { Mousetracker } from "./selpop.ts";
         onclickHandler(_e?: MouseEvent) {
             this.raise();
         }
-        makeDraggable(handleName?: string) {
+        makeDraggable(handleName?: string | null) {
             const drag = new Drag();
             if (!handleName) {
                 drag.startCondition = (e) => {

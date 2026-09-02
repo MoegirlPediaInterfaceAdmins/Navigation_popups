@@ -1,6 +1,7 @@
 import { makeFixDabs, popupRedlinkHTML } from "./dab.ts";
 import { loadDiff } from "./diffpreview.ts";
 import { abortAllDownloads } from "./downloader.ts";
+import type { Downloader } from "./downloader.ts";
 import { log, pg } from "./globals.ts";
 import { fillEmptySpans, popupHTML, setPopupHTML, setPopupTrailer } from "./htmloutput.ts";
 import { getValidImageFromWikiText, loadImage } from "./images.ts";
@@ -16,11 +17,11 @@ import { addPopupShortcuts, rmPopupShortcuts } from "./shortcutkeys.ts";
 import { popupString } from "./strings.ts";
 import { Title, anchorContainsImage, isPopupLink, parseParams } from "./titles.ts";
 import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
-    export const setupTooltips = (_container?: unknown, remove = false, force = false, popData: unknown = null) => {
-        let container = _container;
+    export const setupTooltips = (_container?: unknown, remove = false, force = false, popData: { owner?: Navpopup } & Record<string, unknown> | null = null) => {
+        let container = _container as Element | Document;
         log(`setupTooltips, container=${container}, remove=${remove}`);
         if (!container) {
-            if (getValueOf("popupOnEditSelection") && document && document.editform && document.editform.wpTextbox1) {
+            if (getValueOf("popupOnEditSelection") && document.editform?.wpTextbox1) {
                 document.editform.wpTextbox1.onmouseup = doSelectionPopup;
             }
             container = defaultPopupsContainer();
@@ -29,10 +30,10 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
             return;
         }
         container.ranSetupTooltipsAlready = !remove;
-        const anchors = container.getElementsByTagName("A");
+        const anchors = container.getElementsByTagName("A") as HTMLCollectionOf<HTMLAnchorElement>;
         setupTooltipsLoop(anchors, 0, 250, 100, remove, popData);
     };
-    const defaultPopupsContainer = () => {
+    const defaultPopupsContainer = (): Element | Document => {
         if (getValueOf("popupOnlyArticleLinks")) {
             return document.querySelector(".skin-vector-2022 .vector-body") || document.getElementById("mw_content") || document.getElementById("content") || document.getElementById("article")
                 || document.getElementsByTagName("article")?.[0] // moeskin
@@ -40,18 +41,18 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         }
         return document;
     };
-    const setupTooltipsLoop = (anchors, begin, howmany, sleep, remove, popData) => {
+    const setupTooltipsLoop = (anchors: HTMLCollectionOf<HTMLAnchorElement>, begin: number, howmany: number, sleep: number, remove: boolean, popData: { owner?: Navpopup } & Record<string, unknown> | null) => {
         log(simplePrintf("setupTooltipsLoop(%s,%s,%s,%s,%s)", [anchors, begin, howmany, sleep, remove, popData]));
         const finish = begin + howmany;
         const loopend = Math.min(finish, anchors.length);
         let j = loopend - begin;
         log(`setupTooltips: anchors.length=${anchors.length}, begin=${begin}, howmany=${howmany}, loopend=${loopend}, remove=${remove}`);
-        const doTooltip = remove ? removeTooltip : addTooltip;
+        const doTooltip: (a: HTMLAnchorElement, popData: { owner?: Navpopup } & Record<string, unknown> | null) => void = remove ? removeTooltip : addTooltip;
         if (j > 0) {
             do {
                 const a = anchors[loopend - j];
-                if (typeof a === "undefined" || !a || !a.href) {
-                    log(`got null anchor at index ${loopend}` - j);
+                if (!a || !a.href) {
+                    log(`got null anchor at index ${loopend - j}`);
                     continue;
                 }
                 doTooltip(a, popData);
@@ -71,14 +72,14 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
     const rmTocTooltips = () => {
         const toc = document.getElementById("toc");
         if (toc) {
-            const tocLinks = toc.getElementsByTagName("A");
+            const tocLinks = toc.getElementsByTagName("A") as HTMLCollectionOf<HTMLAnchorElement>;
             const tocLen = tocLinks.length;
             for (let j = 0; j < tocLen; ++j) {
                 removeTooltip(tocLinks[j], true);
             }
         }
     };
-    const addTooltip = (a, popData) => {
+    const addTooltip = (a: HTMLAnchorElement, popData?: { owner?: Navpopup } & Record<string, unknown> | null) => {
         if (!isPopupLink(a)) {
             return;
         }
@@ -88,7 +89,7 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         a.hasPopup = true;
         a.popData = popData;
     };
-    const removeTooltip = (a) => {
+    const removeTooltip = (a: HTMLAnchorElement, _popData?: unknown) => {
         if (!a.hasPopup) {
             return;
         }
@@ -99,19 +100,19 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         }
         a.hasPopup = false;
     };
-    const removeTitle = (a) => {
+    const removeTitle = (a: HTMLAnchorElement) => {
         if (!a.originalTitle) {
             a.originalTitle = a.title;
         }
         a.title = "";
     };
-    export const restoreTitle = (a) => {
+    export const restoreTitle = (a: HTMLAnchorElement) => {
         if (a.title || !a.originalTitle) {
             return;
         }
         a.title = a.originalTitle;
     };
-    const registerHooks = (np) => {
+    const registerHooks = (np: Navpopup) => {
         const popupMaxWidth = getValueOf("popupMaxWidth");
         if (typeof popupMaxWidth === "number") {
             const setMaxWidth = () => {
@@ -123,27 +124,28 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         np.addHook(addPopupShortcuts, "unhide", "after");
         np.addHook(rmPopupShortcuts, "hide", "before");
     };
-    export const removeModifierKeyHandler = (a) => {
-        document.removeEventListener("keydown", a.modifierKeyHandler, false);
-        document.removeEventListener("keyup", a.modifierKeyHandler, false);
+    export const removeModifierKeyHandler = (a: HTMLAnchorElement) => {
+        document.removeEventListener("keydown", a.modifierKeyHandler as EventListener, false);
+        document.removeEventListener("keyup", a.modifierKeyHandler as EventListener, false);
     };
-    function mouseOverWikiLink(_evt) {
+    function mouseOverWikiLink(this: GlobalEventHandlers, _evt?: MouseEvent) {
+        const self = this as HTMLAnchorElement;
         let evt = _evt;
         if (!evt && window.event) {
-            evt = window.event;
+            evt = window.event as MouseEvent;
         }
         if (getValueOf("popupModifier")) {
             const action = getValueOf("popupModifierAction");
             const key = action === "disable" ? "keyup" : "keydown";
-            const a = this;
+            const a = self;
             a.modifierKeyHandler = (evt) => {
-                mouseOverWikiLink2(a, evt);
+                mouseOverWikiLink2(a, evt as MouseEvent);
             };
             document.addEventListener(key, a.modifierKeyHandler, false);
         }
-        return mouseOverWikiLink2(this, evt);
+        return mouseOverWikiLink2(self, evt);
     }
-    const footnoteTarget = (a) => {
+    const footnoteTarget = (a: HTMLAnchorElement): HTMLElement | false => {
         const aTitle = Title.fromAnchor(a);
         const anch = aTitle.anchor;
         if (!/^(cite_note-|_note-|endnote)/.test(anch)) {
@@ -161,28 +163,28 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
             } else if (nt === "body") {
                 return false;
             } else if (el.parentNode) {
-                el = el.parentNode;
+                el = el.parentNode as HTMLElement;
             } else {
                 return false;
             }
         }
         return false;
     };
-    const footnotePreview = (x, navpop) => {
+    const footnotePreview = (x: HTMLElement, navpop: Navpopup) => {
         setPopupHTML(`<hr />${x.innerHTML}`, "popupPreview", navpop.idNumber);
     };
-    const modifierPressed = (_evt) => {
+    const modifierPressed = (_evt?: MouseEvent) => {
         let evt = _evt;
         const mod = getValueOf("popupModifier");
         if (!mod) {
             return false;
         }
         if (!evt && window.event) {
-            evt = window.event;
+            evt = window.event as MouseEvent;
         }
-        return evt && mod && evt[`${mod.toLowerCase()}Key`];
+        return Boolean(evt && mod && (evt as unknown as Record<string, unknown>)[`${String(mod).toLowerCase()}Key`]);
     };
-    const isCorrectModifier = (a, evt) => {
+    const isCorrectModifier = (a: HTMLAnchorElement, evt?: MouseEvent) => {
         if (!getValueOf("popupModifier")) {
             return true;
         }
@@ -214,7 +216,7 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
             simplePopupContent(a, article);
         }
         a.navpopup.showSoonIfStable(a.navpopup.delay);
-        clearInterval(pg.timer.checkPopupPosition);
+        clearInterval(pg.timer.checkPopupPosition as number);
         pg.timer.checkPopupPosition = setInterval(checkPopupPosition, 600);
         if (getValueOf("simplePopups")) {
             if (getValueOf("popupPreviewButton") && !a.simpleNoMore) {
@@ -223,47 +225,51 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
                 const s = document.createElement("span");
                 d.appendChild(s);
                 s.className = "popupPreviewButton";
-                s[`on${getValueOf("popupPreviewButtonEvent")}`] = () => {
+                (s as unknown as Record<string, unknown>)[`on${String(getValueOf("popupPreviewButtonEvent"))}`] = () => {
                     a.simpleNoMore = true;
                     d.style.display = "none";
                     nonsimplePopupContent(a, article);
                 };
                 s.innerHTML = popupString("show preview");
-                setPopupHTML(d, "popupPreview", a.navpopup.idNumber);
+                setPopupHTML(d, "popupPreview", a.navpopup?.idNumber);
             }
         }
         if (a.navpopup.pending !== 0) {
             nonsimplePopupContent(a, article);
         }
     };
-    const simplePopupContent = (a, article) => {
-        a.navpopup.hasPopupMenu = false;
-        a.navpopup.setInnerHTML(popupHTML(a));
+    const simplePopupContent = (a: HTMLAnchorElement, article: Title) => {
+        const navpop = a.navpopup;
+        if (!navpop) {
+            return;
+        }
+        navpop.hasPopupMenu = false;
+        navpop.setInnerHTML(popupHTML(a));
         fillEmptySpans({
-            navpopup: a.navpopup,
+            navpopup: navpop,
         });
         if (getValueOf("popupDraggable")) {
-            let dragHandle = getValueOf("popupDragHandle") || null;
+            let dragHandle = (getValueOf("popupDragHandle") as string | null) || null;
             if (dragHandle && dragHandle !== "all") {
-                dragHandle += a.navpopup.idNumber;
+                dragHandle += String(navpop.idNumber);
             }
             setTimeout(() => {
-                a.navpopup.makeDraggable(dragHandle);
+                navpop.makeDraggable(dragHandle);
             }, 150);
         }
         if (getValueOf("popupRedlinkRemoval") && a.className === "new") {
-            setPopupHTML(`<br>${popupRedlinkHTML(article)}`, "popupRedlink", a.navpopup.idNumber);
+            setPopupHTML(`<br>${popupRedlinkHTML(article)}`, "popupRedlink", navpop.idNumber);
         }
     };
-    const debugData = (navpopup) => {
+    const debugData = (navpopup: Navpopup) => {
         if (getValueOf("popupDebugging") && navpopup.idNumber) {
             setPopupHTML(`idNumber=${navpopup.idNumber}, pending=${navpopup.pending}`, "popupError", navpopup.idNumber);
         }
     };
-    const newNavpopup = (a, article) => {
+    const newNavpopup = (a: HTMLAnchorElement, article: Title) => {
         const navpopup = new Navpopup();
         navpopup.fuzz = 5;
-        navpopup.delay = getValueOf("popupDelay") * 1e3;
+        navpopup.delay = Number(getValueOf("popupDelay")) * 1e3;
         navpopup.idNumber = ++pg.idNumber;
         navpopup.parentAnchor = a;
         navpopup.parentPopup = a.popData && a.popData.owner;
@@ -271,16 +277,21 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         registerHooks(navpopup);
         return navpopup;
     };
-    const shouldShowNonSimple = (a) => !getValueOf("simplePopups") || a.simpleNoMore;
-    const shouldShow = (a, option) => {
+    const shouldShowNonSimple = (a: HTMLAnchorElement) => !getValueOf("simplePopups") || a.simpleNoMore;
+    const shouldShow = (a: HTMLAnchorElement, option: string) => {
         if (shouldShowNonSimple(a)) {
             return getValueOf(option);
         }
-        return typeof window[option] !== "undefined" && window[option];
+        const w = window as unknown as Record<string, unknown>;
+        return typeof w[option] !== "undefined" && w[option];
     };
-    const nonsimplePopupContent = (a, article) => {
-        let diff = null,
-            history = null;
+    const nonsimplePopupContent = (a: HTMLAnchorElement, article: Title) => {
+        const navpop = a.navpopup;
+        if (!navpop) {
+            return;
+        }
+        let diff: string | null = null,
+            history: boolean | null = null;
         const params = parseParams(a.href);
         const oldid = typeof params.oldid === "undefined" ? null : params.oldid;
         if (shouldShow(a, "popupPreviewDiffs")) {
@@ -289,64 +300,64 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         if (shouldShow(a, "popupPreviewHistory")) {
             history = params.action === "history";
         }
-        a.navpopup.pending = 0;
+        navpop.pending = 0;
         const referenceElement = footnoteTarget(a);
         if (referenceElement) {
-            footnotePreview(referenceElement, a.navpopup);
-        } else if (diff || diff === 0) {
-            loadDiff(article, oldid, diff, a.navpopup);
+            footnotePreview(referenceElement, navpop);
+        } else if (diff) {
+            loadDiff(article, oldid, diff, navpop);
         } else if (history) {
-            loadAPIPreview("history", article, a.navpopup);
-        } else if (shouldShowNonSimple(a) && pg.re.contribs.test(a.href)) {
-            loadAPIPreview("contribs", article, a.navpopup);
-        } else if (shouldShowNonSimple(a) && pg.re.backlinks.test(a.href)) {
-            loadAPIPreview("backlinks", article, a.navpopup);
+            loadAPIPreview("history", article, navpop);
+        } else if (shouldShowNonSimple(a) && (pg.re.contribs as RegExp).test(a.href)) {
+            loadAPIPreview("contribs", article, navpop);
+        } else if (shouldShowNonSimple(a) && (pg.re.backlinks as RegExp).test(a.href)) {
+            loadAPIPreview("backlinks", article, navpop);
         } else if (article.namespaceId() === pg.nsImageId && (shouldShow(a, "imagePopupsForImages") || !anchorContainsImage(a))) {
-            loadAPIPreview("imagepagepreview", article, a.navpopup);
-            loadImage(article, a.navpopup);
+            loadAPIPreview("imagepagepreview", article, navpop);
+            loadImage(article, navpop);
         } else {
             if (article.namespaceId() === pg.nsCategoryId && shouldShow(a, "popupCategoryMembers")) {
-                loadAPIPreview("category", article, a.navpopup);
+                loadAPIPreview("category", article, navpop);
             } else if ((article.namespaceId() === pg.nsUserId || article.namespaceId() === pg.nsUsertalkId) && shouldShow(a, "popupUserInfo")) {
-                loadAPIPreview("userinfo", article, a.navpopup);
+                loadAPIPreview("userinfo", article, navpop);
             }
             if (shouldShowNonSimple(a)) {
-                startArticlePreview(article, oldid, a.navpopup);
+                startArticlePreview(article, oldid, navpop);
             }
         }
     };
-    export const pendingNavpopTask = (navpop) => {
-        if (navpop && navpop.pending === null) {
+    export const pendingNavpopTask = (navpop: Navpopup) => {
+        if (navpop.pending === null) {
             navpop.pending = 0;
         }
         ++navpop.pending;
         debugData(navpop);
     };
-    export const completedNavpopTask = (navpop) => {
-        if (navpop && navpop.pending) {
+    export const completedNavpopTask = (navpop: Navpopup) => {
+        if (navpop.pending) {
             --navpop.pending;
         }
         debugData(navpop);
     };
-    const startArticlePreview = (article, oldid, navpop) => {
+    const startArticlePreview = (article: Title, oldid: string | null, navpop: Navpopup) => {
         navpop.redir = 0;
         loadPreview(article, oldid, navpop);
     };
-    const loadPreview = (article, oldid, navpop) => {
+    const loadPreview = (article: Title, oldid: string | null, navpop: Navpopup) => {
         if (!navpop.redir) {
             navpop.originalArticle = article;
         }
         article.oldid = oldid;
         loadAPIPreview("revision", article, navpop);
     };
-    const loadPreviewFromRedir = (redirMatch, navpop) => {
+    const loadPreviewFromRedir = (redirMatch: RegExpExecArray, navpop: Navpopup) => {
         const target = new Title().fromWikiText(redirMatch[2]);
-        if (navpop.article.anchor) {
+        if (navpop.article?.anchor) {
             target.anchor = navpop.article.anchor;
         }
         navpop.redir++;
         navpop.redirTarget = target;
-        const warnRedir = redirLink(target, navpop.article);
+        const warnRedir = navpop.article ? redirLink(target, navpop.article) : "";
         setPopupHTML(warnRedir, "popupWarnRedir", navpop.idNumber);
         navpop.article = target;
         fillEmptySpans({
@@ -356,11 +367,11 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         });
         return loadPreview(target, null, navpop);
     };
-    export const insertPreview = (download) => {
+    export const insertPreview = (download: Downloader) => {
         if (!download.owner) {
             return;
         }
-        const redirMatch = pg.re.redirect.exec(download.data);
+        const redirMatch = (pg.re.redirect as RegExp).exec(download.data ?? "");
         if (download.owner.redir === 0 && redirMatch) {
             loadPreviewFromRedir(redirMatch, download.owner);
             return;
@@ -375,13 +386,16 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
             }, "unhide", "after", id);
         }
     };
-    const insertPreviewNow = (download) => {
+    const insertPreviewNow = (download: Downloader) => {
         if (!download.owner) {
             return;
         }
-        const wikiText = download.data;
+        const wikiText = download.data ?? "";
         const navpop = download.owner;
         const art = navpop.redirTarget || navpop.originalArticle;
+        if (!art) {
+            return;
+        }
         makeFixDabs(wikiText, navpop);
         if (getValueOf("popupSummaryData")) {
             getPageInfo(wikiText, download);
@@ -400,8 +414,8 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
             insertArticlePreview(download, art, navpop);
         }
     };
-    const insertArticlePreview = (download, art, navpop) => {
-        if (download && typeof download.data === typeof "") {
+    const insertArticlePreview = (download: Downloader, art: Title, navpop: Navpopup) => {
+        if (download && typeof download.data === "string") {
             if (art.namespaceId() === pg.nsTemplateId && getValueOf("popupPreviewRawTemplates")) {
                 const h = `<hr /><span style="font-family: monospace;">${download.data.entify().split("\\n").join("<br />\\n")}</span>`;
                 setPopupHTML(h, "popupPreview", navpop.idNumber);
@@ -411,17 +425,17 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
             }
         }
     };
-    export const prepPreviewmaker = (data, article, navpop) => {
+    export const prepPreviewmaker = (data: string, article: Title, navpop: Navpopup): Previewmaker => {
         const d = anchorize(data, article.anchorString());
         const urlBase = joinPath([pg.wiki.articlebase, article.urlString()]);
         const p = new Previewmaker(d, urlBase, navpop);
         return p;
     };
-    const anchorize = (d, anch) => {
+    const anchorize = (d: string, anch: string): string => {
         if (!anch) {
             return d;
         }
-        const anchRe = RegExp(`(?:=+\\s*${literalizeRegex(anch).replace(/[_ ]/g, "[_ ]")}\\s*=+|\\{\\{\\s*${getValueOf("popupAnchorRegexp")}\\s*(?:\\|[^|}]*)*?\\s*${literalizeRegex(anch)}\\s*(?:\\|[^}]*)?}})`);
+        const anchRe = RegExp(`(?:=+\\s*${literalizeRegex(anch).replace(/[_ ]/g, "[_ ]")}\\s*=+|\\{\\{\\s*${String(getValueOf("popupAnchorRegexp"))}\\s*(?:\\|[^|}]*)*?\\s*${literalizeRegex(anch)}\\s*(?:\\|[^}]*)?}})`);
         const match = d.match(anchRe);
         if (match && match.length > 0 && match[0]) {
             return d.substring(d.indexOf(match[0]));
@@ -435,8 +449,8 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         }
         return d;
     };
-    export function killPopup() {
-        removeModifierKeyHandler(this);
+    export function killPopup(this: GlobalEventHandlers) {
+        removeModifierKeyHandler(this as HTMLAnchorElement);
         if (getValueOf("popupShortcutKeys")) {
             rmPopupShortcuts();
         }
@@ -449,7 +463,7 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         pg.current.link = null;
         abortAllDownloads();
         if (pg.timer.checkPopupPosition) {
-            clearInterval(pg.timer.checkPopupPosition);
+            clearInterval(pg.timer.checkPopupPosition as number);
             pg.timer.checkPopupPosition = null;
         }
         return true;

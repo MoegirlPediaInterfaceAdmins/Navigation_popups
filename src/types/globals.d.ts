@@ -15,7 +15,8 @@ interface String {
     // Polyfill installed by parensplit.ts at module init; isNative marks
     // whether the native (non-polyfilled) split implementation is in use
     parenSplit: {
-        (re: RegExp): string[];
+        // the polyfill path (String.split) also accepts a "/pattern/" string
+        (re: RegExp | string): string[];
         isNative?: boolean;
     };
     // Extension installed by tools.ts at module init
@@ -53,7 +54,8 @@ interface Document {
     scrollTop?: number;
 }
 
-interface Element {
+interface Node {
     // ad-hoc marker property the gadget sets on tooltip containers
+    // (Element or Document — both are used as setupTooltips containers)
     ranSetupTooltipsAlready?: boolean;
 }

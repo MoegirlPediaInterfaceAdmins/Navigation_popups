@@ -9,7 +9,7 @@ import { popupString } from "./strings.ts";
             return;
         }
         if (keyCode === 27) {
-            killPopup();
+            killPopup.call(pg.current.link);
             return false;
         }
         const letter = String.fromCharCode(keyCode);
@@ -62,9 +62,9 @@ import { popupString } from "./strings.ts";
         }
         return `${html.substring(0, i)} ${property}${html.substring(i)}`;
     };
-    export const addPopupShortcut = (html: string, _key?: string | null) => {
+    export const addPopupShortcut = (html: string | null, _key?: string | null) => {
         let key = _key;
-        if (!getValueOf("popupShortcutKeys")) {
+        if (!html || !getValueOf("popupShortcutKeys")) {
             return html;
         }
         const ret = addLinkProperty(html, `popupkey="${key}"`);
