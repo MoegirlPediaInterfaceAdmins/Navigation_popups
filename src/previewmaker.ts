@@ -5,7 +5,7 @@ import type { Navpopup } from "./navpopup.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
 import { Title } from "./titles.ts";
-import { isRegExp, isString, literalizeRegex } from "./tools.ts";
+import { assume, isRegExp, isString, literalizeRegex } from "./tools.ts";
 export class Previewmaker {
     maxCharacters = Number(getValueOf("popupMaxPreviewCharacters"));
     maxSentences = Number(getValueOf("popupMaxPreviewSentences"));
@@ -58,7 +58,7 @@ export class Previewmaker {
         if (!op.test(txt)) {
             return txt;
         }
-        const opResult = op.exec(txt)!;
+        const opResult = assume(op.exec(txt));
         const ret = txt.substring(0, opResult.index);
         txt = txt.substring(opResult.index + opResult[0].length);
         let depth = 1;
@@ -66,13 +66,13 @@ export class Previewmaker {
             let removal = 0;
             if (depth === 1 && cl.test(txt)) {
                 depth--;
-                removal = (cl.exec(txt)!)[0].length;
+                removal = assume(cl.exec(txt))[0].length;
             } else if (depth > 1 && sc.test(txt)) {
                 depth--;
-                removal = (sc.exec(txt)!)[0].length;
-            } else if (sb && sb.test(txt)) {
+                removal = assume(sc.exec(txt))[0].length;
+            } else if (sb?.test(txt)) {
                 depth++;
-                removal = (sb.exec(txt)!)[0].length;
+                removal = assume(sb.exec(txt))[0].length;
             }
             if (!removal) {
                 removal = 1;
@@ -299,12 +299,11 @@ export class Previewmaker {
         const a = document.createElement("a");
         a.className = "popupMoreLink";
         a.innerHTML = popupString("more...");
-        const savedThis = this;
         a.onclick = () => {
-            savedThis.maxCharacters += 2e3;
-            savedThis.maxSentences += 20;
-            savedThis.setData();
-            savedThis.showPreview();
+            this.maxCharacters += 2e3;
+            this.maxSentences += 20;
+            this.setData();
+            this.showPreview();
         };
         return a;
     }

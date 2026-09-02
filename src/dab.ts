@@ -57,9 +57,9 @@ const listLinks = (wikitext: string, oldTarget: unknown, titleToEdit: string | u
 };
 const rmDupesFromSortedList = (list: (string | null)[]) => {
     const ret: (string | null)[] = [];
-    for (let i = 0; i < list.length; ++i) {
-        if (ret.length === 0 || list[i] !== ret[ret.length - 1]) {
-            ret.push(list[i]);
+    for (const item of list) {
+        if (ret.length === 0 || item !== ret[ret.length - 1]) {
+            ret.push(item);
         }
     }
     return ret;

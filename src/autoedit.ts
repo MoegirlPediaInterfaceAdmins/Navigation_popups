@@ -3,7 +3,7 @@ import { startDownload } from "./downloader.ts";
 import { pg } from "./globals.ts";
 import { setupPopups } from "./init.ts";
 import { popupString, tprintf } from "./strings.ts";
-import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
+import { anyChild, assume, getJsObj, simplePrintf } from "./tools.ts";
 interface EditCmd {
     action: (data: string, cmdBody: EditCmd) => string;
     from: string;
@@ -20,8 +20,8 @@ const execCmds = (_data: string, cmdList: false | EditCmd[]): string => {
     if (!cmdList) {
         return data;
     }
-    for (let i = 0; i < cmdList.length; ++i) {
-        data = cmdList[i].action(data, cmdList[i]);
+    for (const cmd of cmdList) {
+        data = cmd.action(data, cmd);
     }
     return data;
 };
@@ -67,7 +67,7 @@ const parseSubstitute = (_str: string): false | EditCmd => {
     }
     flags = "";
     if (str.length) {
-        tmp = skipOver(str, ";") || skipToEnd(str, ";");
+        tmp = skipOver(str, ";") || skipToEnd(str);
         if (tmp) {
             flags = tmp.segment;
             str = tmp.remainder;
@@ -92,7 +92,7 @@ const skipOver = (str: string, sep: string): false | { segment: string; remainde
         remainder: str.substring(endSegment + 1),
     };
 };
-const skipToEnd = (str: string, _sep?: string): { segment: string; remainder: string } => ({
+const skipToEnd = (str: string): { segment: string; remainder: string } => ({
     segment: str,
     remainder: "",
 });
@@ -139,12 +139,12 @@ export const autoEdit: (() => void) & { alreadyRan?: boolean } = () => {
             document.editform.action += "%2CAutomation%20tool";
         }
     }
-    setupPopups(() => {
+    void setupPopups(() => {
         if (mw.util.getParamValue("autoimpl") !== popupString("autoedit_version")) {
             return false;
         }
         if (mw.util.getParamValue("autowatchlist") && mw.util.getParamValue("actoken") === autoClickToken()) {
-            pg.fn.modifyWatchlist(mw.util.getParamValue("title"), mw.util.getParamValue("action"));
+            void pg.fn.modifyWatchlist?.(mw.util.getParamValue("title"), mw.util.getParamValue("action"));
         }
         if (!document.editform) {
             return false;
@@ -193,7 +193,7 @@ const autoEdit2 = (d?: Downloader) => {
         if (s === false) {
             summaryprompt = true;
             summarynotice = popupString("Failed to get revision information, please edit manually.\n\n");
-            summary = simplePrintf(summary!, [mw.util.getParamValue("autorv"), "(unknown)", "(unknown)"]);
+            summary = simplePrintf(assume(summary), [mw.util.getParamValue("autorv"), "(unknown)", "(unknown)"]);
         } else {
             summary = s;
         }
@@ -245,14 +245,14 @@ interface RvPage {
 }
 const getRvSummary = (template: string | null, json: string | undefined): false | string => {
     try {
-        const o = getJsObj<{ query?: { pages?: Record<string, RvPage> } }>(json ?? "") as { query?: { pages?: Record<string, RvPage> } };
+        const o = getJsObj(json ?? "") as { query?: { pages?: Record<string, RvPage> } };
         const edit = anyChild(o.query?.pages ?? {});
         const revision = edit?.revisions?.[0];
         if (!revision) {
             return false;
         }
         const timestamp = revision.timestamp.split(/[A-Z]/g).join(" ").replace(/^ *| *$/g, "");
-        return simplePrintf(template!, [revision.revid, timestamp, revision.userhidden ? "(hidden)" : revision.user]);
+        return simplePrintf(assume(template), [revision.revid, timestamp, revision.userhidden ? "(hidden)" : revision.user]);
     } catch {
         return false;
     }

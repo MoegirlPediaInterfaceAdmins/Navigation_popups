@@ -3,6 +3,7 @@ import type { StructureContext } from "./types/pg.ts";
 import { navlinkStringToHTML } from "./navlinks.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
+import { assume } from "./tools.ts";
 const copyStructure = (oldStructure: string, newStructure: string) => {
     pg.structures[newStructure] = {};
     for (const prop in pg.structures[oldStructure]) {
@@ -110,7 +111,7 @@ pg.structures.menus.popupTopLinks = (x, shorter) => {
     s.push("<<blocklog|shortcut=B|block log>>");
     s.push(`</menu>${enddiv}}`);
     if (getValueOf("popupSetupMenu") && !x.navpop?.hasPopupMenu) {
-        x.navpop!.hasPopupMenu = true;
+        assume(x.navpop).hasPopupMenu = true;
         s.push(`*${menuTitle(dropclass, "popupsMenu")}<menu>`);
         s.push("<<togglePreviews|toggle previews>>");
         s.push("<<purgePopups|reset>>");

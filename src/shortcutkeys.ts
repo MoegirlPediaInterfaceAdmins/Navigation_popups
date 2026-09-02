@@ -4,7 +4,7 @@ import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
 type PopupHandleKeypress = NonNullable<GlobalEventHandlers["onkeypress"]> & { lastPopupLinkSelected?: Element | null };
 const popupHandleKeypress: PopupHandleKeypress = (evt) => {
-    const keyCode = window.event ? (window.event as KeyboardEvent).keyCode : evt && evt.keyCode ? evt.keyCode : evt?.which;
+    const keyCode = window.event ? (window.event as KeyboardEvent).keyCode : evt?.keyCode ? evt.keyCode : evt?.which;
     if (!keyCode || !pg.current.link?.navpopup) {
         return;
     }
@@ -26,7 +26,7 @@ const popupHandleKeypress: PopupHandleKeypress = (evt) => {
     for (j = 0; j < links.length; ++j) {
         i = (startLink + j + 1) % links.length;
         if (links[i].getAttribute("popupkey") === letter) {
-            if (evt && evt.preventDefault) {
+            if (evt?.preventDefault) {
                 evt.preventDefault();
             }
             (links[i] as unknown as { trigger: (s: string) => void }).trigger("focus");

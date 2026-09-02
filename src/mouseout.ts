@@ -7,9 +7,9 @@ const fuzzyCursorOffMenus = (_x: number | undefined, _y: number | undefined, _fu
         return null;
     }
     const uls = parent.getElementsByTagName("ul");
-    for (let i = 0; i < uls.length; ++i) {
-        if (uls[i].className === "popup_menu") {
-            if (uls[i].offsetWidth > 0) {
+    for (const ul of uls) {
+        if (ul.className === "popup_menu") {
+            if (ul.offsetWidth > 0) {
                 return false;
             }
         }
@@ -43,7 +43,7 @@ export const posCheckerHook = (navpop: Navpopup) => () => {
     }
     const x = Navpopup.tracker.x,
         y = Navpopup.tracker.y;
-    const mouseOverNavpop = navpop.isWithin(x, y, navpop.fuzz, navpop.mainDiv) || !fuzzyCursorOffMenus(x, y, navpop.fuzz, navpop.mainDiv);
+    const mouseOverNavpop = navpop.isWithin(x, y) || !fuzzyCursorOffMenus(x, y, navpop.fuzz, navpop.mainDiv);
     let t = getValueOf("popupHideDelay");
     if (t) {
         t = (t as number) * 1e3;

@@ -9,6 +9,7 @@ declare const wikEdUseWikEd: boolean;
 declare const WikEdUpdateFrame: () => void;
 // moment.js is site-provided at runtime; typings come from the moment package
 // (moment.d.ts ends with `export = moment`, so it is a module, not a UMD global)
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- a global script d.ts cannot use module imports
 declare const moment: typeof import("moment");
 
 interface String {

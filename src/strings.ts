@@ -223,7 +223,7 @@ localStorage.removeItem("popupNoTranslation");
 const popupNoTranslation = new Set<string>();
 window.popupNoTranslation = popupNoTranslation;
 export const popupString = (str: string) => {
-    if (typeof popupStrings !== "undefined" && popupStrings && popupStrings[str]) {
+    if (typeof popupStrings !== "undefined" && popupStrings?.[str]) {
         return popupStrings[str];
     }
     if (!popupNoTranslation.has(str) && (typeof str !== "string" || !str.includes("&autoimpl=np20140416&actoken=") && !str.endsWith("Hint"))) {

@@ -8,7 +8,7 @@ import { getValueOf } from "./options.ts";
 import { addPopupShortcut } from "./shortcutkeys.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { Title, parseParams, safeDecodeURI } from "./titles.ts";
-import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
+import { anyChild, assume, getJsObj, simplePrintf } from "./tools.ts";
 // A navlink spec as built by navlinks.ts: an article plus the display
 // and target options of one popup navlink. Fields are optional because
 // different builders consume different subsets.
@@ -49,7 +49,7 @@ export const wikiLink = (l: LinkSpec): string | null => {
         l.oldid = null;
     }
     const savedOldid = l.oldid;
-    if (!/^(edit|view|revert|render)$|^raw/.test(l.action!)) {
+    if (!/^(edit|view|revert|render)$|^raw/.test(assume(l.action))) {
         l.oldid = null;
     }
     let hint = popupString(`${l.action}Hint`);
@@ -103,7 +103,7 @@ export const wikiLink = (l: LinkSpec): string | null => {
             hint = simplePrintf(hint, [safeDecodeURI(l.article)]);
         }
     } else {
-        hint = safeDecodeURI(`${l.article}&action=${l.action}`) as string + l.oldid ? `&oldid=${l.oldid}` : "";
+        hint = String(safeDecodeURI(`${l.article}&action=${l.action}`)) + String(l.oldid) ? `&oldid=${l.oldid}` : "";
     }
     return titledWikiLink({
         article: l.article,
@@ -237,7 +237,7 @@ const processAllPopups = (nullify?: boolean, banish?: boolean) => {
             continue;
         }
         if (nullify || banish) {
-            pg.current.links[i].navpopup!.banish();
+            assume(pg.current.links[i].navpopup).banish();
         }
         pg.current.links[i].simpleNoMore = false;
         if (nullify) {
@@ -483,7 +483,7 @@ export const redirLink = (redirMatch: string | Title, article: Title): string =>
         if (getValueOf("popupFixRedirs")) {
             ret += popupString("Redirects to: (Fix ");
             log(`redirLink: newTarget=${redirMatch}`);
-            ret += addPopupShortcut(changeLinkTargetLink({
+            ret += String(addPopupShortcut(changeLinkTargetLink({
                 newTarget: redirMatch as string,
                 text: popupString("target"),
                 hint: popupString("Fix this redirect, changing just the link target"),
@@ -492,9 +492,9 @@ export const redirLink = (redirMatch: string | Title, article: Title): string =>
                 clickButton: String(getValueOf("popupRedirAutoClick")),
                 minor: true,
                 watch: getValueOf("popupWatchRedirredPages") as boolean | null,
-            }), "R");
+            }), "R"));
             ret += popupString(" or ");
-            ret += addPopupShortcut(changeLinkTargetLink({
+            ret += String(addPopupShortcut(changeLinkTargetLink({
                 newTarget: redirMatch as string,
                 text: popupString("target & label"),
                 hint: popupString("Fix this redirect, changing the link target and label"),
@@ -504,7 +504,7 @@ export const redirLink = (redirMatch: string | Title, article: Title): string =>
                 minor: true,
                 watch: getValueOf("popupWatchRedirredPages") as boolean | null,
                 alsoChangeLabel: true,
-            }), "R");
+            }), "R"));
             ret += popupString(")");
         } else {
             ret += popupString("Redirects") + popupString(" to ");
@@ -644,7 +644,7 @@ const getHistory = (wikipage: string, onComplete: (d: Downloader) => void): Down
     return startDownload(url, `${pg.idNumber}history`, onComplete);
 };
 const processHistory = (download: Downloader): HistoryInfo => {
-    const jsobj = getJsObj<{ query?: { pages?: Record<string, { revisions?: HistoryEdit[] }> } }>(download.data ?? "") as { query?: { pages?: Record<string, { revisions?: HistoryEdit[] }> } };
+    const jsobj = getJsObj(download.data ?? "") as { query?: { pages?: Record<string, { revisions?: HistoryEdit[] }> } };
     try {
         const page = anyChild(jsobj.query?.pages ?? {}) as { revisions?: { revid?: number; user?: string }[] } | null;
         const revisions = page?.revisions;
@@ -653,10 +653,10 @@ const processHistory = (download: Downloader): HistoryInfo => {
             return finishProcessHistory([], mw.config.get("wgUserName"));
         }
         const edits: HistoryEdit[] = [];
-        for (let i = 0; i < revisions.length; ++i) {
+        for (const revision of revisions) {
             edits.push({
-                oldid: revisions[i].revid,
-                editor: revisions[i].user,
+                oldid: revision.revid,
+                editor: revision.user,
             });
         }
         log(`processed ${edits.length} edits`);

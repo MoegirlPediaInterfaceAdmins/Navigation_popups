@@ -44,13 +44,13 @@ const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: D
         interface ImageQuery {
             query: { pages: Record<string, { imageinfo?: { thumburl?: string; url: string; mime: string; descriptionurl: string }[] }> };
         }
-        const jsObj = getJsObj<ImageQuery>(download.data ?? "") as ImageQuery;
+        const jsObj = getJsObj(download.data ?? "") as ImageQuery;
         const imagepage = anyChild(jsObj.query.pages) as NonNullable<ReturnType<typeof anyChild<{ imageinfo?: { thumburl?: string; url: string; mime: string; descriptionurl: string }[] }>>>;
         if (typeof imagepage.imageinfo === "undefined") {
             return;
         }
         imageinfo = imagepage.imageinfo[0];
-    } catch (someError) {
+    } catch {
         log("popupsInsertImage failed :(");
         return;
     }

@@ -1,4 +1,5 @@
 import { pg } from "./globals.ts";
+import { assume } from "./tools.ts";
 interface InstaConfUser {
     name?: string;
     signature?: string;
@@ -105,7 +106,7 @@ Insta.convert = (wiki: string | string[]): string => {
     };
     const compareLineStringOrReg = (c: string | RegExp): boolean | RegExpMatchArray | null => {
         if (typeof c === "string") {
-            return Boolean(ll[0] && ll[0].substr(0, c.length) === c);
+            return ll[0]?.substr(0, c.length) === c;
         }
         r = ll[0] ? ll[0].match(c) : null;
         return r;
@@ -119,7 +120,7 @@ Insta.convert = (wiki: string | string[]): string => {
     const parse_list = () => {
         let prev = "";
         while (remain() && compareLineStringOrReg(/^([*#:;]+)(.*)$/)) {
-            const l_match = r!;
+            const l_match = assume(r);
             sh();
             const ipos = str_imatch(prev, l_match[1]);
             for (let prevPos = prev.length - 1; prevPos >= ipos; prevPos--) {
@@ -168,7 +169,7 @@ Insta.convert = (wiki: string | string[]): string => {
         }
     };
     const parse_table = () => {
-        endl(f("<table>", compareLineStringOrReg(/^\{\|( .*)$/) ? (r!)[1] : ""));
+        endl(f("<table>", compareLineStringOrReg(/^\{\|( .*)$/) ? assume(r)[1] : ""));
         while (remain()) {
             if (compareLineStringOrReg("|")) {
                 switch (charAtPoint(1)) {
@@ -377,8 +378,8 @@ Insta.convert = (wiki: string | string[]): string => {
             .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):[^|]*?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
             .replace(RegExp(`\\[\\[(?:${Insta.conf.locale.category}|${Insta.conf.wiki.interwiki}):.*?\\]\\]`, "gi"), "")
             .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):.*?)\\|([^\\]]+?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
-            .replace(/\[\[(\/[^|]*?)\]\]/g, ($0: string, $1: string) => f("<a href='?'>?</a>", Insta.conf.baseUrl + htmlescape_attr($1), htmlescape_text($1)))
-            .replace(/\[\[(\/.*?)\|(.+?)\]\]/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.baseUrl + htmlescape_attr($1), htmlescape_text($2)))
+            .replace(/\[\[(\/[^|]*?)\]\]/g, ($0: string, $1: string) => f("<a href='?'>?</a>", String(Insta.conf.baseUrl) + htmlescape_attr($1), htmlescape_text($1)))
+            .replace(/\[\[(\/.*?)\|(.+?)\]\]/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", String(Insta.conf.baseUrl) + htmlescape_attr($1), htmlescape_text($2)))
             .replace(/\[\[([^[|]*?)\]\](\w*)/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
             .replace(/\[\[([^[]*?)\|([^\]]+?)\]\](\w*)/g, ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
             .replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, ($0: string, $1: string | undefined, $2: string, $3: string | undefined) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1 ?? "") + htmlescape_attr($2) + htmlescape_attr($3 ?? ""), htmlescape_text($2)))

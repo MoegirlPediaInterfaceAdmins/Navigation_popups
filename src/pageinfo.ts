@@ -111,9 +111,9 @@ const formatAge = (age: Moment) => {
 const addunit = (num: number, str: string) => `${num} ${num !== 1 ? popupString(`${str}s`) : popupString(str)}`;
 const runPopupFilters = (list: PopupFilterFn[], data: string, download: Downloader) => {
     const ret: string[] = [];
-    for (let i = 0; i < list.length; ++i) {
-        if (list[i] && typeof list[i] === "function") {
-            const s = list[i](data, download, download.owner?.article);
+    for (const filter of list) {
+        if (filter && typeof filter === "function") {
+            const s = filter(data, download, download.owner?.article);
             if (s) {
                 ret.push(s);
             }
@@ -153,4 +153,4 @@ export const popupFilterDisambigDetect = (data: string, download: Downloader, ar
     }
     return isDisambig(data, article) ? popupString("disambig") : "";
 };
-const formatBytes = (num: number) => num > 949 ? Math.round(num / 100) / 10 + popupString("kB") : `${num}&nbsp;${popupString("bytes")}`;
+const formatBytes = (num: number) => num > 949 ? `${Math.round(num / 100) / 10}${popupString("kB")}` : `${num}&nbsp;${popupString("bytes")}`;

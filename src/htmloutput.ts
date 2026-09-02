@@ -4,7 +4,7 @@ import type { Navpopup } from "./navpopup.ts";
 import { checkPopupPosition } from "./mouseout.ts";
 import { getValueOf } from "./options.ts";
 import { Title, parseParams } from "./titles.ts";
-import { isString, simplePrintf } from "./tools.ts";
+import { assume, isString, simplePrintf } from "./tools.ts";
 export const setPopupHTML = (str: string | Node | null | undefined, elementId: string, _popupId?: number, onSuccess?: (() => void) | null, append?: boolean) => {
     let popupId = _popupId;
     if (typeof popupId === "undefined") {
@@ -44,12 +44,12 @@ export const fillEmptySpans = (args: FillEmptySpansArgs) => {
     if (typeof args !== "object" || typeof args.redir === "undefined" || !args.redir) {
         redir = false;
     }
-    const a = args.navpopup.parentAnchor!;
+    const a = assume(args.navpopup.parentAnchor);
     let article: Title, hint: string | null = null,
         oldid: string | null = null,
         params: Record<string, string | null> = {};
     if (redir && typeof args.redirTarget === typeof {}) {
-        article = args.redirTarget!;
+        article = assume(args.redirTarget);
     } else {
         article = new Title().fromAnchor(a);
         hint = a.originalTitle || article.hintValue();
@@ -140,14 +140,13 @@ export const popupHTML = (a: { navpopup?: Navpopup | null }): string => {
 };
 const makeEmptySpans = (list: unknown[], navpop: Navpopup): string => {
     let ret = "";
-    for (let i = 0; i < list.length; ++i) {
-        const item = list[i];
+    for (const item of list) {
         if (typeof item === typeof "") {
             ret += emptySpanHTML(item as string, navpop.idNumber, "div");
         } else if (typeof item === typeof [] && (item as unknown[]).length > 0) {
             ret = ret.parenSplit(RegExp("(</[^>]*?>$)")).join(makeEmptySpans(item as unknown[], navpop));
         } else if (typeof item === typeof {} && (item as { nodeType?: number }).nodeType) {
-            ret += emptySpanHTML((item as { name?: string }).name!, navpop.idNumber, (item as { nodeType?: number }).nodeType);
+            ret += emptySpanHTML(assume((item as { name?: string }).name), navpop.idNumber, (item as { nodeType?: number }).nodeType);
         }
     }
     return ret;

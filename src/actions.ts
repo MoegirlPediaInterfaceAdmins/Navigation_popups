@@ -75,7 +75,7 @@ const rmTocTooltips = () => {
         const tocLinks = toc.getElementsByTagName("A") as HTMLCollectionOf<HTMLAnchorElement>;
         const tocLen = tocLinks.length;
         for (let j = 0; j < tocLen; ++j) {
-            removeTooltip(tocLinks[j], true);
+            removeTooltip(tocLinks[j]);
         }
     }
 };
@@ -89,7 +89,7 @@ const addTooltip = (a: HTMLAnchorElement, popData?: { owner?: Navpopup } & Recor
     a.hasPopup = true;
     a.popData = popData;
 };
-const removeTooltip = (a: HTMLAnchorElement, _popData?: unknown) => {
+const removeTooltip = (a: HTMLAnchorElement) => {
     if (!a.hasPopup) {
         return;
     }
@@ -305,7 +305,7 @@ const nonsimplePopupContent = (a: HTMLAnchorElement, article: Title) => {
     if (referenceElement) {
         footnotePreview(referenceElement, navpop);
     } else if (diff) {
-        loadDiff(article, oldid, diff, navpop);
+        void loadDiff(article, oldid, diff, navpop);
     } else if (history) {
         loadAPIPreview("history", article, navpop);
     } else if (shouldShowNonSimple(a) && (pg.re.contribs as RegExp).test(a.href)) {
