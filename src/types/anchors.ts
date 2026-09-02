@@ -6,7 +6,7 @@ declare global {
         navpopup?: Navpopup | null;
         // ad-hoc markers the gadget sets on tooltip anchors
         originalTitle?: string | null;
-        popData?: ({ owner?: Navpopup } & Record<string, unknown>) | null;
+        popData?: { owner?: Navpopup } & Record<string, unknown> | null;
         inNopopupSpan?: boolean;
         simpleNoMore?: boolean;
         hasPopup?: boolean;
