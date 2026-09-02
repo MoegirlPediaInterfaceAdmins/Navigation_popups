@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-deprecated -- the shortcut-keys feature is built on the
+   legacy keypress/keyCode/window.event API by design */
 import { killPopup } from "./actions.ts";
 import { pg } from "./globals.ts";
 import { getValueOf } from "./options.ts";
@@ -35,7 +37,7 @@ const popupHandleKeypress: PopupHandleKeypress = (evt) => {
         }
     }
     if (document.oldPopupOnkeypress) {
-        return document.oldPopupOnkeypress(evt);
+        return document.oldPopupOnkeypress(evt) as boolean | undefined;
     }
     return true;
 };
@@ -67,9 +69,9 @@ export const addPopupShortcut = (html: string | null, _key?: string | null) => {
     if (!html || !getValueOf("popupShortcutKeys")) {
         return html;
     }
-    const ret = addLinkProperty(html, `popupkey="${key}"`);
+    const ret = addLinkProperty(html, `popupkey="${String(key)}"`);
     if (key === " ") {
         key = popupString("spacebar");
     }
-    return ret.replace(/^(.*?)(title=")(.*?)(".*)$/i, `$1$2$3 [${key}]$4`);
+    return ret.replace(/^(.*?)(title=")(.*?)(".*)$/i, `$1$2$3 [${String(key)}]$4`);
 };

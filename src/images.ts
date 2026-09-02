@@ -21,7 +21,7 @@ export const loadImage = (image: Title, navpop: Navpopup) => {
     }
     const art = image.urlString();
     let url = `${pg.wiki.apiwikibase}?format=json&formatversion=2&action=query`;
-    url += `&prop=imageinfo&iiprop=url|mime&iiurlwidth=${getValueOf("popupImageSizeLarge")}`;
+    url += `&prop=imageinfo&iiprop=url|mime&iiurlwidth=${getValueOf("popupImageSizeLarge") as string}`;
     url += `&titles=${art}`;
     pendingNavpopTask(navpop);
     const callback = (d: Downloader) => {
@@ -54,7 +54,7 @@ const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: D
         log("popupsInsertImage failed :(");
         return;
     }
-    const popupImage = document.getElementById(`popupImg${id}`) as HTMLImageElement | null;
+    const popupImage = document.getElementById(`popupImg${String(id)}`) as HTMLImageElement | null;
     if (!popupImage) {
         log("could not find insertion point for image");
         return;
@@ -69,7 +69,7 @@ const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: D
     } else {
         log("fullsize imagethumb, but not sure if it's an image");
     }
-    const a = document.getElementById(`popupImageLink${id}`) as HTMLAnchorElement | null;
+    const a = document.getElementById(`popupImageLink${String(id)}`) as HTMLAnchorElement | null;
     if (a === null) {
         return null;
     }
@@ -77,7 +77,7 @@ const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: D
         case "imagepage": {
             if (pg.current.article && pg.current.article.namespaceId() !== pg.nsImageId) {
                 a.href = imageinfo.descriptionurl;
-                popTipsSoonFn(`popupImage${id}`)();
+                popTipsSoonFn(`popupImage${String(id)}`)();
                 break;
             }
             a.onclick = toggleSize;

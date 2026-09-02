@@ -449,7 +449,7 @@ class NavlinkTag implements LinkSpec {
                 break;
             case "oldEdit":
                 this.print = titledDiffLink;
-                this.title = `${popupString("Show the edit made to get revision")} ${this.oldid}`;
+                this.title = `${popupString("Show the edit made to get revision")} ${String(this.oldid)}`;
                 this.from = "prev";
                 this.to = this.oldid;
                 break;

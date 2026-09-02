@@ -2,7 +2,7 @@ import type { Downloader } from "./downloader.ts";
 import { fakeDownload, startDownload } from "./downloader.ts";
 import type { Navpopup } from "./navpopup.ts";
 import { log, pg } from "./globals.ts";
-export const getPageWithCaching = (url: string, onComplete: (d: Downloader) => void, owner: Navpopup) => {
+export const getPageWithCaching = (url: string, onComplete: (d: Downloader) => void | Promise<void>, owner: Navpopup) => {
     log(`getPageWithCaching, url=${url}`);
     const i = findInPageCache(url);
     let d;
@@ -17,12 +17,12 @@ export const getPageWithCaching = (url: string, onComplete: (d: Downloader) => v
         }
     }
 };
-const getPage = (url: string, onComplete: (d: Downloader) => void, owner: Navpopup) => {
+const getPage = (url: string, onComplete: (d: Downloader) => void | Promise<void>, owner: Navpopup) => {
     log("getPage");
     const callback = (d: Downloader) => {
         if (!d.aborted) {
             addPageToCache(d);
-            onComplete(d);
+            void onComplete(d);
         }
     };
     return startDownload(url, owner.idNumber, callback);

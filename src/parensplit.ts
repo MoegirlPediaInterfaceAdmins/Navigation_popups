@@ -1,6 +1,6 @@
 import { nonGlobalRegex } from "./tools.ts";
 type ParenSplit = ((this: string, re: RegExp | string) => string[]) & { isNative?: boolean };
-if (`${"abc".split(/(b)/)}` !== "a,b,c") {
+if (String("abc".split(/(b)/)) !== "a,b,c") {
     String.prototype.parenSplit = function (this: string, _re: RegExp | string) {
         const re = nonGlobalRegex(_re as RegExp);
         let s = this.toString();

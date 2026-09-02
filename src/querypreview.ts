@@ -68,7 +68,7 @@ export const loadAPIPreview = (queryType: string, article: Title, navpop: Navpop
     let usernameart;
     switch (queryType) {
         case "history":
-            url += `titles=${art}&prop=revisions&rvlimit=${getValueOf("popupHistoryPreviewLimit")}`;
+            url += `titles=${art}&prop=revisions&rvlimit=${getValueOf("popupHistoryPreviewLimit") as string}`;
             htmlGenerator = APIhistoryPreviewHTML;
             break;
         case "category":
@@ -88,7 +88,7 @@ export const loadAPIPreview = (queryType: string, article: Title, navpop: Navpop
         }
         case "contribs":
             usernameart = encodeURIComponent(String(new Title(article).userName()));
-            url += `list=usercontribs&ucuser=${usernameart}&uclimit=${getValueOf("popupContribsPreviewLimit")}`;
+            url += `list=usercontribs&ucuser=${usernameart}&uclimit=${getValueOf("popupContribsPreviewLimit") as string}`;
             htmlGenerator = APIcontribsPreviewHTML;
             break;
         case "imagepagepreview": {
@@ -157,14 +157,14 @@ const getTimeOffset = () => {
 };
 const getTimeZone = () => {
     if (!pg.user.timeZone) {
-        const tz = mw.user.options.get("timecorrection");
+        const tz = mw.user.options.get("timecorrection") as string | null;
         pg.user.timeZone = "UTC";
         if (tz) {
             const tzComponents = tz.split("|");
             if (tzComponents.length === 3 && tzComponents[0] === "ZoneInfo") {
                 pg.user.timeZone = tzComponents[2];
             } else {
-                errlog(`Unexpected timezone information: ${tz}`);
+                errlog(`Unexpected timezone information: ${String(tz)}`);
             }
         }
     }
@@ -174,7 +174,7 @@ const useTimeOffset = () => {
     if (typeof (Intl.DateTimeFormat.prototype as unknown as Record<string, unknown>).formatToParts === "undefined") {
         return true;
     }
-    const tz = mw.user.options.get("timecorrection");
+    const tz = mw.user.options.get("timecorrection") as string | null;
     if (tz?.indexOf("ZoneInfo|") === -1) {
         return true;
     }
@@ -184,7 +184,7 @@ const getLocales = () => {
     if (!pg.user.locales) {
         let userLanguage: string | null = document.querySelector("html")?.getAttribute("lang") ?? null;
         if (getValueOf("popupLocale")) {
-            userLanguage = String(getValueOf("popupLocale"));
+            userLanguage = getValueOf("popupLocale") as string;
         } else if (userLanguage === "en") {
             if (getMWDateFormat() === "mdy") {
                 userLanguage = "en-US";
@@ -206,7 +206,7 @@ const editPreviewTable = (article: Title, h: RevisionRow[], reallyContribs?: boo
     if (reallyContribs) {
         makeFirstColumnLinks = (currentRevision) => {
             let result = "(";
-            result += `<a href="${pg.wiki.titlebase}${new Title(currentRevision.title ?? "").urlString()}&diff=prev&oldid=${currentRevision.revid}">${popupString("diff")}</a>`;
+            result += `<a href="${pg.wiki.titlebase}${new Title(currentRevision.title ?? "").urlString()}&diff=prev&oldid=${String(currentRevision.revid)}">${popupString("diff")}</a>`;
             result += "&nbsp;|&nbsp;";
             result += `<a href="${pg.wiki.titlebase}${new Title(currentRevision.title ?? "").urlString()}&action=history">${popupString("hist")}</a>`;
             result += ")";
@@ -216,9 +216,9 @@ const editPreviewTable = (article: Title, h: RevisionRow[], reallyContribs?: boo
         const firstRevid = h[0].revid;
         makeFirstColumnLinks = (currentRevision) => {
             let result = "(";
-            result += `<a href="${pg.wiki.titlebase}${new Title(curart).urlString()}&diff=${firstRevid}&oldid=${currentRevision.revid}">${popupString("cur")}</a>`;
+            result += `<a href="${pg.wiki.titlebase}${new Title(curart).urlString()}&diff=${String(firstRevid)}&oldid=${String(currentRevision.revid)}">${popupString("cur")}</a>`;
             result += "&nbsp;|&nbsp;";
-            result += `<a href="${pg.wiki.titlebase}${new Title(curart).urlString()}&diff=prev&oldid=${currentRevision.revid}">${popupString("last")}</a>`;
+            result += `<a href="${pg.wiki.titlebase}${new Title(curart).urlString()}&diff=prev&oldid=${String(currentRevision.revid)}">${popupString("last")}</a>`;
             result += ")";
             return result;
         };
@@ -242,7 +242,7 @@ const editPreviewTable = (article: Title, h: RevisionRow[], reallyContribs?: boo
         }
         html.push(`<tr class="popup_history_row_${i % 2 ? "odd" : "even"}">`);
         html.push(`<td>${makeFirstColumnLinks(h[i])}</td>`);
-        html.push(`<td><a href="${pg.wiki.titlebase}${new Title(curart).urlString()}&oldid=${h[i].revid}">${thisTime}</a></td>`);
+        html.push(`<td><a href="${pg.wiki.titlebase}${new Title(curart).urlString()}&oldid=${String(h[i].revid)}">${thisTime}</a></td>`);
         let col3url: string,
             col3txt: string;
         if (!reallyContribs) {
@@ -255,7 +255,7 @@ const editPreviewTable = (article: Title, h: RevisionRow[], reallyContribs?: boo
                 }
                 col3txt = pg.escapeQuotesHTML?.(user ?? "") ?? "";
             } else {
-                col3url = String(getValueOf("popupRevDelUrl"));
+                col3url = getValueOf("popupRevDelUrl") as string;
                 col3txt = pg.escapeQuotesHTML?.(popupString("revdel")) ?? "";
             }
         } else {
@@ -290,7 +290,7 @@ export const formattedDateTime = (date: Date) => {
     }
     if (getMWDateFormat() === "ISO 8601") {
         const d2 = convertTimeZone(date, getTimeZone());
-        return `${map(zeroFill, [d2.getFullYear(), d2.getMonth() + 1, d2.getDate()]).join("-")}T${map(zeroFill, [d2.getHours(), d2.getMinutes(), d2.getSeconds()]).join(":")}`;
+        return `${(map(zeroFill, [d2.getFullYear(), d2.getMonth() + 1, d2.getDate()]) as string[]).join("-")}T${(map(zeroFill, [d2.getHours(), d2.getMinutes(), d2.getSeconds()]) as string[]).join(":")}`;
     }
     const options = getValueOf("popupDateTimeFormatterOptions") as Intl.DateTimeFormatOptions;
     options.timeZone = getTimeZone();
@@ -299,11 +299,11 @@ export const formattedDateTime = (date: Date) => {
 const formattedDate = (date: Date) => {
     if (useTimeOffset()) {
         const d2 = adjustDate(date, getTimeOffset());
-        return map(zeroFill, [d2.getUTCFullYear(), d2.getUTCMonth() + 1, d2.getUTCDate()]).join("-");
+        return (map(zeroFill, [d2.getUTCFullYear(), d2.getUTCMonth() + 1, d2.getUTCDate()]) as string[]).join("-");
     }
     if (getMWDateFormat() === "ISO 8601") {
         const d2 = convertTimeZone(date, getTimeZone());
-        return map(zeroFill, [d2.getFullYear(), d2.getMonth() + 1, d2.getDate()]).join("-");
+        return (map(zeroFill, [d2.getFullYear(), d2.getMonth() + 1, d2.getDate()]) as string[]).join("-");
     }
     const options = getValueOf("popupDateFormatterOptions") as Intl.DateTimeFormatOptions;
     options.timeZone = getTimeZone();
@@ -312,11 +312,11 @@ const formattedDate = (date: Date) => {
 const formattedTime = (date: Date) => {
     if (useTimeOffset()) {
         const d2 = adjustDate(date, getTimeOffset());
-        return map(zeroFill, [d2.getUTCHours(), d2.getUTCMinutes(), d2.getUTCSeconds()]).join(":");
+        return (map(zeroFill, [d2.getUTCHours(), d2.getUTCMinutes(), d2.getUTCSeconds()]) as string[]).join(":");
     }
     if (getMWDateFormat() === "ISO 8601") {
         const d2 = convertTimeZone(date, getTimeZone());
-        return map(zeroFill, [d2.getHours(), d2.getMinutes(), d2.getSeconds()]).join(":");
+        return (map(zeroFill, [d2.getHours(), d2.getMinutes(), d2.getSeconds()]) as string[]).join(":");
     }
     const options = getValueOf("popupTimeFormatterOptions") as Intl.DateTimeFormatOptions;
     options.timeZone = getTimeZone();
@@ -455,7 +455,7 @@ const APIimagepagePreviewHTML = (article: Title, download: Downloader, navpop: N
         if (page?.imagerepository === "shared") {
             const art = new Title(article);
             const encart = encodeURIComponent(`File:${art.stripNamespace()}`);
-            const shared_url = `${pg.wiki.apicommonsbase}?format=json&formatversion=2&callback=pg.fn.APIsharedImagePagePreviewHTML&requestid=${navpop.idNumber}&action=query&prop=revisions&rvslots=main&rvprop=content&titles=${encart}`;
+            const shared_url = `${pg.wiki.apicommonsbase}?format=json&formatversion=2&callback=pg.fn.APIsharedImagePagePreviewHTML&requestid=${String(navpop.idNumber)}&action=query&prop=revisions&rvslots=main&rvprop=content&titles=${encart}`;
             ret = `${ret}<hr />${popupString("Image from Commons")}: <a href="${pg.wiki.commonsbase}?title=${encart}">${popupString("Description page")}</a>`;
             mw.loader.load(shared_url);
         }
@@ -581,7 +581,7 @@ const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string =>
             ret.push(gug.join(popupString("separator")));
         }
         if (user.registration) {
-            ret.push(pg.escapeQuotesHTML?.((user.editcount ? user.editcount : "0") + popupString(" edits since: ") + (user.registration ? formattedDate(new Date(user.registration)) : "")) ?? "");
+            ret.push(pg.escapeQuotesHTML?.(`${user.editcount ? user.editcount : "0"}${popupString(" edits since: ")}${user.registration ? formattedDate(new Date(user.registration)) : ""}`) ?? "");
         }
     }
     if (queryobj.query?.usercontribs?.length) {

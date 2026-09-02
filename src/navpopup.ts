@@ -57,7 +57,7 @@ export class Navpopup {
         return this.visible;
     }
     reposition(x?: number | null, y?: number | null, noLimitHor?: boolean) {
-        log(`reposition(${x},${y},${noLimitHor})`);
+        log(`reposition(${String(x)},${String(y)},${String(noLimitHor)})`);
         if (typeof x !== "undefined" && x !== null) {
             this.left = x;
         }
@@ -82,14 +82,14 @@ export class Navpopup {
         const cWidth = document.body.clientWidth;
         if (x + w >= cWidth || x > 0 && this.maxWidth && this.width < this.maxWidth && this.height > this.width && x > cWidth - (this.maxWidth ?? Number.NaN)) {
             this.mainDiv.style.left = "-10000px";
-            this.mainDiv.style.width = `${this.maxWidth}px`;
+            this.mainDiv.style.width = `${String(this.maxWidth)}px`;
             const naturalWidth = parseInt(String(this.mainDiv.offsetWidth), 10);
             let newLeft = cWidth - naturalWidth - 1;
             if (newLeft < 0) {
                 newLeft = 0;
                 this.tooWide = true;
             }
-            log(`limitHorizontalPosition: moving to (${newLeft},${this.top}); naturalWidth=${naturalWidth}, clientWidth=${cWidth}`);
+            log(`limitHorizontalPosition: moving to (${newLeft},${String(this.top)}); naturalWidth=${naturalWidth}, clientWidth=${cWidth}`);
             this.reposition(newLeft, null, true);
         }
     }

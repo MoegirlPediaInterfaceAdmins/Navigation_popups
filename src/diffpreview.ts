@@ -80,7 +80,7 @@ export const loadDiff = async (article: Title, oldid: string | number | null, di
     const go = () => {
         pendingNavpopTask(navpop);
         let url = `${pg.wiki.apiwikibase}?format=json&formatversion=2&action=query&`;
-        url += `revids=${navpop.diffData?.oldRev.revid}|${navpop.diffData?.newRev.revid}`;
+        url += `revids=${String(navpop.diffData?.oldRev.revid)}|${String(navpop.diffData?.newRev.revid)}`;
         url += "&prop=revisions&rvslots=main&rvprop=ids|timestamp|content";
         getPageWithCaching(url, doneDiff, navpop);
         return true;
@@ -278,7 +278,7 @@ const insertDiff = (navpop: Navpopup) => {
         html += diffDatesTable(navpop);
         html += "<hr />";
     }
-    html += shortenDiffString(diffString(oldlines2.join("\n"), newlines2.join("\n"), simpleSplit), Number(getValueOf("popupDiffContextCharacters"))).join("<hr />");
+    html += shortenDiffString(diffString((oldlines2 as string[]).join("\n"), (newlines2 as string[]).join("\n"), simpleSplit), Number(getValueOf("popupDiffContextCharacters"))).join("<hr />");
     setPopupTipsAndHTML(html.split("\n").join("<br>") + (truncated ? `<hr /><b>${popupString("Diff truncated for performance reasons")}</b>` : ""), "popupPreview", navpop.idNumber);
 };
 const diffDatesTable = (navpop: Navpopup) => {
@@ -296,7 +296,7 @@ const diffDatesTableRow = (revision: RevisionData, label: string) => {
     const lastModifiedDate = new Date(revision.timestamp ?? "");
     const txt = formattedDateTime(lastModifiedDate);
     const revlink = generalLink({
-        url: `${mw.config.get("wgScript")}?oldid=${revision.revid}`,
+        url: `${mw.config.get("wgScript")}?oldid=${String(revision.revid)}`,
         text: label,
         title: label,
     });
@@ -313,7 +313,7 @@ export interface DiffLinkSpec {
 }
 export const titledDiffLink = (l: DiffLinkSpec) => titledWikiLink({
     article: l.article,
-    action: `${l.to}&oldid=${l.from}`,
+    action: `${String(l.to)}&oldid=${String(l.from)}`,
     newWin: l.newWin,
     noPopup: l.noPopup,
     text: l.text,

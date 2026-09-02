@@ -52,7 +52,7 @@ export const wikiLink = (l: LinkSpec): string | null => {
     if (!/^(edit|view|revert|render)$|^raw/.test(assume(l.action))) {
         l.oldid = null;
     }
-    let hint = popupString(`${l.action}Hint`);
+    let hint = popupString(`${String(l.action)}Hint`);
     const oldidData = [l.oldid, safeDecodeURI(l.article)];
     let revisionString = tprintf("revision %s of %s", oldidData);
     log(`revisionString=${revisionString}`);
@@ -94,7 +94,7 @@ export const wikiLink = (l: LinkSpec): string | null => {
             l.action = "history&feed=rss";
             break;
         case "markpatrolled":
-            l.action = `markpatrolled&rcid=${l.rcid}`;
+            l.action = `markpatrolled&rcid=${String(l.rcid)}`;
     }
     if (hint) {
         if (l.oldid) {
@@ -103,7 +103,7 @@ export const wikiLink = (l: LinkSpec): string | null => {
             hint = simplePrintf(hint, [safeDecodeURI(l.article)]);
         }
     } else {
-        hint = String(safeDecodeURI(`${l.article}&action=${l.action}`)) + String(l.oldid) ? `&oldid=${l.oldid}` : "";
+        hint = String(safeDecodeURI(`${String(l.article)}&action=${String(l.action)}`)) + String(l.oldid) ? `&oldid=${String(l.oldid)}` : "";
     }
     return titledWikiLink({
         article: l.article,
@@ -123,7 +123,7 @@ const revertSummary = (oldid: string | null, diff: string | null | undefined) =>
     } else {
         ret = getValueOf("popupQueriedRevertSummary");
     }
-    return `${ret}&autorv=${oldid}`;
+    return `${ret as string}&autorv=${String(oldid)}`;
 };
 export const titledWikiLink = (l: LinkSpec): string | null => {
     if (typeof l.article === "undefined" || typeof l.action === "undefined") {
@@ -190,7 +190,7 @@ const processLastContribInfo = (info: HistoryInfo, stuff: { page: string; newWin
         alert(tprintf("Only found one editor: %s made %s edits", [info.edits[0].editor, info.edits.length]));
         return;
     }
-    const newUrl = `${pg.wiki.titlebase + new Title(stuff.page).urlString()}&diff=cur&oldid=${info.firstNewEditor.oldid}`;
+    const newUrl = `${pg.wiki.titlebase + new Title(stuff.page).urlString()}&diff=cur&oldid=${String(info.firstNewEditor.oldid)}`;
     displayUrl(newUrl, stuff.newWin);
 };
 pg.fn.getDiffSinceMyEdit = (wikipage: string, newWin: boolean): void => {
@@ -215,7 +215,7 @@ const processDiffSinceMyEdit = (info: HistoryInfo, stuff: { page: string; newWin
         alert(tprintf("%s seems to be the last editor to the page %s", [info.userName, friendlyName]));
         return;
     }
-    const newUrl = `${pg.wiki.titlebase + new Title(stuff.page).urlString()}&diff=cur&oldid=${info.myLastEdit.oldid}`;
+    const newUrl = `${pg.wiki.titlebase + new Title(stuff.page).urlString()}&diff=cur&oldid=${String(info.myLastEdit.oldid)}`;
     displayUrl(newUrl, stuff.newWin);
 };
 const displayUrl = (url: string, newWin?: boolean | null) => {
@@ -367,7 +367,7 @@ export const specialLink = (l: LinkSpec): string | null => {
     if (hint) {
         hint = simplePrintf(hint, [safeDecodeURI(l.article)]);
     } else {
-        hint = safeDecodeURI(`${l.specialpage}:${l.article}`) as string;
+        hint = safeDecodeURI(`${l.specialpage}:${String(l.article)}`) as string;
     }
     const url = base + l.sep + article;
     return generalNavLink({
@@ -482,14 +482,14 @@ export const redirLink = (redirMatch: string | Title, article: Title): string =>
         ret += "<hr />";
         if (getValueOf("popupFixRedirs")) {
             ret += popupString("Redirects to: (Fix ");
-            log(`redirLink: newTarget=${redirMatch}`);
+            log(`redirLink: newTarget=${String(redirMatch)}`);
             ret += String(addPopupShortcut(changeLinkTargetLink({
                 newTarget: redirMatch as string,
                 text: popupString("target"),
                 hint: popupString("Fix this redirect, changing just the link target"),
-                summary: simplePrintf(String(getValueOf("popupFixRedirsSummary")), [article.toString(), redirMatch]),
+                summary: simplePrintf((getValueOf("popupFixRedirsSummary") as string), [article.toString(), redirMatch]),
                 oldTarget: article.toString(),
-                clickButton: String(getValueOf("popupRedirAutoClick")),
+                clickButton: (getValueOf("popupRedirAutoClick") as string),
                 minor: true,
                 watch: getValueOf("popupWatchRedirredPages") as boolean | null,
             }), "R"));
@@ -498,9 +498,9 @@ export const redirLink = (redirMatch: string | Title, article: Title): string =>
                 newTarget: redirMatch as string,
                 text: popupString("target & label"),
                 hint: popupString("Fix this redirect, changing the link target and label"),
-                summary: simplePrintf(String(getValueOf("popupFixRedirsSummary")), [article.toString(), redirMatch]),
+                summary: simplePrintf((getValueOf("popupFixRedirsSummary") as string), [article.toString(), redirMatch]),
                 oldTarget: article.toString(),
-                clickButton: String(getValueOf("popupRedirAutoClick")),
+                clickButton: (getValueOf("popupRedirAutoClick") as string),
                 minor: true,
                 watch: getValueOf("popupWatchRedirredPages") as boolean | null,
                 alsoChangeLabel: true,
@@ -511,12 +511,12 @@ export const redirLink = (redirMatch: string | Title, article: Title): string =>
         }
         return ret;
     }
-    return `<br> ${popupString("Redirects")}${popupString(" to ")}${titledWikiLink({
+    return `<br> ${popupString("Redirects")}${popupString(" to ")}${String(titledWikiLink({
         article: new Title().fromWikiText(redirMatch),
         action: "view",
         text: safeDecodeURI(redirMatch) as string,
         title: popupString("Bypass redirect"),
-    })}`;
+    }))}`;
 };
 export const arinLink = (l: LinkSpec): string | null => {
     if (!saneLinkCheck(l)) {
@@ -560,7 +560,7 @@ export const editCounterLink = (l: LinkSpec): string | null => {
     const defaultToolUrl = `https://xtools.wmflabs.org/ec?user=$1&project=$2.$3&uselang=${mw.config.get("wgUserLanguage")}`;
     switch (tool) {
         case "custom":
-            url = simplePrintf(String(getValueOf("popupEditCounterUrl")), [encodeURIComponent(String(uN)), toolDbName()]);
+            url = simplePrintf((getValueOf("popupEditCounterUrl") as string), [encodeURIComponent(String(uN)), toolDbName()]);
             break;
         case "soxred":
         case "kate":
@@ -639,7 +639,7 @@ const getHistoryInfo = (wikipage: string, whatNext?: (x: HistoryInfo) => void) =
 };
 const getHistory = (wikipage: string, onComplete: (d: Downloader) => void): Downloader | string => {
     log("getHistory");
-    const url = `${pg.wiki.apiwikibase}?format=json&formatversion=2&action=query&prop=revisions&titles=${new Title(wikipage).urlString()}&rvlimit=${getValueOf("popupHistoryLimit")}`;
+    const url = `${pg.wiki.apiwikibase}?format=json&formatversion=2&action=query&prop=revisions&titles=${new Title(wikipage).urlString()}&rvlimit=${getValueOf("popupHistoryLimit") as string}`;
     log(`getHistory: url=${url}`);
     return startDownload(url, `${pg.idNumber}history`, onComplete);
 };

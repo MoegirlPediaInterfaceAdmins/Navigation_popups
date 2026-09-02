@@ -105,6 +105,7 @@ const newDownload = (url: string, id: number | string | ((d: Downloader) => void
                 if (d.getStatus() === 200) {
                     d.data = d.getData() ?? undefined;
                     d.lastModified = d.getLastModifiedDate();
+                    // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
                     callback?.(d);
                 } else if (typeof onfailure === "number") {
                     if (onfailure > 0) {
@@ -128,9 +129,15 @@ export const fakeDownload = (url: string, id: number | undefined, callback: (d: 
     d.id = id ?? null;
     d.data = data ?? undefined;
     d.lastModified = lastModified ?? null;
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
     callback(d);
 };
-export const startDownload = (url: string, id: number | string | null | undefined, callback: (d: Downloader) => void): Downloader | string => {
+export const startDownload = (
+    url: string,
+    id: number | string | null | undefined,
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
+    callback: (d: Downloader) => void,
+): Downloader | string => {
     const d = newDownload(url, id, callback);
     if (typeof d === "string") {
         return d;

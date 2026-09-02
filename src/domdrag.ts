@@ -25,6 +25,7 @@ export class Drag {
     fixE = (_e?: MouseEvent) => {
         let e = _e;
         if (typeof e === "undefined") {
+            // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
             e = window.event as MouseEvent | undefined;
         }
         if (!e) {
@@ -83,7 +84,7 @@ export class Drag {
         document.onmousemove = (e) => {
             this.drag.bind(this)(e);
         };
-        document.onmouseup = (e) => {
+        document.onmouseup = () => {
             this.end.bind(this)();
         };
         return false;
@@ -135,7 +136,7 @@ pg.structures.original.popupTopLinks = (x) => {
     return "";
 };
 pg.structures.original.popupImage = (x) => {
-    log(`original.popupImage, x.article=${x.article}, x.navpop?.idNumber=${x.navpop?.idNumber}`);
+    log(`original.popupImage, x.article=${String(x.article)}, x.navpop?.idNumber=${String(x.navpop?.idNumber)}`);
     return imageHTML(x.article, x.navpop?.idNumber);
 };
 pg.structures.original.popupRedirTitle = pg.structures.original.popupTitle;
