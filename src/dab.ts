@@ -12,7 +12,7 @@ import { simplePrintf } from "./tools.ts";
             newTarget: newTarget,
             text: newTarget.split(" ").join("&nbsp;"),
             hint: tprintf("disambigHint", [newTarget]),
-            summary: simplePrintf(getValueOf("popupFixDabsSummary"), [friendlyCurrentArticleName, newTarget]),
+            summary: simplePrintf(String(getValueOf("popupFixDabsSummary")), [friendlyCurrentArticleName, newTarget]),
             clickButton: getValueOf("popupDabsAutoClick"),
             minor: true,
             oldTarget: oldTarget,
@@ -49,7 +49,7 @@ import { simplePrintf } from "./tools.ts";
             hint: popupString("remove all links to this disambig page from this article"),
             clickButton: getValueOf("popupDabsAutoClick"),
             oldTarget: oldTarget,
-            summary: simplePrintf(getValueOf("popupRmDabLinkSummary"), [friendlyCurrentArticleName]),
+            summary: simplePrintf(String(getValueOf("popupRmDabLinkSummary")), [friendlyCurrentArticleName]),
             watch: getValueOf("popupWatchDisambiggedPages"),
             title: titleToEdit,
         }));
@@ -76,7 +76,7 @@ import { simplePrintf } from "./tools.ts";
         return html;
     };
     export const makeFixDabs = (wikiText: string, navpop: Navpopup) => {
-        if (getValueOf("popupFixDabs") && isDisambig(wikiText, navpop.article) && Title.fromURL(location.href).namespaceId() !== pg.nsSpecialId && (navpop.article as Title).talkPage()) {
+        if (getValueOf("popupFixDabs") && navpop.article && isDisambig(wikiText, navpop.article) && Title.fromURL(location.href).namespaceId() !== pg.nsSpecialId && navpop.article.talkPage()) {
             setPopupHTML(makeFixDab(wikiText, navpop), "popupFixDab", navpop.idNumber);
         }
     };
@@ -86,5 +86,5 @@ import { simplePrintf } from "./tools.ts";
         hint: popupString("remove all links to this page from this article"),
         clickButton: getValueOf("popupRedlinkAutoClick"),
         oldTarget: String(article),
-        summary: simplePrintf(getValueOf("popupRedlinkSummary"), [String(article)]),
+        summary: simplePrintf(String(getValueOf("popupRedlinkSummary")), [String(article)]),
     });

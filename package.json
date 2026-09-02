@@ -25,6 +25,7 @@
     },
     "devDependencies": {
         "@types/jquery": "^4.0.1",
+        "moment": "^2.30.1",
         "rollup": "^4.63.1",
         "rollup-plugin-esbuild": "^6.2.1",
         "types-mediawiki": "^2.1.0"

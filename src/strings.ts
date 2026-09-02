@@ -232,7 +232,7 @@ import { simplePrintf } from "./tools.ts";
         }
         return str;
     };
-    export const tprintf = (str: string, _subs: unknown) => {
+    export const tprintf = (str: string, _subs?: unknown) => {
         let subs = _subs;
         if (!Array.isArray(subs)) {
             subs = [subs];

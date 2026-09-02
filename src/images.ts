@@ -1,4 +1,7 @@
 import { pendingNavpopTask } from "./actions.ts";
+    import type { Downloader } from "./downloader.ts";
+    import type { Navpopup } from "./navpopup.ts";
+    import type { Title } from "./titles.ts";
 import { getPageWithCaching } from "./getpage.ts";
 import { log, pg } from "./globals.ts";
 import { popTipsSoonFn } from "./htmloutput.ts";
@@ -6,7 +9,7 @@ import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
 import { isValidImageName } from "./titles.ts";
 import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
-    export const loadImage = (image, navpop) => {
+    export const loadImage = (image: Title, navpop: Navpopup) => {
         if (typeof image.stripNamespace !== "function") {
             alert("loadImages bad");
         }
@@ -21,7 +24,7 @@ import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
         url += `&prop=imageinfo&iiprop=url|mime&iiurlwidth=${getValueOf("popupImageSizeLarge")}`;
         url += `&titles=${art}`;
         pendingNavpopTask(navpop);
-        const callback = (d) => {
+        const callback = (d: Downloader) => {
             popupsInsertImage(navpop.idNumber, navpop, d);
         };
         const go = () => {
@@ -34,12 +37,15 @@ import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
             navpop.addHook(go, "unhide", "after", "DOWNLOAD_IMAGE_QUERY_DATA");
         }
     };
-    const popupsInsertImage = (id, navpop, download) => {
+    const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: Downloader) => {
         log("popupsInsertImage");
-        let imageinfo;
+        let imageinfo: { thumburl?: string; url: string; mime: string; descriptionurl: string };
         try {
-            const jsObj = getJsObj(download.data);
-            const imagepage = anyChild(jsObj.query.pages);
+            interface ImageQuery {
+                query: { pages: Record<string, { imageinfo?: { thumburl?: string; url: string; mime: string; descriptionurl: string }[] }> };
+            }
+            const jsObj = getJsObj<ImageQuery>(download.data ?? "") as ImageQuery;
+            const imagepage = anyChild(jsObj.query.pages) as NonNullable<ReturnType<typeof anyChild<{ imageinfo?: { thumburl?: string; url: string; mime: string; descriptionurl: string }[] }>>>;
             if (typeof imagepage.imageinfo === "undefined") {
                 return;
             }
@@ -48,12 +54,12 @@ import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
             log("popupsInsertImage failed :(");
             return;
         }
-        const popupImage = document.getElementById(`popupImg${id}`);
+        const popupImage = document.getElementById(`popupImg${id}`) as HTMLImageElement | null;
         if (!popupImage) {
             log("could not find insertion point for image");
             return;
         }
-        popupImage.width = getValueOf("popupImageSize");
+        popupImage.width = Number(getValueOf("popupImageSize"));
         popupImage.style.display = "inline";
         if (imageinfo.thumburl) {
             popupImage.src = imageinfo.thumburl;
@@ -63,18 +69,20 @@ import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
         } else {
             log("fullsize imagethumb, but not sure if it's an image");
         }
-        const a = document.getElementById(`popupImageLink${id}`);
+        const a = document.getElementById(`popupImageLink${id}`) as HTMLAnchorElement | null;
         if (a === null) {
             return null;
         }
         switch (getValueOf("popupThumbAction")) {
             case "imagepage": {
-                if (pg.current.article.namespaceId() !== pg.nsImageId) {
+                if (pg.current.article && pg.current.article.namespaceId() !== pg.nsImageId) {
                     a.href = imageinfo.descriptionurl;
                     popTipsSoonFn(`popupImage${id}`)();
                     break;
                 }
-                // falls through
+                a.onclick = toggleSize;
+                a.title = popupString("Toggle image size");
+                return;
             }
             case "sizetoggle":
                 a.onclick = toggleSize;
@@ -86,13 +94,13 @@ import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
                 return;
         }
     };
-    function toggleSize() {
-        const imgContainer = this;
+    function toggleSize(this: GlobalEventHandlers) {
+        const imgContainer = this as HTMLElement;
         if (!imgContainer) {
             alert("imgContainer is null :/");
             return;
         }
-        const img = imgContainer.firstChild;
+        const img = imgContainer.firstChild as HTMLElement | null;
         if (!img) {
             alert("img is null :/");
             return;
@@ -103,25 +111,25 @@ import { anyChild, getJsObj, upcaseFirst } from "./tools.ts";
             img.style.width = "";
         }
     }
-    export const getValidImageFromWikiText = (wikiText) => {
+    export const getValidImageFromWikiText = (wikiText: string) => {
         let matched = null;
         const t = removeMatchesUnless(wikiText, /(<!--[\s\S]*?-->)/, 1, /^<!--[^[]*popup/i);
-        let match = pg.re.image.exec(t);
+        let match = (pg.re.image as RegExp).exec(t);
         while (match) {
             const m = match[2] || match[6];
             if (isValidImageName(m)) {
                 matched = m;
                 break;
             }
-            match = pg.re.image.exec(t);
+            match = (pg.re.image as RegExp).exec(t);
         }
-        pg.re.image.lastIndex = 0;
+        (pg.re.image as RegExp).lastIndex = 0;
         if (!matched) {
             return null;
         }
-        return `${mw.config.get("wgFormattedNamespaces")[pg.nsImageId]}:${upcaseFirst(matched)}`;
+        return `${(mw.config.get("wgFormattedNamespaces") as Record<number, string>)[pg.nsImageId ?? 6]}:${upcaseFirst(matched)}`;
     };
-    const removeMatchesUnless = (str, re1, parencount, re2) => {
+    const removeMatchesUnless = (str: string, re1: RegExp, parencount: number, re2: RegExp) => {
         const split = str.parenSplit(re1);
         const c = parencount + 1;
         for (let i = 0; i < split.length; ++i) {

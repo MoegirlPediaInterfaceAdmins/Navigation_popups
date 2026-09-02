@@ -1,5 +1,7 @@
 import { Drag } from "./domdrag.ts";
     import type { Downloader } from "./downloader.ts";
+    import type { Title } from "./titles.ts";
+    import type { DiffSide } from "./diffpreview.ts";
 import { log } from "./globals.ts";
 import { Mousetracker } from "./selpop.ts";
     export class Navpopup {
@@ -34,8 +36,10 @@ import { Mousetracker } from "./selpop.ts";
         top?: number;
         tooWide?: boolean;
         maxWidth?: number;
-        article?: unknown;
+        article?: Title;
         originalArticle?: unknown;
+        // per-popup diff state, filled by diffpreview.ts (loadDiff/doneDiff)
+        diffData?: { oldRev: DiffSide; newRev: DiffSide };
         parentPopup?: Navpopup | null;
         parentAnchor?: HTMLAnchorElement | null;
         mouseLeavingTime?: number | null;

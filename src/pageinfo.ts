@@ -1,22 +1,26 @@
+import type { Moment } from "moment";
 import { pg } from "./globals.ts";
 import { getValueOf } from "./options.ts";
 import { popupString, tprintf } from "./strings.ts";
+import type { Downloader } from "./downloader.ts";
 import { isDisambig, stubCount } from "./titles.ts";
+import type { Title } from "./titles.ts";
 import { upcaseFirst } from "./tools.ts";
-    export const popupFilterPageSize = (data) => formatBytes(data.length);
-    export const popupFilterCountLinks = (data) => {
+    type PopupFilterFn = (data: string, download: Downloader, article?: Title) => string | false | undefined;
+    export const popupFilterPageSize = (data: string) => formatBytes(data.length);
+    export const popupFilterCountLinks = (data: string) => {
         const num = countLinks(data);
         return `${num}&nbsp;${num !== 1 ? popupString("wikiLinks") : popupString("wikiLink")}`;
     };
-    export const popupFilterCountImages = (data) => {
+    export const popupFilterCountImages = (data: string) => {
         const num = countImages(data);
         return `${num}&nbsp;${num !== 1 ? popupString("images") : popupString("image")}`;
     };
-    export const popupFilterCountCategories = (data) => {
+    export const popupFilterCountCategories = (data: string) => {
         const num = countCategories(data);
         return `${num}&nbsp;${num !== 1 ? popupString("categories") : popupString("category")}`;
     };
-    export const popupFilterLastModified = (data, download) => {
+    export const popupFilterLastModified = (data: string, download: Downloader) => {
         const lastmod = download.lastModified;
         const age = moment(lastmod); // formatAge 现仅直接接受 moment 对象
         if (lastmod && getValueOf("popupLastModified")) {
@@ -24,7 +28,7 @@ import { upcaseFirst } from "./tools.ts";
         }
         return "";
     };
-    export const popupFilterWikibaseItem = (data, download) => {
+    export const popupFilterWikibaseItem = (data: string, download: Downloader) => {
         if (!download.wikibaseItem || !download.wikibaseRepo) {
             return "";
         }
@@ -33,7 +37,7 @@ import { upcaseFirst } from "./tools.ts";
             download.wikibaseItem,
         ]);
     };
-    const formatAge = (age) => {
+    const formatAge = (age: Moment) => {
         const now = moment();
         const isBefore = age.isBefore(now);
         const monthsHave31Days = [0, 2, 4, 6, 7, 9, 11]; // 月份从0开始
@@ -104,12 +108,12 @@ import { upcaseFirst } from "./tools.ts";
         }
         return result.replace(/(\d) /g, "$1");
     };
-    const addunit = (num, str) => `${num} ${num !== 1 ? popupString(`${str}s`) : popupString(str)}`;
-    const runPopupFilters = (list, data, download) => {
-        const ret = [];
+    const addunit = (num: number, str: string) => `${num} ${num !== 1 ? popupString(`${str}s`) : popupString(str)}`;
+    const runPopupFilters = (list: PopupFilterFn[], data: string, download: Downloader) => {
+        const ret: string[] = [];
         for (let i = 0; i < list.length; ++i) {
             if (list[i] && typeof list[i] === "function") {
-                const s = list[i](data, download, download.owner.article);
+                const s = list[i](data, download, download.owner?.article);
                 if (s) {
                     ret.push(s);
                 }
@@ -117,12 +121,12 @@ import { upcaseFirst } from "./tools.ts";
         }
         return ret;
     };
-    export const getPageInfo = (data, download) => {
+    export const getPageInfo = (data: string, download: Downloader) => {
         if (!data || data.length === 0) {
             return popupString("Empty page");
         }
-        const popupFilters = getValueOf("popupFilters") || [];
-        const extraPopupFilters = getValueOf("extraPopupFilters") || [];
+        const popupFilters = (getValueOf("popupFilters") || []) as PopupFilterFn[];
+        const extraPopupFilters = (getValueOf("extraPopupFilters") || []) as PopupFilterFn[];
         const pageInfoArray = runPopupFilters(popupFilters.concat(extraPopupFilters), data, download);
         let pageInfo = pageInfoArray.join(popupString("comma"));
         if (pageInfo !== "") {
@@ -130,23 +134,23 @@ import { upcaseFirst } from "./tools.ts";
         }
         return pageInfo;
     };
-    const countLinks = (wikiText) => wikiText.split("[[").length - 1;
-    const countImages = (wikiText) => (wikiText.parenSplit(pg.re.image).length - 1) / (pg.re.imageBracketCount + 1);
-    const countCategories = (wikiText) => (wikiText.parenSplit(pg.re.category).length - 1) / (pg.re.categoryBracketCount + 1);
-    export const popupFilterStubDetect = (data, download, article) => {
+    const countLinks = (wikiText: string) => wikiText.split("[[").length - 1;
+    const countImages = (wikiText: string) => (wikiText.parenSplit(pg.re.image as RegExp).length - 1) / (Number(pg.re.imageBracketCount) + 1);
+    const countCategories = (wikiText: string) => (wikiText.parenSplit(pg.re.category as RegExp).length - 1) / (Number(pg.re.categoryBracketCount) + 1);
+    export const popupFilterStubDetect = (data: string, download: Downloader, article: Title) => {
         const counts = stubCount(data, article);
-        if (counts.real) {
+        if (counts && counts.real) {
             return popupString("stub");
         }
-        if (counts.sect) {
+        if (counts && counts.sect) {
             return popupString("section stub");
         }
         return "";
     };
-    export const popupFilterDisambigDetect = (data, download, article) => {
+    export const popupFilterDisambigDetect = (data: string, download: Downloader, article: Title) => {
         if (!getValueOf("popupAllDabsStubs") && article.namespace()) {
             return "";
         }
         return isDisambig(data, article) ? popupString("disambig") : "";
     };
-    const formatBytes = (num) => num > 949 ? Math.round(num / 100) / 10 + popupString("kB") : `${num}&nbsp;${popupString("bytes")}`;
+    const formatBytes = (num: number) => num > 949 ? Math.round(num / 100) / 10 + popupString("kB") : `${num}&nbsp;${popupString("bytes")}`;

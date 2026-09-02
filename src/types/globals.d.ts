@@ -5,13 +5,19 @@
 // land in the global scope.
 declare const wgULS: (cn: string, tw: string, ...variants: (string | null)[]) => string;
 declare const wgUVS: (cn: string, tw: string, ...variants: (string | null)[]) => string;
-declare const moment: unknown;
 declare const wikEdUseWikEd: boolean;
 declare const WikEdUpdateFrame: () => void;
+// moment.js is site-provided at runtime; typings come from the moment package
+// (moment.d.ts ends with `export = moment`, so it is a module, not a UMD global)
+declare const moment: typeof import("moment");
 
 interface String {
-    // Polyfill installed by parensplit.ts at module init
-    parenSplit(re: RegExp): string[];
+    // Polyfill installed by parensplit.ts at module init; isNative marks
+    // whether the native (non-polyfilled) split implementation is in use
+    parenSplit: {
+        (re: RegExp): string[];
+        isNative?: boolean;
+    };
     // Extension installed by tools.ts at module init
     entify(): string;
 }
@@ -24,9 +30,27 @@ interface Window {
     popupNoTranslation?: Set<string>;
 }
 
+// MediaWiki legacy edit form, present on ?action=edit pages
+interface EditForm extends HTMLFormElement {
+    wpTextbox1?: HTMLTextAreaElement;
+    wpSummary?: HTMLInputElement;
+    wpMinoredit?: HTMLInputElement;
+    wpWatchthis?: HTMLInputElement;
+    wpSave?: HTMLInputElement;
+    wpPreview?: HTMLInputElement;
+    wpDiff?: HTMLInputElement;
+    [key: string]: unknown;
+}
+
 interface Document {
     // shortcutkeys.ts keeps the previous handler here
     oldPopupOnkeypress?: GlobalEventHandlers["onkeypress"];
+    editform?: EditForm;
+    // legacy IE selection object (document.selection.createRange().text)
+    selection?: { createRange(): { text: string } };
+    // legacy scroll offsets (undefined in modern browsers; read via || fallbacks)
+    scrollLeft?: number;
+    scrollTop?: number;
 }
 
 interface Element {

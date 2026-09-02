@@ -16,7 +16,7 @@ import { addPopupShortcuts, rmPopupShortcuts } from "./shortcutkeys.ts";
 import { popupString } from "./strings.ts";
 import { Title, anchorContainsImage, isPopupLink, parseParams } from "./titles.ts";
 import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
-    export const setupTooltips = (_container?: unknown, remove = false, force = false, popData = null) => {
+    export const setupTooltips = (_container?: unknown, remove = false, force = false, popData: unknown = null) => {
         let container = _container;
         log(`setupTooltips, container=${container}, remove=${remove}`);
         if (!container) {
@@ -189,7 +189,7 @@ import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
         const action = getValueOf("popupModifierAction");
         return action === "enable" && modifierPressed(evt) || action === "disable" && !modifierPressed(evt);
     };
-    export const mouseOverWikiLink2 = (a, evt) => {
+    export const mouseOverWikiLink2 = (a: HTMLAnchorElement, evt?: MouseEvent | undefined) => {
         if (!isCorrectModifier(a, evt)) {
             return;
         }

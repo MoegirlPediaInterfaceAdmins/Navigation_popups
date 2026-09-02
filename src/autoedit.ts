@@ -1,24 +1,35 @@
+import type { Downloader } from "./downloader.ts";
 import { startDownload } from "./downloader.ts";
 import { pg } from "./globals.ts";
 import { setupPopups } from "./init.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
-    const substitute = (data, cmdBody) => {
+    interface EditCmd {
+        action: (data: string, cmdBody: EditCmd) => string;
+        from: string;
+        to: string;
+        flags: string;
+        remainder: string;
+    }
+    const substitute = (data: string, cmdBody: EditCmd) => {
         const fromRe = RegExp(cmdBody.from, cmdBody.flags);
         return data.replace(fromRe, cmdBody.to);
     };
-    const execCmds = (_data, cmdList) => {
+    const execCmds = (_data: string, cmdList: false | EditCmd[]): string => {
         let data = _data;
+        if (!cmdList) {
+            return data;
+        }
         for (let i = 0; i < cmdList.length; ++i) {
             data = cmdList[i].action(data, cmdList[i]);
         }
         return data;
     };
-    const parseCmd = (str) => {
+    const parseCmd = (str: string): false | EditCmd[] => {
         if (!str.length) {
             return [];
         }
-        let p;
+        let p: false | EditCmd;
         switch (str.charAt(0)) {
             case "s":
                 p = parseSubstitute(str);
@@ -27,14 +38,14 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
                 return false;
         }
         if (p) {
-            return [p].concat(parseCmd(p.remainder));
+            return [p].concat(parseCmd(p.remainder) as EditCmd[]);
         }
         return false;
     };
-    const unEscape = (str, sep) => str.split("\\\\").join("\\").split(`\\${sep}`).join(sep).split("\\n").join("\n");
-    const parseSubstitute = (_str) => {
+    const unEscape = (str: string, sep: string) => str.split("\\\\").join("\\").split(`\\${sep}`).join(sep).split("\\n").join("\n");
+    const parseSubstitute = (_str: string): false | EditCmd => {
         let str = _str;
-        let from, to, flags, tmp;
+        let from: string, to: string, flags: string, tmp: false | { segment: string; remainder: string };
         if (str.length < 4) {
             return false;
         }
@@ -70,7 +81,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             remainder: str,
         };
     };
-    const skipOver = (str, sep) => {
+    const skipOver = (str: string, sep: string): false | { segment: string; remainder: string } => {
         const endSegment = findNext(str, sep);
         if (endSegment < 0) {
             return false;
@@ -81,11 +92,11 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             remainder: str.substring(endSegment + 1),
         };
     };
-    const skipToEnd = (str) => ({
+    const skipToEnd = (str: string, _sep?: string): { segment: string; remainder: string } => ({
         segment: str,
         remainder: "",
     });
-    const findNext = (str, ch) => {
+    const findNext = (str: string, ch: string) => {
         for (let i = 0; i < str.length; ++i) {
             if (str.charAt(i) === "\\") {
                 i += 2;
@@ -96,9 +107,9 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         }
         return -1;
     };
-    const setCheckbox = (param, box) => {
+    const setCheckbox = (param: string, box: HTMLInputElement | undefined) => {
         const val = mw.util.getParamValue(param);
-        if (val) {
+        if (val && box) {
             switch (val) {
                 case "1":
                 case "yes":
@@ -112,11 +123,11 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
         }
     };
-    export const autoEdit = () => {
+    export const autoEdit: (() => void) & { alreadyRan?: boolean } = () => {
         if (!document.editform) {
             return false;
         }
-        if (/Popups/.test(mw.util.getParamValue("wpChangeTags"))) {
+        if (/Popups/.test(mw.util.getParamValue("wpChangeTags") ?? "")) {
             const wpChangeTags = document.createElement("input");
             wpChangeTags.type = "hidden";
             wpChangeTags.name = "wpChangeTags";
@@ -146,11 +157,14 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             if (cmdString) {
                 try {
                     const editbox = document.editform.wpTextbox1;
+                    if (!editbox) {
+                        return;
+                    }
                     const cmdList = parseCmd(cmdString);
                     const input = editbox.value;
                     const output = execCmds(input, cmdList);
                     editbox.value = output;
-                } catch (dang) {
+                } catch {
                     return;
                 }
                 if (typeof wikEdUseWikEd !== "undefined") {
@@ -170,23 +184,23 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
         });
     };
-    const autoEdit2 = (d) => {
+    const autoEdit2 = (d?: Downloader) => {
         let summary = mw.util.getParamValue("autosummary");
-        let summaryprompt = mw.util.getParamValue("autosummaryprompt");
+        let summaryprompt: string | null | boolean = mw.util.getParamValue("autosummaryprompt");
         let summarynotice = "";
         if (d && d.data && mw.util.getParamValue("autorv")) {
             const s = getRvSummary(summary, d.data);
             if (s === false) {
                 summaryprompt = true;
                 summarynotice = popupString("Failed to get revision information, please edit manually.\n\n");
-                summary = simplePrintf(summary, [mw.util.getParamValue("autorv"), "(unknown)", "(unknown)"]);
+                summary = simplePrintf(summary as string, [mw.util.getParamValue("autorv"), "(unknown)", "(unknown)"]);
             } else {
                 summary = s;
             }
         }
         if (summaryprompt) {
             const txt = summarynotice + popupString("Enter a non-empty edit summary or press cancel to abort");
-            const response = prompt(txt, summary);
+            const response = prompt(txt, summary as string | undefined);
             if (response) {
                 summary = response;
             } else {
@@ -194,7 +208,9 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
         }
         if (summary) {
-            document.editform.wpSummary.value = summary;
+            if (document.editform?.wpSummary) {
+                document.editform.wpSummary.value = summary;
+            }
         }
         setTimeout(autoEdit3, 100);
     };
@@ -206,10 +222,7 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
         const btn = mw.util.getParamValue("autoclick");
         if (btn) {
             if (document.editform && document.editform[btn]) {
-                /**
-                 * @type {HTMLButtonElement | HTMLInputElement}
-                 */
-                const button = document.editform[btn];
+                const button = document.editform[btn] as HTMLButtonElement | HTMLInputElement;
                 const msg = tprintf("The %s button has been automatically clicked. Please wait for the next page to load.", [button.value]);
                 bannerMessage(msg);
                 document.title = `(${document.title})`;
@@ -219,21 +232,28 @@ import { anyChild, getJsObj, simplePrintf } from "./tools.ts";
             }
         }
     };
-    const bannerMessage = (s) => {
+    const bannerMessage = (s: string) => {
         const headings = document.getElementsByTagName("h1");
         if (headings) {
             const div = document.createElement("div");
-            div.innerHTML = `<font size=+1><b>${pg.escapeQuotesHTML(s)}</b></font>`;
-            headings[0].parentNode.insertBefore(div, headings[0]);
+            div.innerHTML = `<font size=+1><b>${pg.escapeQuotesHTML?.(s) ?? ""}</b></font>`;
+            headings[0].parentNode?.insertBefore(div, headings[0]);
         }
     };
-    const getRvSummary = (template, json) => {
+    interface RvPage {
+        revisions?: { timestamp: string; revid: number; user: string; userhidden?: boolean }[];
+    }
+    const getRvSummary = (template: string | null, json: string | undefined): false | string => {
         try {
-            const o = getJsObj(json);
-            const edit = anyChild(o.query.pages).revisions[0];
-            const timestamp = edit.timestamp.split(/[A-Z]/g).join(" ").replace(/^ *| *$/g, "");
-            return simplePrintf(template, [edit.revid, timestamp, edit.userhidden ? "(hidden)" : edit.user]);
-        } catch (badness) {
+            const o = getJsObj<{ query?: { pages?: Record<string, RvPage> } }>(json ?? "") as { query?: { pages?: Record<string, RvPage> } };
+            const edit = anyChild(o.query?.pages ?? {}) as RvPage | null;
+            const revision = edit?.revisions?.[0];
+            if (!revision) {
+                return false;
+            }
+            const timestamp = revision.timestamp.split(/[A-Z]/g).join(" ").replace(/^ *| *$/g, "");
+            return simplePrintf(template as string, [revision.revid, timestamp, revision.userhidden ? "(hidden)" : revision.user]);
+        } catch {
             return false;
         }
     };
