@@ -1,12 +1,10 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { setupTooltips } from "./actions.ts";
 import { errlog, log, pg } from "./globals.ts";
 import { checkPopupPosition } from "./mouseout.ts";
 import { getValueOf } from "./options.ts";
 import { Title, parseParams } from "./titles.ts";
 import { isString, simplePrintf } from "./tools.ts";
-    export const setPopupHTML = (str, elementId, _popupId, onSuccess, append) => {
+    export const setPopupHTML = (str: string | null, elementId: string, _popupId?: number, onSuccess?: () => void, append?: boolean) => {
         let popupId = _popupId;
         if (typeof popupId === "undefined") {
             popupId = pg.idNumber;

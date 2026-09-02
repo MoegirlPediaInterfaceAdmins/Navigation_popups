@@ -1,10 +1,8 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { removeModifierKeyHandler, restoreTitle } from "./actions.ts";
 import { pg } from "./globals.ts";
 import { Navpopup } from "./navpopup.ts";
 import { getValueOf } from "./options.ts";
-    const fuzzyCursorOffMenus = (x, y, fuzz, parent) => {
+    const fuzzyCursorOffMenus = (_x: number | undefined, _y: number | undefined, _fuzz: number, parent: HTMLElement | null) => {
         if (!parent) {
             return null;
         }
@@ -23,7 +21,7 @@ import { getValueOf } from "./options.ts";
             pg.current.link.navpopup.limitHorizontalPosition();
         }
     };
-    export function mouseOutWikiLink() {
+    export function mouseOutWikiLink(this: HTMLAnchorElement) {
         const a = this;
         removeModifierKeyHandler(a);
         if (a.navpopup === null || typeof a.navpopup === "undefined") {
@@ -36,7 +34,7 @@ import { getValueOf } from "./options.ts";
         restoreTitle(a);
         Navpopup.tracker.addHook(posCheckerHook(a.navpopup));
     }
-    export const posCheckerHook = (navpop) => () => {
+    export const posCheckerHook = (navpop: Navpopup) => () => {
         if (!navpop.isVisible()) {
             return true;
         }
@@ -48,7 +46,7 @@ import { getValueOf } from "./options.ts";
         const mouseOverNavpop = navpop.isWithin(x, y, navpop.fuzz, navpop.mainDiv) || !fuzzyCursorOffMenus(x, y, navpop.fuzz, navpop.mainDiv);
         let t = getValueOf("popupHideDelay");
         if (t) {
-            t = t * 1e3;
+            t = (t as number) * 1e3;
         }
         if (!t) {
             if (!mouseOverNavpop) {
@@ -69,14 +67,14 @@ import { getValueOf } from "./options.ts";
             navpop.mouseLeavingTime = null;
             return false;
         }
-        if (d - navpop.mouseLeavingTime > t) {
+        if (d - (navpop.mouseLeavingTime as number) > (t as number)) {
             navpop.mouseLeavingTime = null;
             navpop.banish();
             return true;
         }
         return false;
     };
-    export const runStopPopupTimer = (navpop) => {
+    export const runStopPopupTimer = (navpop: Navpopup) => {
         if (!navpop.stopPopupTimer) {
             navpop.stopPopupTimer = setInterval(posCheckerHook(navpop), 500);
             navpop.addHook(() => {

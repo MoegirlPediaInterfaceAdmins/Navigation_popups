@@ -1,21 +1,23 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { pg } from "./globals.ts";
-    class Downloader {
-        id = null;
-        lastModified = null;
-        callbackFunction = null;
-        onFailure = null;
+    export class Downloader {
+        id: number | null = null;
+        lastModified: Date | string | null = null;
+        callbackFunction: ((downloader: Downloader) => void) | null = null;
+        onFailure: ((downloader: Downloader) => void) | null = null;
         aborted = false;
         method = "GET";
         async = true;
-        constructor(url) {
+        http?: XMLHttpRequest;
+        url: string;
+        data?: string;
+        owner?: unknown;
+        constructor(url: string) {
             if (typeof XMLHttpRequest !== "undefined") {
                 this.http = new XMLHttpRequest();
             }
             this.url = url;
         }
-        send(x) {
+        send(x: string | null) {
             if (!this.http) {
                 return null;
             }
@@ -39,7 +41,7 @@ import { pg } from "./globals.ts";
                 return null;
             }
             this.http.open(this.method, this.url, this.async);
-            this.http.setRequestHeader("Api-User-Agent", pg.api.userAgent);
+            this.http.setRequestHeader("Api-User-Agent", pg.api.userAgent ?? "");
         }
         getReadyState() {
             if (!this.http) {
@@ -51,7 +53,7 @@ import { pg } from "./globals.ts";
             if (!this.http) {
                 return;
             }
-            pg.misc.downloadsInProgress[this.id] = this;
+            (pg.misc.downloadsInProgress ??= {})[String(this.id)] = this;
             this.http.send(null);
         }
         getLastModifiedDate() {
@@ -67,7 +69,7 @@ import { pg } from "./globals.ts";
             }
             return null;
         }
-        setCallback(f) {
+        setCallback(f: () => void) {
             if (!this.http) {
                 return;
             }
@@ -81,31 +83,31 @@ import { pg } from "./globals.ts";
         }
     }
     pg.misc.downloadsInProgress = {};
-    const newDownload = (url, id, callback, _onfailure) => {
+    const newDownload = (url: string, id: number | ((d: Downloader) => void) | undefined, callback?: (d: Downloader) => void, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void) => void)): Downloader | string => {
         let onfailure = _onfailure;
         const d = new Downloader(url);
         if (!d.http) {
             return "ohdear";
         }
-        d.id = id;
+        d.id = typeof id === "number" ? id : null;
         d.setTarget();
         if (!onfailure) {
             onfailure = 2;
         }
-        const f = function () {
+        const f = function (this: XMLHttpRequest) {
             if (d.getReadyState() === 4) {
-                Reflect.deleteProperty(pg.misc.downloadsInProgress, this.id);
+                Reflect.deleteProperty(pg.misc.downloadsInProgress ?? {}, String((this as unknown as { id?: number }).id));
                 try {
                     if (d.getStatus() === 200) {
-                        d.data = d.getData();
-                        d.lastModified = d.getLastModifiedDate();
-                        callback(d);
-                    } else if (typeof onfailure === typeof 1) {
+                        d.data = d.getData() ?? undefined;
+                        d.lastModified = d.getLastModifiedDate() as Date | null;
+                        callback?.(d);
+                    } else if (typeof onfailure === "number") {
                         if (onfailure > 0) {
                             newDownload(url, id, callback, onfailure - 1);
                         }
                     } else if (typeof onfailure === "function") {
-                        onfailure(d, url, id, callback);
+                        onfailure(d, url, typeof id === "number" ? id : undefined, callback);
                     }
                 } catch { }
             }
@@ -113,17 +115,20 @@ import { pg } from "./globals.ts";
         d.setCallback(f);
         return d;
     };
-    export const fakeDownload = (url, id, callback, data, lastModified, owner) => {
+    export const fakeDownload = (url: string, id: number | undefined, callback: (d: Downloader) => void, data?: string, lastModified?: Date | string | null, owner?: unknown) => {
         const d = newDownload(url, callback);
+        if (typeof d === "string") {
+            return;
+        }
         d.owner = owner;
-        d.id = id;
-        d.data = data;
-        d.lastModified = lastModified;
+        d.id = id ?? null;
+        d.data = data ?? undefined;
+        d.lastModified = lastModified ?? null;
         return callback(d);
     };
-    export const startDownload = (url, id, callback) => {
+    export const startDownload = (url: string, id: number | undefined, callback: (d: Downloader) => void): Downloader | string => {
         const d = newDownload(url, id, callback);
-        if (typeof d === typeof "") {
+        if (typeof d === "string") {
             return d;
         }
         d.start();

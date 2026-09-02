@@ -1,13 +1,12 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { log, pg } from "./globals.ts";
 import { setPopupHTML } from "./htmloutput.ts";
 import { changeLinkTargetLink } from "./links.ts";
 import { getValueOf } from "./options.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { Title, isDisambig } from "./titles.ts";
+    import type { Navpopup } from "./navpopup.ts";
 import { simplePrintf } from "./tools.ts";
-    const retargetDab = (newTarget, oldTarget, friendlyCurrentArticleName, titleToEdit) => {
+    const retargetDab = (newTarget: string, oldTarget: unknown, friendlyCurrentArticleName: string, titleToEdit: string | undefined) => {
         log(`retargetDab: newTarget=${newTarget} oldTarget=${oldTarget}`);
         return changeLinkTargetLink({
             newTarget: newTarget,
@@ -21,12 +20,12 @@ import { simplePrintf } from "./tools.ts";
             title: titleToEdit,
         });
     };
-    const listLinks = (wikitext, oldTarget, titleToEdit) => {
+    const listLinks = (wikitext: string, oldTarget: unknown, titleToEdit: string | undefined) => {
         const reg = RegExp("\\[\\[([^|]*?) *(\\||\\]\\])", "gi");
-        let ret = [];
+        let ret: string[] = [];
         const splitted = wikitext.parenSplit(reg);
         const omitRegex = RegExp("^[a-z]*:|^[Ss]pecial:|^[Ii]mage|^[Cc]ategory");
-        const friendlyCurrentArticleName = oldTarget.toString();
+        const friendlyCurrentArticleName = String(oldTarget);
         const wikPos = getValueOf("popupDabWiktionary");
         for (let i = 1; i < splitted.length; i = i + 3) {
             if (typeof splitted[i] === typeof "string" && splitted[i].length > 0 && !omitRegex.test(splitted[i])) {
@@ -36,8 +35,8 @@ import { simplePrintf } from "./tools.ts";
         ret = rmDupesFromSortedList(ret.sort());
         if (wikPos) {
             const wikTarget = `wiktionary:${friendlyCurrentArticleName.replace(RegExp("^(.+)\\s+[(][^)]+[)]\\s*$"), "$1")}`;
-            let meth;
-            if (wikPos.toLowerCase() === "first") {
+            let meth: "unshift" | "push";
+            if (String(wikPos).toLowerCase() === "first") {
                 meth = "unshift";
             } else {
                 meth = "push";
@@ -56,7 +55,7 @@ import { simplePrintf } from "./tools.ts";
         }));
         return ret;
     };
-    const rmDupesFromSortedList = (list) => {
+    const rmDupesFromSortedList = (list: string[]) => {
         const ret = [];
         for (let i = 0; i < list.length; ++i) {
             if (ret.length === 0 || list[i] !== ret[ret.length - 1]) {
@@ -65,8 +64,8 @@ import { simplePrintf } from "./tools.ts";
         }
         return ret;
     };
-    const makeFixDab = (data, navpop) => {
-        const titleToEdit = navpop.parentPopup && navpop.parentPopup.article.toString();
+    const makeFixDab = (data: string, navpop: Navpopup) => {
+        const titleToEdit = navpop.parentPopup ? String(navpop.parentPopup.article) : undefined;
         const list = listLinks(data, navpop.originalArticle, titleToEdit);
         if (list.length === 0) {
             log("listLinks returned empty list");
@@ -76,16 +75,16 @@ import { simplePrintf } from "./tools.ts";
         html += list.join(popupString("separator"));
         return html;
     };
-    export const makeFixDabs = (wikiText, navpop) => {
-        if (getValueOf("popupFixDabs") && isDisambig(wikiText, navpop.article) && Title.fromURL(location.href).namespaceId() !== pg.nsSpecialId && navpop.article.talkPage()) {
+    export const makeFixDabs = (wikiText: string, navpop: Navpopup) => {
+        if (getValueOf("popupFixDabs") && isDisambig(wikiText, navpop.article) && Title.fromURL(location.href).namespaceId() !== pg.nsSpecialId && (navpop.article as Title).talkPage()) {
             setPopupHTML(makeFixDab(wikiText, navpop), "popupFixDab", navpop.idNumber);
         }
     };
-    export const popupRedlinkHTML = (article) => changeLinkTargetLink({
+    export const popupRedlinkHTML = (article: unknown) => changeLinkTargetLink({
         newTarget: null,
         text: popupString("remove this link").split(" ").join("&nbsp;"),
         hint: popupString("remove all links to this page from this article"),
         clickButton: getValueOf("popupRedlinkAutoClick"),
-        oldTarget: article.toString(),
-        summary: simplePrintf(getValueOf("popupRedlinkSummary"), [article.toString()]),
+        oldTarget: String(article),
+        summary: simplePrintf(getValueOf("popupRedlinkSummary"), [String(article)]),
     });

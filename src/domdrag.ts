@@ -1,13 +1,11 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { log, pg } from "./globals.ts";
 import { imageHTML } from "./htmloutput.ts";
 import { navLinksHTML, navlinkStringToHTML } from "./navlinks.ts";
 import { getValueOf } from "./options.ts";
     export class Drag {
-        startCondition = null;
-        endHook = null;
-        fixE = (_e) => {
+        startCondition: ((e: MouseEvent) => boolean) | null = null;
+        endHook: ((x: number | undefined, y: number | undefined) => void) | null = null;
+        fixE = (_e?: MouseEvent) => {
             let e = _e;
             if (typeof e === "undefined") {
                 e = window.event;
@@ -20,7 +18,7 @@ import { getValueOf } from "./options.ts";
             }
             return e;
         };
-        init(o, oRoot) {
+        init(o: HTMLElement, oRoot: HTMLElement) {
             const dragObj = this;
             this.obj = o;
             o.onmousedown = (e) => {

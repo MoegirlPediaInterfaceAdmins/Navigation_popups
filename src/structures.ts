@@ -1,10 +1,9 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { log, pg } from "./globals.ts";
+import type { StructureContext } from "./types/pg.ts";
 import { navlinkStringToHTML } from "./navlinks.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
-    const copyStructure = (oldStructure, newStructure) => {
+    const copyStructure = (oldStructure: string, newStructure: string) => {
         pg.structures[newStructure] = {};
         for (const prop in pg.structures[oldStructure]) {
             pg.structures[newStructure][prop] = pg.structures[oldStructure][prop];
@@ -47,7 +46,7 @@ import { popupString } from "./strings.ts";
     pg.structures.fancy.popupRedirTopLinks = pg.structures.fancy.popupTopLinks;
     pg.structures.fancy.popupRedirOtherLinks = pg.structures.fancy.popupOtherLinks;
     copyStructure("fancy", "fancy2");
-    pg.structures.fancy2.popupTopLinks = (x) => `<br>${pg.structures.fancy.popupTopLinks(x).replace(/<br>$/i, "")}`;
+    pg.structures.fancy2.popupTopLinks = (x) => `<br>${(pg.structures.fancy.popupTopLinks as (x: StructureContext) => string)(x).replace(/<br>$/i, "")}`;
     pg.structures.fancy2.popupLayout = () => ["popupError", "popupImage", "popupTitle", "popupUserData", "popupData", "popupTopLinks", "popupOtherLinks", "popupRedir", ["popupWarnRedir", "popupRedirTopLinks", "popupRedirTitle", "popupRedirData", "popupRedirOtherLinks"], "popupMiscTools", ["popupRedlink"], "popupPrePreviewSep", "popupPreview", "popupSecondPreview", "popupPreviewMore", "popupPostPreview", "popupFixDab"];
     copyStructure("original", "menus");
     pg.structures.menus.popupLayout = () => ["popupError", "popupImage", "popupTopLinks", "popupTitle", "popupOtherLinks", "popupRedir", ["popupWarnRedir", "popupRedirTopLinks", "popupRedirTitle", "popupRedirData", "popupRedirOtherLinks"], "popupUserData", "popupData", "popupMiscTools", ["popupRedlink"], "popupPrePreviewSep", "popupPreview", "popupSecondPreview", "popupPreviewMore", "popupPostPreview", "popupFixDab"];
@@ -120,7 +119,7 @@ import { popupString } from "./strings.ts";
         }
         return navlinkStringToHTML(s.join(""), x.article, x.params);
     };
-    const menuTitle = (dropclass, s) => {
+    const menuTitle = (dropclass: string, s: string) => {
         const text = popupString(s); // i18n
         const len = text.length;
         return `<div class="${dropclass}" style="--navpop-m-len:${len}ch"><a href="#" noPopup=1>${text}</a>`;
@@ -128,11 +127,11 @@ import { popupString } from "./strings.ts";
     pg.structures.menus.popupRedirTitle = pg.structures.menus.popupTitle;
     pg.structures.menus.popupRedirTopLinks = pg.structures.menus.popupTopLinks;
     copyStructure("menus", "shortmenus");
-    pg.structures.shortmenus.popupTopLinks = (x) => pg.structures.menus.popupTopLinks(x, true);
+    pg.structures.shortmenus.popupTopLinks = (x) => (pg.structures.menus.popupTopLinks as (x: StructureContext, shorter?: boolean) => string)(x, true);
     pg.structures.shortmenus.popupRedirTopLinks = pg.structures.shortmenus.popupTopLinks;
     pg.structures.lite = {};
     pg.structures.lite.popupLayout = () => ["popupTitle", "popupPreview"];
     pg.structures.lite.popupTitle = (x) => {
-        log(`${x.article}: structures.lite.popupTitle`);
-        return `<div><span class="popup_mainlink"><b>${x.article.toString()}</b></span></div>`;
+        log(`${String(x.article)}: structures.lite.popupTitle`);
+        return `<div><span class="popup_mainlink"><b>${String(x.article)}</b></span></div>`;
     };

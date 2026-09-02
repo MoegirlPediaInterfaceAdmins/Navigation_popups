@@ -1,12 +1,11 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { nonGlobalRegex } from "./tools.ts";
+type ParenSplit = ((this: string, re: RegExp) => string[]) & { isNative?: boolean };
     if (`${"abc".split(/(b)/)}` !== "a,b,c") {
-        String.prototype.parenSplit = function (_re) {
+        String.prototype.parenSplit = function (this: string, _re) {
             const re = nonGlobalRegex(_re);
             let s = this;
             let m = re.exec(s);
-            let ret = [];
+            let ret: string[] = [];
             while (m && s) {
                 for (let i = 0; i < m.length; ++i) {
                     if (typeof m[i] === "undefined") {
@@ -14,7 +13,7 @@ import { nonGlobalRegex } from "./tools.ts";
                     }
                 }
                 ret.push(s.substring(0, m.index));
-                ret = ret.concat(m.slice(1));
+                ret = ret.concat(m.slice(1) as string[]);
                 s = s.substring(m.index + m[0].length);
                 m = re.exec(s);
             }
@@ -22,8 +21,9 @@ import { nonGlobalRegex } from "./tools.ts";
             return ret;
         };
     } else {
-        String.prototype.parenSplit = function (re) {
+        const nativeSplit: ParenSplit = function (re) {
             return this.split(re);
         };
-        String.prototype.parenSplit.isNative = true;
+        nativeSplit.isNative = true;
+        String.prototype.parenSplit = nativeSplit;
     }

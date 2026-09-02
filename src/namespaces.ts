@@ -1,5 +1,3 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { pg } from "./globals.ts";
 import { upcaseFirst } from "./tools.ts";
     export const setNamespaces = () => {
@@ -14,7 +12,7 @@ import { upcaseFirst } from "./tools.ts";
     export const setRedirs = () => {
         const r = "redirect";
         const R = "REDIRECT";
-        const redirLists = {
+        const redirLists: Record<string, string[]> = {
             ar: [R, "تحويل"],
             be: [r, "перанакіраваньне"],
             bg: [r, "пренасочване", "виж"],
@@ -50,7 +48,7 @@ import { upcaseFirst } from "./tools.ts";
             yi: [R, "ווייטערפירן"],
             zh: [R, "重定向"],
         };
-        const redirList = redirLists[pg.wiki.lang] || [r, R];
+        const redirList: (string | RegExp)[] = redirLists[pg.wiki.lang] || [r, R];
         pg.re.redirect = RegExp(`^\\s*[#](${redirList.join("|")}).*?\\[{2}([^\\|\\]]*)(|[^\\]]*)?\\]{2}\\s*(.*)`, "i");
     };
     export const setInterwiki = () => {
@@ -63,9 +61,9 @@ import { upcaseFirst } from "./tools.ts";
         }
         pg.re.interwiki = RegExp(`^${pg.wiki.interwiki}:`);
     };
-    export const nsRe = (namespaceId) => {
-        const imageNamespaceVariants = [];
-        $.each(mw.config.get("wgNamespaceIds"), (_localizedNamespaceLc, _namespaceId) => {
+    export const nsRe = (namespaceId?: number) => {
+        const imageNamespaceVariants: string[] = [];
+        $.each(mw.config.get("wgNamespaceIds"), (_localizedNamespaceLc: string, _namespaceId: number) => {
             const localizedNamespaceLc = upcaseFirst(_localizedNamespaceLc);
             if (_namespaceId !== namespaceId) {
                 return;

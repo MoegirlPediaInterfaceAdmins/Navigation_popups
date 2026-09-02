@@ -1,5 +1,3 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { pg } from "./globals.ts";
 import { popupStrings } from "./popupStrings.ts";
 import { simplePrintf } from "./tools.ts";
@@ -222,9 +220,9 @@ import { simplePrintf } from "./tools.ts";
         autoedit_version: "np20140416",
     };
     localStorage.removeItem("popupNoTranslation");
-    const popupNoTranslation = new Set();
+    const popupNoTranslation = new Set<string>();
     window.popupNoTranslation = popupNoTranslation;
-    export const popupString = (str) => {
+    export const popupString = (str: string) => {
         if (typeof popupStrings !== "undefined" && popupStrings && popupStrings[str]) {
             return popupStrings[str];
         }
@@ -234,10 +232,10 @@ import { simplePrintf } from "./tools.ts";
         }
         return str;
     };
-    export const tprintf = (str, _subs) => {
+    export const tprintf = (str: string, _subs: unknown) => {
         let subs = _subs;
-        if (typeof subs !== typeof []) {
+        if (!Array.isArray(subs)) {
             subs = [subs];
         }
-        return simplePrintf(popupString(str), subs);
+        return simplePrintf(popupString(str), subs as string[]);
     };
