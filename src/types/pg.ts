@@ -38,7 +38,9 @@ export interface PopupStructure {
 export interface StructureContext {
     a?: unknown;
     article?: unknown;
+    hint?: string | null;
     navpop?: Navpopup;
+    params?: Record<string, string>;
     [key: string]: unknown;
 }
 
@@ -66,7 +68,7 @@ export interface WikiInfo {
 }
 
 export interface CurrentState {
-    article?: unknown;
+    article?: import("../titles.ts").Title;
     link?: HTMLAnchorElement | null;
     links?: { navpopup?: unknown }[];
     linksHash?: Record<string, unknown>;
@@ -92,7 +94,7 @@ export interface Pg {
         decodeExtras?: { from: string; to: string }[];
         defaultNavlinkClassname?: string;
         downloadsInProgress?: Record<string, import("../downloader.ts").Downloader>;
-        layout?: string[];
+        layout?: (string | string[])[];
         redirSpans?: string[];
         [key: string]: unknown;
     };
@@ -107,7 +109,7 @@ export interface Pg {
     timer: Record<string, (() => void) | null | unknown>;
     counter: Record<string, number | unknown>;
     current: CurrentState;
-    fn: Record<string, (...args: never[]) => unknown>;
+    fn: Record<string, (...args: unknown[]) => unknown>;
     endoflist: null;
     // namespace ids and misc scalars assigned at init time
     nsSpecialId?: number;

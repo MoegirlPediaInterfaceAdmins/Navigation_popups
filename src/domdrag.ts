@@ -2,47 +2,75 @@ import { log, pg } from "./globals.ts";
 import { imageHTML } from "./htmloutput.ts";
 import { navLinksHTML, navlinkStringToHTML } from "./navlinks.ts";
 import { getValueOf } from "./options.ts";
+    // An HTMLElement after Drag.init() has decorated it with drag state.
+    // The properties are ad-hoc (upstream pattern); they only exist on
+    // elements that went through init(), which also assigns all of them.
+    type DragHandle = HTMLElement & {
+        dragging: boolean;
+        popups_draggable: boolean;
+        hmode: boolean;
+        vmode: boolean;
+        root: DragHandle;
+        lastMouseX: number;
+        lastMouseY: number;
+        onmousemoveDefault: GlobalEventHandlers["onmousemove"];
+        onthisStart: (x?: number, y?: number) => void;
+        onthisEnd: () => void;
+        onthis: (x?: number, y?: number) => void;
+    };
     export class Drag {
+        obj!: DragHandle;
         startCondition: ((e: MouseEvent) => boolean) | null = null;
         endHook: ((x: number | undefined, y: number | undefined) => void) | null = null;
         fixE = (_e?: MouseEvent) => {
             let e = _e;
             if (typeof e === "undefined") {
-                e = window.event;
+                e = window.event as MouseEvent | undefined;
             }
-            if (typeof e.layerX === "undefined") {
-                e.layerX = e.offsetX;
+            if (!e) {
+                return e;
             }
-            if (typeof e.layerY === "undefined") {
-                e.layerY = e.offsetY;
+            // lib.dom declares layerX/layerY as always-present and read-only;
+            // upstream patches them for legacy browsers, so go through a
+            // mutable view of the same object
+            const legacy = e as unknown as { layerX?: number; layerY?: number; offsetX: number; offsetY: number };
+            if (typeof legacy.layerX === "undefined") {
+                legacy.layerX = legacy.offsetX;
+            }
+            if (typeof legacy.layerY === "undefined") {
+                legacy.layerY = legacy.offsetY;
             }
             return e;
         };
         init(o: HTMLElement, oRoot: HTMLElement) {
             const dragObj = this;
-            this.obj = o;
-            o.onmousedown = (e) => {
+            const obj = o as DragHandle;
+            this.obj = obj;
+            obj.onmousedown = (e) => {
                 dragObj.start.bind(dragObj)(e);
             };
-            o.dragging = false;
-            o.popups_draggable = true;
-            o.hmode = true;
-            o.vmode = true;
-            o.root = oRoot || o;
-            if (isNaN(parseInt(o.root.style.left, 10))) {
-                o.root.style.left = "0px";
+            obj.dragging = false;
+            obj.popups_draggable = true;
+            obj.hmode = true;
+            obj.vmode = true;
+            obj.root = (oRoot || o) as DragHandle;
+            if (isNaN(parseInt(obj.root.style.left, 10))) {
+                obj.root.style.left = "0px";
             }
-            if (isNaN(parseInt(o.root.style.top, 10))) {
-                o.root.style.top = "0px";
+            if (isNaN(parseInt(obj.root.style.top, 10))) {
+                obj.root.style.top = "0px";
             }
-            o.root.onthisStart = () => { };
-            o.root.onthisEnd = () => { };
-            o.root.onthis = () => { };
+            obj.root.onthisStart = () => { };
+            obj.root.onthisEnd = () => { };
+            obj.root.onthis = () => { };
         }
-        start(_e) {
+        start(_e?: MouseEvent) {
             let e = _e;
             const o = this.obj;
             e = this.fixE(e);
+            if (!e) {
+                return;
+            }
             if (this.startCondition && !this.startCondition(e)) {
                 return;
             }
@@ -62,9 +90,12 @@ import { getValueOf } from "./options.ts";
             };
             return false;
         }
-        drag(_e) {
+        drag(_e?: MouseEvent) {
             let e = _e;
             e = this.fixE(e);
+            if (!e) {
+                return;
+            }
             const o = this.obj;
             const ey = e.clientY;
             const ex = e.clientX;
@@ -79,7 +110,7 @@ import { getValueOf } from "./options.ts";
             this.obj.root.onthis(nx, ny);
             return false;
         }
-        end() {
+        end(_e?: MouseEvent) {
             document.onmousemove = this.obj.onmousemoveDefault;
             document.onmouseup = null;
             this.obj.dragging = false;
@@ -106,8 +137,8 @@ import { getValueOf } from "./options.ts";
         return "";
     };
     pg.structures.original.popupImage = (x) => {
-        log(`original.popupImage, x.article=${x.article}, x.navpop.idNumber=${x.navpop.idNumber}`);
-        return imageHTML(x.article, x.navpop.idNumber);
+        log(`original.popupImage, x.article=${x.article}, x.navpop?.idNumber=${x.navpop?.idNumber}`);
+        return imageHTML(x.article, x.navpop?.idNumber);
     };
     pg.structures.original.popupRedirTitle = pg.structures.original.popupTitle;
     pg.structures.original.popupRedirTopLinks = pg.structures.original.popupTopLinks;

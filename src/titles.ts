@@ -26,14 +26,14 @@ import { getValueOf } from "./options.ts";
     export class Title extends Stringwrapper {
         value = null;
         anchor = "";
-        constructor(val) {
+        constructor(val?: unknown) {
             super();
             this.setUtf(val);
         }
         static fromURL = (h) => new Title().fromURL(h);
         static fromAnchor = (a) => new Title().fromAnchor(a);
         static fromWikiText = (txt) => new Title().fromWikiText(txt);
-        toString(omitAnchor) {
+        toString(omitAnchor?: unknown) {
             return this.value + (!omitAnchor && this.anchor ? `#${this.anchorString()}` : "");
         }
         anchorString() {
@@ -227,7 +227,7 @@ import { getValueOf } from "./options.ts";
         append(x) {
             this.setUtf(this.value + x);
         }
-        urlString(_x) {
+        urlString(_x?: unknown) {
             let x = _x;
             if (!x) {
                 x = {};
@@ -368,20 +368,20 @@ import { getValueOf } from "./options.ts";
         const ret = myDecodeURI(str);
         return ret || str;
     };
-    export const isDisambig = (data, article) => {
+    export const isDisambig = (data: string, article: Title) => {
         if (!getValueOf("popupAllDabsStubs") && article.namespace()) {
             return false;
         }
-        return !article.isTalkPage() && pg.re.disambig.test(data);
+        return !article.isTalkPage() && (pg.re.disambig as RegExp).test(data);
     };
-    export const stubCount = (data, article) => {
+    export const stubCount = (data: string, article: Title): false | { real: number; sect: number } => {
         if (!getValueOf("popupAllDabsStubs") && article.namespace()) {
             return false;
         }
         let sectStub = 0;
         let realStub = 0;
-        if (pg.re.stub.test(data)) {
-            const s = data.parenSplit(pg.re.stub);
+        if ((pg.re.stub as RegExp).test(data)) {
+            const s = data.parenSplit(pg.re.stub as RegExp);
             for (let i = 1; i < s.length; i = i + 2) {
                 if (s[i]) {
                     ++sectStub;

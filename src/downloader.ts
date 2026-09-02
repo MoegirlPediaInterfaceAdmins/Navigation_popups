@@ -1,4 +1,5 @@
 import { pg } from "./globals.ts";
+    import type { Navpopup } from "./navpopup.ts";
     export class Downloader {
         id: number | null = null;
         lastModified: Date | string | null = null;
@@ -10,7 +11,10 @@ import { pg } from "./globals.ts";
         http?: XMLHttpRequest;
         url: string;
         data?: string;
-        owner?: unknown;
+        owner?: Navpopup | null;
+        // set by querypreview once the wikibase item of the page is known
+        wikibaseItem?: string;
+        wikibaseRepo?: string;
         constructor(url: string) {
             if (typeof XMLHttpRequest !== "undefined") {
                 this.http = new XMLHttpRequest();
@@ -83,7 +87,7 @@ import { pg } from "./globals.ts";
         }
     }
     pg.misc.downloadsInProgress = {};
-    const newDownload = (url: string, id: number | ((d: Downloader) => void) | undefined, callback?: (d: Downloader) => void, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void) => void)): Downloader | string => {
+    const newDownload = (url: string, id: number | ((d: Downloader) => void) | null | undefined, callback?: (d: Downloader) => void, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void) => void)): Downloader | string => {
         let onfailure = _onfailure;
         const d = new Downloader(url);
         if (!d.http) {
@@ -115,7 +119,7 @@ import { pg } from "./globals.ts";
         d.setCallback(f);
         return d;
     };
-    export const fakeDownload = (url: string, id: number | undefined, callback: (d: Downloader) => void, data?: string, lastModified?: Date | string | null, owner?: unknown) => {
+    export const fakeDownload = (url: string, id: number | undefined, callback: (d: Downloader) => void, data?: string, lastModified?: Date | string | null, owner?: Navpopup | null) => {
         const d = newDownload(url, callback);
         if (typeof d === "string") {
             return;
@@ -126,7 +130,7 @@ import { pg } from "./globals.ts";
         d.lastModified = lastModified ?? null;
         return callback(d);
     };
-    export const startDownload = (url: string, id: number | undefined, callback: (d: Downloader) => void): Downloader | string => {
+    export const startDownload = (url: string, id: number | null | undefined, callback: (d: Downloader) => void): Downloader | string => {
         const d = newDownload(url, id, callback);
         if (typeof d === "string") {
             return d;

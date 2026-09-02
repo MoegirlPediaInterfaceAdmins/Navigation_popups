@@ -5,19 +5,22 @@ import { wiki2html } from "./livepreview.ts";
 import { runStopPopupTimer } from "./mouseout.ts";
 import { getValueOf } from "./options.ts";
 import { Title } from "./titles.ts";
-    const getEditboxSelection = () => {
-        let editbox;
+    const getEditboxSelection = (): string => {
+        let editbox: HTMLTextAreaElement | undefined;
         try {
-            editbox = document.editform.wpTextbox1;
-        } catch (dang) {
-            return;
+            editbox = document.editform?.wpTextbox1;
+        } catch {
+            return "";
         }
         if (document.selection) {
             return document.selection.createRange().text;
         }
+        if (!editbox) {
+            return "";
+        }
         const selStart = editbox.selectionStart;
         const selEnd = editbox.selectionEnd;
-        return editbox.value.substring(selStart, selEnd);
+        return editbox.value.substring(selStart ?? 0, selEnd ?? 0);
     };
     export const doSelectionPopup = () => {
         const sel = getEditboxSelection();
@@ -40,21 +43,25 @@ import { Title } from "./titles.ts";
         const a = document.createElement("a");
         a.href = pg.wiki.titlebase + article.urlString();
         mouseOverWikiLink2(a);
-        if (a.navpopup) {
-            a.navpopup.addHook(() => {
-                runStopPopupTimer(a.navpopup);
+        const navpop = a.navpopup;
+        if (navpop) {
+            navpop.addHook(() => {
+                runStopPopupTimer(navpop);
             }, "unhide", "after");
         }
     };
-    const doSeparateSelectionPopup = (str) => {
+    const doSeparateSelectionPopup = (str: string) => {
         let div = document.getElementById("selectionPreview");
         if (!div) {
             div = document.createElement("div");
             div.id = "selectionPreview";
             try {
-                const box = document.editform.wpTextbox1;
+                const box = document.editform?.wpTextbox1;
+                if (!box || !box.parentNode) {
+                    return;
+                }
                 box.parentNode.insertBefore(div, box);
-            } catch (error) {
+            } catch {
                 return;
             }
         }
@@ -62,15 +69,19 @@ import { Title } from "./titles.ts";
         div.ranSetupTooltipsAlready = false;
         popTipsSoonFn("selectionPreview")();
     };
+    type MousetrackFn = (x?: number, y?: number) => boolean | void;
     export class Mousetracker {
         x?: number;
         y?: number;
         loopDelay = 400;
-        timer = null;
+        timer: number | null = null;
         active = false;
         dirty = true;
-        hooks = [];
-        addHook(f) {
+        hooks: MousetrackFn[] = [];
+        lastHook_x?: number;
+        lastHook_y?: number;
+        savedHandler?: GlobalEventHandlers["onmousemove"];
+        addHook(f: MousetrackFn) {
             this.hooks.push(f);
         }
         runHooks() {
@@ -78,7 +89,7 @@ import { Title } from "./titles.ts";
                 return;
             }
             let remove = false;
-            const removeObj = {};
+            const removeObj: Record<number, boolean> = {};
             const x = this.x, y = this.y, len = this.hooks.length;
             for (let i = 0; i < len; ++i) {
                 if (this.hooks[i](x, y) === true) {
@@ -90,8 +101,8 @@ import { Title } from "./titles.ts";
                 this.removeHooks(removeObj);
             }
         }
-        removeHooks(removeObj) {
-            const newHooks = [];
+        removeHooks(removeObj: Record<number, boolean>) {
+            const newHooks: MousetrackFn[] = [];
             const len = this.hooks.length;
             for (let i = 0; i < len; ++i) {
                 if (!removeObj[i]) {
@@ -100,16 +111,16 @@ import { Title } from "./titles.ts";
             }
             this.hooks = newHooks;
         }
-        track(_e) {
+        track(_e?: MouseEvent) {
             let e = _e;
-            e ||= window.event;
-            let x, y;
+            e ||= window.event as MouseEvent | undefined;
+            let x = 0, y = 0;
             if (e) {
                 if (e.pageX) {
                     x = e.pageX;
                     y = e.pageY;
                 } else if (typeof e.clientX !== "undefined") {
-                    let left, top;
+                    let left = 0, top = 0;
                     const docElt = document.documentElement;
                     if (docElt) {
                         left = docElt.scrollLeft;
@@ -127,14 +138,14 @@ import { Title } from "./titles.ts";
                 this.setPosition(x, y);
             }
         }
-        setPosition(x, y) {
+        setPosition(x: number, y: number) {
             this.x = x;
             this.y = y;
             if (this.dirty || this.hooks.length === 0) {
                 this.dirty = false;
                 return;
             }
-            if (typeof this.lastHook_x !== "number") {
+            if (typeof this.lastHook_x !== "number" || typeof this.lastHook_y !== "number") {
                 this.lastHook_x = -100;
                 this.lastHook_y = -100;
             }

@@ -63,7 +63,7 @@ import { literalizeRegex, map } from "./tools.ts";
     };
     const setMainRegex = () => {
         const reStart = "[^:]*://";
-        let preTitles = `(?:${literalizeRegex(mw.config.get("wgScript"))}|${literalizeRegex(mw.config.get("wgScriptPath"))}/(?:index[.]php|wiki[.]phtml))`;
+        let preTitles = `(?:${literalizeRegex(String(mw.config.get("wgScript")))}|${literalizeRegex(String(mw.config.get("wgScriptPath")))}/(?:index[.]php|wiki[.]phtml))`;
         preTitles += `[?]title=|${literalizeRegex(`${pg.wiki.articlePath}/`)}`;
         const reEnd = `(${preTitles})([^&?#]*)[^#]*(?:#(.+))?`;
         pg.re.main = RegExp(reStart + literalizeRegex(pg.wiki.sitebase) + reEnd);

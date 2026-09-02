@@ -388,7 +388,7 @@ import { pg } from "./globals.ts";
         }
         return o;
     };
-    export const wiki2html = (txt, baseurl) => {
+    export const wiki2html = (txt: string, baseurl?: string) => {
         Insta.conf.baseUrl = baseurl;
         return Insta.convert(txt);
     };

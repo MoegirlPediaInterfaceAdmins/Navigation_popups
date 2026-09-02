@@ -1,5 +1,5 @@
 import { errlog, log, pg } from "./globals.ts";
-    export const nonGlobalRegex = (re) => {
+    export const nonGlobalRegex = (re: RegExp) => {
         const s = re.toString();
         let flags = "";
         let j = s.length;
@@ -11,9 +11,9 @@ import { errlog, log, pg } from "./globals.ts";
         const t = s.substring(1, j);
         return RegExp(t, flags);
     };
-    export const getJsObj = (json) => {
+    export const getJsObj = <T extends object>(json: string): T | 1 => {
         try {
-            const json_ret = JSON.parse(json);
+            const json_ret = JSON.parse(json) as T & { warnings?: { "*": string; warnings: string }[]; error?: { code: string; info: string } };
             if (json_ret.warnings) {
                 for (let w = 0; w < json_ret.warnings.length; w++) {
                     if (json_ret.warnings[w]["*"]) {
@@ -31,14 +31,14 @@ import { errlog, log, pg } from "./globals.ts";
             return 1;
         }
     };
-    export const anyChild = (obj) => {
+    export const anyChild = <T>(obj: Record<string, T>) => {
         for (const p in obj) {
             return obj[p];
         }
         return null;
     };
-    export const upcaseFirst = (str) => {
-        if (typeof str !== typeof "" || str === "") {
+    export const upcaseFirst = (str: string) => {
+        if (typeof str !== "string" || str === "") {
             return "";
         }
         return str.charAt(0).toUpperCase() + str.substring(1);
@@ -47,21 +47,21 @@ import { errlog, log, pg } from "./globals.ts";
     String.prototype.entify = function () {
         return this.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;").split('"').join("&quot;");
     };
-    const removeNulls = (val) => val !== null;
-    export const joinPath = (list) => list.filter(removeNulls).join("/");
-    export const simplePrintf = (str, subs) => {
+    const removeNulls = (val: string | null) => val !== null;
+    export const joinPath = (list: (string | null)[]) => list.filter(removeNulls).join("/");
+    export const simplePrintf = (str: string, subs: unknown[]) => {
         if (!str || !subs) {
             return str;
         }
-        const ret = [];
+        const ret: unknown[] = [];
         const s = str.parenSplit(/(%s|\$[0-9]+)/);
         let i = 0;
         do {
-            ret.push(s.shift());
+            ret.push(s.shift() ?? "");
             if (!s.length) {
                 break;
             }
-            const cmd = s.shift();
+            const cmd = s.shift() ?? "";
             if (cmd === "%s") {
                 if (i < subs.length) {
                     ret.push(subs[i]);
@@ -80,17 +80,18 @@ import { errlog, log, pg } from "./globals.ts";
         } while (s.length > 0);
         return ret.join("");
     };
-    export const isString = (x) => typeof x === "string" || x instanceof String;
-    export const isRegExp = (x) => x instanceof RegExp;
-    const isArray = (x) => Array.isArray(x);
-    export const zeroFill = (n, l = 2) => `${n}`.padStart(l, "0");
-    type Mapper = <T, U>(f: (x: T) => U, o: T | T[]) => U[];
-    export const map: Mapper = (f, o) => {
+    export const isString = (x: unknown) => typeof x === "string" || x instanceof String;
+    export const isRegExp = (x: unknown) => x instanceof RegExp;
+    const isArray = (x: unknown): x is unknown[] => Array.isArray(x);
+    export const zeroFill = (n: number, l = 2) => `${n}`.padStart(l, "0");
+    export function map<T, U>(f: (x: T) => U, o: T[]): U[];
+    export function map<T, U>(f: (x: T) => U, o: Record<string, T>): Record<string, U>;
+    export function map<T, U>(f: (x: T) => U, o: T[] | Record<string, T>): U[] | Record<string, U> {
         if (isArray(o)) {
             return map_array(f, o);
         }
-        return map_object(f, o);
-    };
+        return map_object(f, o as Record<string, never>);
+    }
     const map_array = <T, U>(f: (x: T) => U, o: T[]): U[] => {
         const ret: U[] = [];
         for (let i = 0; i < o.length; ++i) {
