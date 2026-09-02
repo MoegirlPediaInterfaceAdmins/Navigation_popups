@@ -1,30 +1,29 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { pg } from "./globals.ts";
 import { popupFilterCountCategories, popupFilterCountImages, popupFilterCountLinks, popupFilterDisambigDetect, popupFilterLastModified, popupFilterPageSize, popupFilterStubDetect, popupFilterWikibaseItem } from "./pageinfo.ts";
 import { popupString } from "./strings.ts";
-    const defaultize = (x) => {
+    const defaultize = (x: string) => {
         if (pg.option[x] === null || typeof pg.option[x] === "undefined") {
-            if (typeof window[x] !== "undefined") {
-                pg.option[x] = window[x];
+            if (typeof (window as unknown as Record<string, unknown>)[x] !== "undefined") {
+                pg.option[x] = (window as unknown as Record<string, unknown>)[x] as string | number | boolean | null | undefined;
             } else {
                 pg.option[x] = pg.optionDefault[x];
             }
         }
     };
-    const newOption = (x, def) => {
+    const newOption = (x: string, def: string | number | boolean | null | object | undefined) => {
         pg.optionDefault[x] = def;
     };
-    export const setDefault = (x, def) => newOption(x, def);
-    export const getValueOf = (varName) => {
+    export const setDefault = (x: string, def: string | number | boolean | null | object | undefined) => newOption(x, def);
+    export const getValueOf = (varName: string) => {
         defaultize(varName);
         return pg.option[varName];
     };
     export const setOptions = () => {
         let userIsSysop = false;
-        if (mw.config.get("wgUserGroups")) {
-            for (let g = 0; g < mw.config.get("wgUserGroups").length; ++g) {
-                if (mw.config.get("wgUserGroups")[g] === "sysop") {
+        const groups = mw.config.get("wgUserGroups");
+        if (groups) {
+            for (let g = 0; g < groups.length; ++g) {
+                if (groups[g] === "sysop") {
                     userIsSysop = true;
                 }
             }

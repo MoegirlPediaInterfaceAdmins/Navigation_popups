@@ -1,5 +1,3 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { makeFixDabs, popupRedlinkHTML } from "./dab.ts";
 import { loadDiff } from "./diffpreview.ts";
 import { abortAllDownloads } from "./downloader.ts";
@@ -18,7 +16,7 @@ import { addPopupShortcuts, rmPopupShortcuts } from "./shortcutkeys.ts";
 import { popupString } from "./strings.ts";
 import { Title, anchorContainsImage, isPopupLink, parseParams } from "./titles.ts";
 import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
-    export const setupTooltips = (_container: unknown, remove = false, force = false, popData = null) => {
+    export const setupTooltips = (_container?: unknown, remove = false, force = false, popData = null) => {
         let container = _container;
         log(`setupTooltips, container=${container}, remove=${remove}`);
         if (!container) {

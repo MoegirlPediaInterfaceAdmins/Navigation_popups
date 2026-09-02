@@ -1,5 +1,3 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { setupTooltips } from "./actions.ts";
 import { autoClickToken, autoEdit } from "./autoedit.ts";
 import { abortAllDownloads, startDownload } from "./downloader.ts";

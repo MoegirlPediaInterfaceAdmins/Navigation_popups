@@ -1,5 +1,3 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { mouseOverWikiLink2 } from "./actions.ts";
 import { pg } from "./globals.ts";
 import { popTipsSoonFn } from "./htmloutput.ts";
@@ -65,6 +63,8 @@ import { Title } from "./titles.ts";
         popTipsSoonFn("selectionPreview")();
     };
     export class Mousetracker {
+        x?: number;
+        y?: number;
         loopDelay = 400;
         timer = null;
         active = false;

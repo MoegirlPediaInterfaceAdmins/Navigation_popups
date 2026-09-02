@@ -1,17 +1,18 @@
-import type { Pg } from "./types/pg.ts";
+import type { Pg, WikiInfo } from "./types/pg.ts";
 
 export const pg: Pg = {
     api: {},
     re: {},
     ns: {},
     string: {},
-    wiki: {},
+    // filled in by init.ts at setup time
+    wiki: {} as WikiInfo,
     user: {},
     misc: {},
     option: {},
     optionDefault: {},
     flag: {},
-    cache: {},
+    cache: { pages: [] },
     structures: {},
     timer: {},
     counter: {},

@@ -1,5 +1,3 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { errlog, log, pg } from "./globals.ts";
     export const nonGlobalRegex = (re) => {
         const s = re.toString();
@@ -45,7 +43,7 @@ import { errlog, log, pg } from "./globals.ts";
         }
         return str.charAt(0).toUpperCase() + str.substring(1);
     };
-    export const literalizeRegex = (str) => mw.util.escapeRegExp(str);
+    export const literalizeRegex = (str: string) => mw.util.escapeRegExp(str);
     String.prototype.entify = function () {
         return this.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;").split('"').join("&quot;");
     };
@@ -86,23 +84,25 @@ import { errlog, log, pg } from "./globals.ts";
     export const isRegExp = (x) => x instanceof RegExp;
     const isArray = (x) => Array.isArray(x);
     export const zeroFill = (n, l = 2) => `${n}`.padStart(l, "0");
-    export const map = (f, o) => {
+    type Mapper = <T, U>(f: (x: T) => U, o: T | T[]) => U[];
+    export const map: Mapper = (f, o) => {
         if (isArray(o)) {
             return map_array(f, o);
         }
         return map_object(f, o);
     };
-    const map_array = (f, o) => {
-        const ret = [];
+    const map_array = <T, U>(f: (x: T) => U, o: T[]): U[] => {
+        const ret: U[] = [];
         for (let i = 0; i < o.length; ++i) {
             ret.push(f(o[i]));
         }
         return ret;
     };
-    const map_object = (f, o) => {
-        const ret = {};
+    const map_object = <T, U>(f: (x: T) => U, o: Record<string, T>): Record<string, U> => {
+        const ret: Record<string, U> = {};
         for (const i in o) {
-            ret[o] = f(o[i]);
+            // upstream indexes by the object itself (implicit string key); kept verbatim
+            ret[String(o)] = f(o[i]);
         }
         return ret;
     };

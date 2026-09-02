@@ -1,6 +1,5 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { setupTooltips } from "./actions.ts";
+import type { SpecialPageAlias } from "./types/pg.ts";
 import { setupDebugging } from "./debug.ts";
 import { log, pg } from "./globals.ts";
 import { setupLivePreview } from "./livepreview.ts";
@@ -26,7 +25,7 @@ import { literalizeRegex, map } from "./tools.ts";
         const params = {
             action: "query",
             list: "users",
-            ususers: mw.config.get("wgUserName"),
+            ususers: mw.config.get("wgUserName") ?? "",
             usprop: "rights",
         };
         pg.user.canReview = false;
@@ -69,7 +68,7 @@ import { literalizeRegex, map } from "./tools.ts";
         const reEnd = `(${preTitles})([^&?#]*)[^#]*(?:#(.+))?`;
         pg.re.main = RegExp(reStart + literalizeRegex(pg.wiki.sitebase) + reEnd);
     };
-    const buildSpecialPageGroup = (specialPageObj) => {
+    const buildSpecialPageGroup = (specialPageObj: { realname: string; aliases: string[] }) => {
         const variants = [];
         variants.push(mw.util.escapeRegExp(specialPageObj.realname));
         variants.push(mw.util.escapeRegExp(encodeURI(specialPageObj.realname)));
@@ -83,7 +82,7 @@ import { literalizeRegex, map } from "./tools.ts";
         setMainRegex();
         const sp = nsRe(pg.nsSpecialId);
         pg.re.urlNoPopup = RegExp(`((title=|/)${sp}(?:%3A|:)|section=[0-9]|^#$)`);
-        pg.wiki.specialpagealiases.forEach((specialpage) => {
+        pg.wiki.specialpagealiases.forEach((specialpage: SpecialPageAlias) => {
             if (specialpage.realname === "Contributions") {
                 pg.re.contribs = RegExp(`(title=|/)${sp}(?:%3A|:)(?:${buildSpecialPageGroup(specialpage)})(&target=|/|/${nsRe(pg.nsUserId)}:)(.*)`, "i");
             } else if (specialpage.realname === "Diff") {
@@ -100,8 +99,8 @@ import { literalizeRegex, map } from "./tools.ts";
         pg.re.category = RegExp(`\\[\\[${nsRe(pg.nsCategoryId)}: *([^|\\]]*[^|\\] ]) *`, "i");
         pg.re.categoryBracketCount = 1;
         pg.re.ipUser = RegExp("^(?::(?::|(?::[0-9A-Fa-f]{1,4}){1,7})|[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4}){0,6}::|[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4}){7})|(((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9]))$");
-        pg.re.stub = RegExp(getValueOf("popupStubRegexp"), "im");
-        pg.re.disambig = RegExp(getValueOf("popupDabRegexp"), "im");
+        pg.re.stub = RegExp(getValueOf("popupStubRegexp") as string, "im");
+        pg.re.disambig = RegExp(getValueOf("popupDabRegexp") as string, "im");
         pg.re.oldid = /[?&]oldid=([^&]*)/;
         pg.re.diff = /[?&]diff=([^&]*)/;
     };
@@ -130,7 +129,7 @@ import { literalizeRegex, map } from "./tools.ts";
             to: "&",
         }];
     };
-    export const getMwApi = () => {
+    export const getMwApi = (): mw.Api => {
         if (!pg.api.client) {
             pg.api.userAgent = `Navigation popups/1.0 (${mw.config.get("wgServerName")})`;
             pg.api.client = new mw.Api({
@@ -143,7 +142,11 @@ import { literalizeRegex, map } from "./tools.ts";
         }
         return pg.api.client;
     };
-    export const setupPopups = async (callback) => {
+    interface SetupPopups {
+        (callback?: () => void): Promise<void>;
+        completed?: boolean;
+    }
+    export const setupPopups: SetupPopups = async (callback?: () => void) => {
         if (setupPopups.completed) {
             if (typeof callback === "function") {
                 callback();

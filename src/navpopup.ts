@@ -1,6 +1,5 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { Drag } from "./domdrag.ts";
+    import type { Downloader } from "./downloader.ts";
 import { log } from "./globals.ts";
 import { Mousetracker } from "./selpop.ts";
     export class Navpopup {
@@ -10,26 +9,45 @@ import { Mousetracker } from "./selpop.ts";
         uid = Navpopup.uid++;
         visible = false;
         noshow = false;
-        hooks = {
+        hooks: Record<string, ({
+            hook: (this: Navpopup) => boolean | void;
+            when: string;
+            hookId: string | null;
+        } | null)[]> = {
             create: [],
             unhide: [],
             hide: [],
         };
-        hookIds = {};
-        downloads = [];
+        hookIds: Record<string, boolean> = {};
+        downloads: Downloader[] = [];
+        stable_x = 0;
+        stable_y = 0;
+        showSoonStableTimer?: number;
+        className?: string;
         pending = null;
         fuzz = 5;
         constrained = true;
         width = 0;
         height = 0;
-        mainDiv = null;
+        mainDiv!: HTMLDivElement;
+        left?: number;
+        top?: number;
+        tooWide?: boolean;
+        maxWidth?: number;
+        article?: unknown;
+        originalArticle?: unknown;
+        parentPopup?: Navpopup | null;
+        parentAnchor?: HTMLAnchorElement | null;
+        mouseLeavingTime?: number | null;
+        stopPopupTimer?: number;
+        idNumber?: number;
         constructor() {
             this.createMainDiv();
         }
         isVisible() {
             return this.visible;
         }
-        reposition(x, y, noLimitHor) {
+        reposition(x?: number | null, y?: number | null, noLimitHor?: boolean) {
             log(`reposition(${x},${y},${noLimitHor})`);
             if (typeof x !== "undefined" && x !== null) {
                 this.left = x;
@@ -50,13 +68,13 @@ import { Mousetracker } from "./selpop.ts";
                 return;
             }
             this.updateDimensions();
-            const x = this.left;
+            const x = this.left ?? Number.NaN;
             const w = this.width;
             const cWidth = document.body.clientWidth;
-            if (x + w >= cWidth || x > 0 && this.maxWidth && this.width < this.maxWidth && this.height > this.width && x > cWidth - this.maxWidth) {
+            if (x + w >= cWidth || x > 0 && this.maxWidth && this.width < this.maxWidth && this.height > this.width && x > cWidth - (this.maxWidth ?? Number.NaN)) {
                 this.mainDiv.style.left = "-10000px";
                 this.mainDiv.style.width = `${this.maxWidth}px`;
-                const naturalWidth = parseInt(this.mainDiv.offsetWidth, 10);
+                const naturalWidth = parseInt(String(this.mainDiv.offsetWidth), 10);
                 let newLeft = cWidth - naturalWidth - 1;
                 if (newLeft < 0) {
                     newLeft = 0;
@@ -67,7 +85,7 @@ import { Mousetracker } from "./selpop.ts";
             }
         }
         raise() {
-            this.mainDiv.style.zIndex = Navpopup.highest + 1;
+            this.mainDiv.style.zIndex = String(Navpopup.highest + 1);
             ++Navpopup.highest;
         }
         show() {
@@ -78,7 +96,7 @@ import { Mousetracker } from "./selpop.ts";
             this.raise();
             this.unhide();
         }
-        showSoonIfStable(time) {
+        showSoonIfStable(time: number) {
             log(`showSoonIfStable, time=${time}`);
             if (this.visible) {
                 return;
@@ -89,18 +107,18 @@ import { Mousetracker } from "./selpop.ts";
             const stableShow = () => {
                 log("stableShow called");
                 const new_x = Navpopup.tracker.x, new_y = Navpopup.tracker.y;
-                const dx = this.stable_x - new_x, dy = this.stable_y - new_y;
+                const dx = this.stable_x - (new_x ?? Number.NaN), dy = this.stable_y - (new_y ?? Number.NaN);
                 const fuzz2 = 0;
                 if (dx * dx <= fuzz2 && dy * dy <= fuzz2) {
                     log("mouse is stable");
                     clearInterval(this.showSoonStableTimer);
-                    this.reposition.bind(this)(new_x + 2, new_y + 2);
+                    this.reposition.bind(this)((new_x ?? 0) + 2, (new_y ?? 0) + 2);
                     this.show.bind(this)();
                     this.limitHorizontalPosition.bind(this)();
                     return;
                 }
-                this.stable_x = new_x;
-                this.stable_y = new_y;
+                this.stable_x = new_x ?? Number.NaN;
+                this.stable_y = new_y ?? Number.NaN;
             };
             this.showSoonStableTimer = setInterval(stableShow, time / 2);
         }
@@ -113,24 +131,25 @@ import { Mousetracker } from "./selpop.ts";
             }
             this.hide();
         }
-        runHooks(key, when) {
+        runHooks(key: string, when?: string) {
             if (!this.hooks[key]) {
                 return;
             }
             const keyHooks = this.hooks[key];
             const len = keyHooks.length;
             for (let i = 0; i < len; ++i) {
-                if (keyHooks[i] && keyHooks[i].when === when) {
-                    if (keyHooks[i].hook.bind(this)()) {
-                        if (keyHooks[i].hookId) {
-                            Reflect.deleteProperty(this.hookIds, keyHooks[i].hookId);
+                const entry = keyHooks[i];
+                if (entry && entry.when === when) {
+                    if (entry.hook.bind(this)()) {
+                        if (entry.hookId) {
+                            Reflect.deleteProperty(this.hookIds, entry.hookId);
                         }
                         keyHooks[i] = null;
                     }
                 }
             }
         }
-        addHook(hook, key, _when, uid) {
+        addHook(hook: () => boolean | void, key: string, _when?: string, uid?: string) {
             const when = _when || "after";
             if (!this.hooks[key]) {
                 return;
@@ -150,9 +169,6 @@ import { Mousetracker } from "./selpop.ts";
             });
         }
         createMainDiv() {
-            if (this.mainDiv) {
-                return;
-            }
             this.runHooks("create", "before");
             const mainDiv = document.createElement("div");
             const savedThis = this;
@@ -170,13 +186,10 @@ import { Mousetracker } from "./selpop.ts";
             document.body.appendChild(mainDiv);
             this.runHooks("create", "after");
         }
-        onclickHandler() {
+        onclickHandler(_e?: MouseEvent) {
             this.raise();
         }
-        makeDraggable(handleName) {
-            if (!this.mainDiv) {
-                this.createMainDiv();
-            }
+        makeDraggable(handleName?: string) {
             const drag = new Drag();
             if (!handleName) {
                 drag.startCondition = (e) => {
@@ -190,7 +203,7 @@ import { Mousetracker } from "./selpop.ts";
                     return true;
                 };
             }
-            let dragHandle;
+            let dragHandle: HTMLElement | null = null;
             if (handleName) {
                 dragHandle = document.getElementById(handleName);
             }
@@ -207,7 +220,7 @@ import { Mousetracker } from "./selpop.ts";
         hide() {
             this.runHooks("hide", "before");
             this.abortDownloads();
-            if (typeof this.visible !== "undefined" && this.visible) {
+            if (this.visible) {
                 this.mainDiv.style.display = "none";
                 this.visible = false;
             }
@@ -215,28 +228,30 @@ import { Mousetracker } from "./selpop.ts";
         }
         unhide() {
             this.runHooks("unhide", "before");
-            if (typeof this.visible !== "undefined" && !this.visible) {
+            if (!this.visible) {
                 this.mainDiv.style.display = "inline";
                 this.visible = true;
             }
             this.runHooks("unhide", "after");
         }
-        setInnerHTML(html) {
+        setInnerHTML(html: string) {
             this.mainDiv.innerHTML = html;
         }
         updateDimensions() {
-            this.width = parseInt(this.mainDiv.offsetWidth, 10);
-            this.height = parseInt(this.mainDiv.offsetHeight, 10);
+            this.width = parseInt(String(this.mainDiv.offsetWidth), 10);
+            this.height = parseInt(String(this.mainDiv.offsetHeight), 10);
         }
-        isWithin(x, y) {
+        isWithin(x?: number, y?: number, _fuzz?: number, _parent?: HTMLElement | null) {
             if (!this.visible) {
                 return false;
             }
             this.updateDimensions();
             const fuzz = this.fuzz || 0;
-            return x + fuzz >= this.left && x - fuzz <= this.left + this.width && y + fuzz >= this.top && y - fuzz <= this.top + this.height;
+            const left = this.left ?? Number.NaN;
+            const top = this.top ?? Number.NaN;
+            return (x ?? Number.NaN) + fuzz >= left && (x ?? Number.NaN) - fuzz <= left + this.width && (y ?? Number.NaN) + fuzz >= top && (y ?? Number.NaN) - fuzz <= top + this.height;
         }
-        addDownload(download) {
+        addDownload(download: Downloader) {
             if (!download) {
                 return;
             }

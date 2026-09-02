@@ -1,11 +1,10 @@
-// @ts-nocheck -- typing debt carried over from the upstream-synced JS sources; lifted file by file as the typing effort proceeds (see README)
-/* eslint-disable -- legacy upstream-derived code; lint debt is retired file by file together with the ts-nocheck header (see README) */
 import { killPopup } from "./actions.ts";
 import { pg } from "./globals.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
-    const popupHandleKeypress = (evt) => {
-        const keyCode = window.event ? window.event.keyCode : evt.keyCode ? evt.keyCode : evt.which;
+    type PopupHandleKeypress = NonNullable<GlobalEventHandlers["onkeypress"]> & { lastPopupLinkSelected?: Element | null };
+    const popupHandleKeypress: PopupHandleKeypress = (evt) => {
+        const keyCode = window.event ? (window.event as KeyboardEvent).keyCode : evt && evt.keyCode ? evt.keyCode : evt?.which;
         if (!keyCode || !pg.current.link || !pg.current.link.navpopup) {
             return;
         }
@@ -30,7 +29,7 @@ import { popupString } from "./strings.ts";
                 if (evt && evt.preventDefault) {
                     evt.preventDefault();
                 }
-                links[i].trigger("focus");
+                (links[i] as unknown as { trigger: (s: string) => void }).trigger("focus");
                 popupHandleKeypress.lastPopupLinkSelected = links[i];
                 return false;
             }
@@ -53,17 +52,17 @@ import { popupString } from "./strings.ts";
                 document.onkeypress = null;
                 return;
             }
-            document.onkeypress = document.oldPopupOnkeypress;
+            document.onkeypress = document.oldPopupOnkeypress ?? null;
         } catch { }
     };
-    const addLinkProperty = (html, property) => {
+    const addLinkProperty = (html: string, property: string) => {
         const i = html.indexOf(">");
         if (i < 0) {
             return html;
         }
         return `${html.substring(0, i)} ${property}${html.substring(i)}`;
     };
-    export const addPopupShortcut = (html, _key) => {
+    export const addPopupShortcut = (html: string, _key?: string | null) => {
         let key = _key;
         if (!getValueOf("popupShortcutKeys")) {
             return html;
