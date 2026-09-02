@@ -119,10 +119,6 @@ export const diffString = (o: string, n: string, simpleSplit?: boolean) => {
     return str;
 };
 const jsReservedProperties = RegExp("^(constructor|prototype|__((define|lookup)[GS]etter)__|eval|hasOwnProperty|propertyIsEnumerable|to(Source|String|LocaleString)|(un)?watch|valueOf)$");
-interface DiffBugAlert {
-    (word: string): void;
-    list: Record<string, number>;
-}
 const diffBugAlert = (word: string) => {
     if (!diffBugAlert.list[word]) {
         diffBugAlert.list[word] = 1;
@@ -142,7 +138,7 @@ const makeDiffHashtable = (src: DiffCell[]) => {
         }
         try {
             ret[key].push(i);
-        } catch (err) {
+        } catch {
             diffBugAlert(key);
         }
     }
@@ -153,7 +149,7 @@ export const diff = (o: DiffCell[], n: DiffCell[]): { o: DiffCell[]; n: DiffCell
     const os = makeDiffHashtable(o);
     let i: string | number;
     for (i in ns) {
-        if (ns[i].length === 1 && os[i] && os[i].length === 1) {
+        if (ns[i].length === 1 && os[i]?.length === 1) {
             n[ns[i][0]] = {
                 text: textOf(n[ns[i][0]]),
                 row: os[i][0],

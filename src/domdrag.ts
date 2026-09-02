@@ -43,11 +43,10 @@ export class Drag {
         return e;
     };
     init(o: HTMLElement, oRoot: HTMLElement) {
-        const dragObj = this;
         const obj = o as DragHandle;
         this.obj = obj;
         obj.onmousedown = (e) => {
-            dragObj.start.bind(dragObj)(e);
+            this.start.bind(this)(e);
         };
         obj.dragging = false;
         obj.popups_draggable = true;
@@ -60,9 +59,9 @@ export class Drag {
         if (isNaN(parseInt(obj.root.style.top, 10))) {
             obj.root.style.top = "0px";
         }
-        obj.root.onthisStart = () => { };
-        obj.root.onthisEnd = () => { };
-        obj.root.onthis = () => { };
+        obj.root.onthisStart = () => { /* no-op by design */ };
+        obj.root.onthisEnd = () => { /* no-op by design */ };
+        obj.root.onthis = () => { /* no-op by design */ };
     }
     start(_e?: MouseEvent) {
         let e = _e;
@@ -79,14 +78,13 @@ export class Drag {
         o.root.onthisStart(x, y);
         o.lastMouseX = e.clientX;
         o.lastMouseY = e.clientY;
-        const dragObj = this;
         o.onmousemoveDefault = document.onmousemove;
         o.dragging = true;
         document.onmousemove = (e) => {
-            dragObj.drag.bind(dragObj)(e);
+            this.drag.bind(this)(e);
         };
         document.onmouseup = (e) => {
-            dragObj.end.bind(dragObj)(e);
+            this.end.bind(this)();
         };
         return false;
     }
@@ -110,7 +108,7 @@ export class Drag {
         this.obj.root.onthis(nx, ny);
         return false;
     }
-    end(_e?: MouseEvent) {
+    end() {
         document.onmousemove = this.obj.onmousemoveDefault;
         document.onmouseup = null;
         this.obj.dragging = false;

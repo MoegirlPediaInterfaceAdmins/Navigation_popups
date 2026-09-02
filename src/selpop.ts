@@ -35,7 +35,8 @@ export const doSelectionPopup = () => {
     }
     const article = new Title(sel.substring(open + 2, pipe < 0 ? close : pipe));
     if (getValueOf("popupOnEditSelection") === "boxpreview") {
-        doSeparateSelectionPopup(sel); return;
+        doSeparateSelectionPopup(sel);
+        return;
     }
     if (close > 0 && sel.substring(close + 2).includes("[[")) {
         return;
@@ -69,7 +70,7 @@ const doSeparateSelectionPopup = (str: string) => {
     div.ranSetupTooltipsAlready = false;
     popTipsSoonFn("selectionPreview")();
 };
-type MousetrackFn = (x?: number, y?: number) => boolean | void;
+type MousetrackFn = (x?: number, y?: number) => boolean | undefined;
 export class Mousetracker {
     x?: number;
     y?: number;
@@ -167,13 +168,12 @@ export class Mousetracker {
         }
         this.active = true;
         this.savedHandler = document.onmousemove;
-        const savedThis = this;
         document.onmousemove = (e) => {
-            savedThis.track.bind(savedThis)(e);
+            this.track.bind(this)(e);
         };
         if (this.loopDelay) {
             this.timer = setInterval(() => {
-                savedThis.runHooks();
+                this.runHooks();
             }, this.loopDelay);
         }
     }

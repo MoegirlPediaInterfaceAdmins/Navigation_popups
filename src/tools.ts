@@ -11,22 +11,22 @@ export const nonGlobalRegex = (re: RegExp) => {
     const t = s.substring(1, j);
     return RegExp(t, flags);
 };
-export const getJsObj = <T extends object>(json: string): T | 1 => {
+export const getJsObj = (json: string): object | 1 => {
     try {
-        const json_ret = JSON.parse(json) as T & { warnings?: { "*": string; warnings: string }[]; error?: { code: string; info: string } };
+        const json_ret = JSON.parse(json) as { warnings?: { "*": string; warnings: string }[]; error?: { code: string; info: string } } & object;
         if (json_ret.warnings) {
-            for (let w = 0; w < json_ret.warnings.length; w++) {
-                if (json_ret.warnings[w]["*"]) {
-                    log(json_ret.warnings[w]["*"]);
+            for (const warning of json_ret.warnings) {
+                if (warning["*"]) {
+                    log(warning["*"]);
                 } else {
-                    log(json_ret.warnings[w].warnings);
+                    log(warning.warnings);
                 }
             }
         } else if (json_ret.error) {
             errlog(`${json_ret.error.code}: ${json_ret.error.info}`);
         }
         return json_ret;
-    } catch (someError) {
+    } catch {
         errlog(`Something went wrong with getJsObj, json=${json}`);
         return 1;
     }
@@ -83,6 +83,11 @@ export const simplePrintf = (str: string, subs: unknown[]) => {
 export const isString = (x: unknown) => typeof x === "string" || x instanceof String;
 export const isRegExp = (x: unknown) => x instanceof RegExp;
 const isArray = (x: unknown): x is unknown[] => Array.isArray(x);
+// Identity at runtime; documents that the caller guarantees a non-nullish
+// value (an upstream runtime invariant the types cannot carry). Crashes
+// exactly where the untyped original would.
+export const assume = <T>(value: T | null | undefined): T => value as unknown as T;
+
 export const zeroFill = (n: number, l = 2) => `${n}`.padStart(l, "0");
 export function map<T, U>(f: (x: T) => U, o: T[]): U[];
 export function map<T, U>(f: (x: T) => U, o: Record<string, T>): Record<string, U>;
@@ -94,8 +99,8 @@ export function map<T, U>(f: (x: T) => U, o: T[] | Record<string, T>): U[] | Rec
 }
 const map_array = <T, U>(f: (x: T) => U, o: T[]): U[] => {
     const ret: U[] = [];
-    for (let i = 0; i < o.length; ++i) {
-        ret.push(f(o[i]));
+    for (const item of o) {
+        ret.push(f(item));
     }
     return ret;
 };

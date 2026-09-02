@@ -8,6 +8,7 @@ import { addPopupShortcut } from "./shortcutkeys.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { isInMainNamespace, isInStrippableNamespace, safeDecodeURI } from "./titles.ts";
 import type { Title } from "./titles.ts";
+import { assume } from "./tools.ts";
 const defaultNavlinkSpec = () => {
     let str = "";
     str += "<b><<mainlink|shortcut= >></b>";
@@ -67,13 +68,13 @@ const expandConditionalNavlinkString = (s: string, article: Title, z: Record<str
                 testResult = !!(typeof rcid !== "undefined" && rcid);
                 break;
             case "ipuser":
-                testResult = !!article.isIpUser();
+                testResult = article.isIpUser();
                 break;
             case "mainspace_en":
                 testResult = isInMainNamespace(article) && pg.wiki.hostname === "en.wikipedia.org";
                 break;
             case "wikimedia":
-                testResult = !!pg.wiki.wikimedia;
+                testResult = pg.wiki.wikimedia;
                 break;
             case "diff":
                 testResult = !!(typeof diff !== "undefined" && diff);
@@ -144,8 +145,7 @@ export const navlinkStringToHTML = (s: string, article: Title, params?: Record<s
     let html = "";
     let menudepth = 0;
     let menurowdepth = 0;
-    for (let i = 0; i < p.length; ++i) {
-        const item = p[i];
+    for (const item of p) {
         if (typeof item === "string") {
             html += navlinkSubstituteHTML(item);
             menudepth += navlinkDepth("menu", item);
@@ -239,7 +239,7 @@ class NavlinkTag implements LinkSpec {
             case "userlog":
             case "userSpace":
             case "deletedContribs":
-                this.article = this.article.userName()!;
+                this.article = assume(this.article.userName());
         }
         switch (this.id) {
             case "userTalk":
@@ -249,7 +249,7 @@ class NavlinkTag implements LinkSpec {
             case "monobook":
             case "editMonobook":
             case "blocklog":
-                this.article = this.article.userName(true)!;
+                this.article = assume(this.article.userName(true));
                 Reflect.deleteProperty(this, "oldid");
                 break;
             case "pagelog":
@@ -421,7 +421,7 @@ class NavlinkTag implements LinkSpec {
                 break;
             case "userTalk":
             case "talk":
-                this.article = this.article.talkPage()!;
+                this.article = assume(this.article.talkPage());
                 Reflect.deleteProperty(this, "oldid");
                 this.print = wikiLink;
                 this.action = "view";
@@ -478,13 +478,13 @@ class NavlinkTag implements LinkSpec {
             case "editUserTalk":
             case "editTalk":
                 Reflect.deleteProperty(this, "oldid");
-                this.article = this.article.talkPage()!;
+                this.article = assume(this.article.talkPage());
                 this.action = "edit";
                 this.print = wikiLink;
                 break;
             case "newUserTalk":
             case "newTalk":
-                this.article = this.article.talkPage()!;
+                this.article = assume(this.article.talkPage());
                 this.action = "edit&section=new";
                 this.print = wikiLink;
                 break;

@@ -73,10 +73,10 @@ export const loadDiff = async (article: Title, oldid: string | number | null, di
             params.torev = diff || 0;
             break;
     }
-    const data = await api.get(params);
+    const data = await api.get(params) as { compare: { fromrevid: number; torevid: number } };
     navpop.diffData.oldRev.revid = data.compare.fromrevid;
     navpop.diffData.newRev.revid = data.compare.torevid;
-    addReviewLink(navpop, "popupMiscTools");
+    void addReviewLink(navpop, "popupMiscTools");
     const go = () => {
         pendingNavpopTask(navpop);
         let url = `${pg.wiki.apiwikibase}?format=json&formatversion=2&action=query&`;
@@ -108,7 +108,7 @@ const addReviewLink = async (navpop: Navpopup, target: string) => {
         revids: diffData.oldRev.revid,
         formatversion: 2,
     };
-    const data = await getMwApi().get(params);
+    const data = await getMwApi().get(params) as { query: { pages: { flagged?: { stable_revid?: number } }[] } };
 
     const stable_revid = data.query.pages[0].flagged?.stable_revid || 0;
     if (stable_revid === diffData.oldRev.revid) {
@@ -141,17 +141,17 @@ const doneDiff = (download: Downloader) => {
     let pages: { revisions?: RevisionData[] }[] | undefined;
     let revisions: RevisionData[] = [];
     try {
-        pages = (getJsObj<{ query?: { pages?: { revisions?: RevisionData[] }[] } }>(download.data ?? "") as { query?: { pages?: { revisions?: RevisionData[] }[] } }).query?.pages;
+        pages = (getJsObj(download.data ?? "") as { query?: { pages?: { revisions?: RevisionData[] }[] } }).query?.pages;
         if (pages) {
-            for (let i = 0; i < pages.length; i++) {
-                revisions = revisions.concat(pages[i].revisions ?? []);
+            for (const page of pages) {
+                revisions = revisions.concat(page.revisions ?? []);
             }
         }
-        for (let j = 0; j < revisions.length; j++) {
-            if (revisions[j].revid === diffData.oldRev.revid) {
-                diffData.oldRev.revision = revisions[j];
-            } else if (revisions[j].revid === diffData.newRev.revid) {
-                diffData.newRev.revision = revisions[j];
+        for (const revision of revisions) {
+            if (revision.revid === diffData.oldRev.revid) {
+                diffData.oldRev.revision = revision;
+            } else if (revision.revid === diffData.newRev.revid) {
+                diffData.newRev.revision = revision;
             }
         }
     } catch {

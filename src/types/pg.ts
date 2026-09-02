@@ -4,6 +4,10 @@
 // plus assertions at read sites are preferred over `any` so that the strict
 // type-checked lint rules keep working.
 
+import type { Downloader } from "../downloader.ts";
+import type { Navpopup } from "../navpopup.ts";
+import type { Title } from "../titles.ts";
+
 export type AnyRecord = Record<string, any>;
 
 export interface SpecialPageAlias {
@@ -37,9 +41,9 @@ export interface PopupStructure {
 // descriptor; kept loose until navlinks.ts is fully typed).
 export interface StructureContext {
     a?: unknown;
-    article: import("../titles.ts").Title;
+    article: Title;
     hint?: string | null;
-    navpop?: import("../navpopup.ts").Navpopup;
+    navpop?: Navpopup;
     params?: Record<string, string | null>;
     [key: string]: unknown;
 }
@@ -68,7 +72,7 @@ export interface WikiInfo {
 }
 
 export interface CurrentState {
-    article?: import("../titles.ts").Title;
+    article?: Title;
     link?: HTMLAnchorElement | null;
     links: HTMLAnchorElement[];
     linksHash: Record<string, unknown>;
@@ -93,7 +97,7 @@ export interface Pg {
     misc: {
         decodeExtras?: { from: string; to: string }[];
         defaultNavlinkClassname?: string;
-        downloadsInProgress?: Record<string, import("../downloader.ts").Downloader>;
+        downloadsInProgress?: Record<string, Downloader>;
         layout?: (string | string[])[];
         redirSpans?: string[];
         [key: string]: unknown;
@@ -106,10 +110,15 @@ export interface Pg {
         [key: string]: unknown;
     };
     structures: Record<string, PopupStructure>;
-    timer: Record<string, (() => void) | null | unknown>;
-    counter: Record<string, number | unknown>;
+    timer: Record<string, unknown>;
+    counter: Record<string, unknown>;
     current: CurrentState;
-    fn: AnyRecord;
+    fn: {
+        // called directly from autoedit; other members are addressed through
+        // generated javascript: URLs and stay loosely typed
+        modifyWatchlist?: (title: string | null, action: string | null) => Promise<void>;
+        [key: string]: unknown;
+    };
     endoflist: null;
     // namespace ids and misc scalars assigned at init time
     nsSpecialId?: number;

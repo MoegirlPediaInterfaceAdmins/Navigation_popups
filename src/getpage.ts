@@ -11,7 +11,7 @@ export const getPageWithCaching = (url: string, onComplete: (d: Downloader) => v
         fakeDownload(url, owner.idNumber, onComplete, page.data, page.lastModified, owner);
     } else {
         d = getPage(url, onComplete, owner);
-        if (d && owner && owner.addDownload && !(typeof d === "string")) {
+        if (d && owner?.addDownload && !(typeof d === "string")) {
             owner.addDownload(d);
             d.owner = owner;
         }

@@ -1,5 +1,6 @@
 import { pg } from "./globals.ts";
 import { getValueOf } from "./options.ts";
+import { assume } from "./tools.ts";
 class Stringwrapper {
     value: string | null = null;
     indexOf(x: string) {
@@ -74,7 +75,7 @@ export class Title extends Stringwrapper {
             let ret = decodeURI(this.decodeEscapes(txt));
             ret = ret.replace(/[_ ]*$/, "");
             return ret;
-        } catch (e) {
+        } catch {
             return txt;
         }
     }
@@ -134,11 +135,11 @@ export class Title extends Stringwrapper {
     }
     namespaceId() {
         try {
-            const n = (this.value!).indexOf(":");
+            const n = assume(this.value).indexOf(":");
             if (n < 0) {
                 return 0;
             }
-            const namespaceId = mw.config.get("wgNamespaceIds")[(this.value!).substring(0, n).split(" ").join("_").toLowerCase()];
+            const namespaceId = mw.config.get("wgNamespaceIds")[assume(this.value).substring(0, n).split(" ").join("_").toLowerCase()];
             if (typeof namespaceId === "undefined") {
                 return 0;
             }
@@ -200,15 +201,15 @@ export class Title extends Stringwrapper {
         return (pg.re.ipUser as RegExp).test(String(this.userName()));
     }
     stripNamespace() {
-        const n = (this.value!).indexOf(":");
+        const n = assume(this.value).indexOf(":");
         if (n < 0) {
-            return this.value!;
+            return assume(this.value);
         }
         const namespaceId = this.namespaceId();
         if (namespaceId === pg.nsMainspaceId) {
-            return this.value!;
+            return assume(this.value);
         }
-        return (this.value!).substring(n + 1);
+        return assume(this.value).substring(n + 1);
     }
     setUtf(value: string | Stringwrapper | null | undefined) {
         if (!value) {
@@ -341,10 +342,10 @@ export const parseParams = (_url: string): Record<string, string | null> => {
     url = url.split("#")[0];
     const s = url.split("?").slice(1).join();
     const t = s.split("&");
-    for (let i = 0; i < t.length; ++i) {
-        const z: (string | null)[] = t[i].split("=");
+    for (const pair of t) {
+        const z: (string | null)[] = pair.split("=");
         z.push(null);
-        ret[z[0]!] = z[1];
+        ret[assume(z[0])] = z[1];
     }
     if (ret.diff && typeof ret.oldid === "undefined") {
         ret.oldid = "prev";
@@ -360,13 +361,13 @@ const myDecodeURI = (str: string | Stringwrapper): string | Stringwrapper => {
     let ret;
     try {
         ret = decodeURI(str.toString());
-    } catch (summat) {
+    } catch {
         return str;
     }
     const extras = pg.misc.decodeExtras;
     for (let i = 0; i < (extras?.length ?? 0); ++i) {
-        const from = extras![i].from;
-        const to = extras![i].to;
+        const from = assume(extras)[i].from;
+        const to = assume(extras)[i].to;
         ret = ret.split(from).join(to);
     }
     return ret;
@@ -410,8 +411,8 @@ export const anchorContainsImage = (a: HTMLAnchorElement | null) => {
         return false;
     }
     const kids = a.childNodes;
-    for (let i = 0; i < kids.length; ++i) {
-        if (kids[i].nodeName === "IMG") {
+    for (const kid of kids) {
+        if (kid.nodeName === "IMG") {
             return true;
         }
     }
@@ -444,10 +445,10 @@ const markNopopupSpanLinks: (() => void) & { done?: boolean } = () => {
         fixVectorMenuPopups();
     }
     const s = $(".nopopups").toArray();
-    for (let i = 0; i < s.length; ++i) {
-        const as = s[i].getElementsByTagName("a");
-        for (let j = 0; j < as.length; ++j) {
-            as[j].inNopopupSpan = true;
+    for (const container of s) {
+        const as = container.getElementsByTagName("a");
+        for (const a of as) {
+            a.inNopopupSpan = true;
         }
     }
     markNopopupSpanLinks.done = true;

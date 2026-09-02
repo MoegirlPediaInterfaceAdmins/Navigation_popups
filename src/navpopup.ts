@@ -12,7 +12,7 @@ export class Navpopup {
     visible = false;
     noshow = false;
     hooks: Record<string, ({
-        hook: (this: Navpopup) => boolean | void;
+        hook: (this: Navpopup) => unknown;
         when: string;
         hookId: string | null;
     } | null)[]> = {
@@ -158,7 +158,7 @@ export class Navpopup {
             }
         }
     }
-    addHook(hook: () => boolean | void, key: string, _when?: string, uid?: string) {
+    addHook(hook: () => unknown, key: string, _when?: string, uid?: string) {
         const when = _when || "after";
         if (!this.hooks[key]) {
             return;
@@ -180,12 +180,11 @@ export class Navpopup {
     createMainDiv() {
         this.runHooks("create", "before");
         const mainDiv = document.createElement("div");
-        const savedThis = this;
-        mainDiv.onclick = (e) => {
-            savedThis.onclickHandler(e);
+        mainDiv.onclick = () => {
+            this.onclickHandler();
         };
         mainDiv.className = this.className ? this.className : "navpopup_maindiv";
-        mainDiv.id = mainDiv.className + this.uid;
+        mainDiv.id = `${mainDiv.className}${this.uid}`;
         mainDiv.style.position = "absolute";
         mainDiv.style.minWidth = "350px";
         mainDiv.style.display = "none";
@@ -195,7 +194,7 @@ export class Navpopup {
         document.body.appendChild(mainDiv);
         this.runHooks("create", "after");
     }
-    onclickHandler(_e?: MouseEvent) {
+    onclickHandler() {
         this.raise();
     }
     makeDraggable(handleName?: string | null) {
@@ -206,7 +205,7 @@ export class Navpopup {
                     if (!e.shiftKey) {
                         return false;
                     }
-                } catch (err) {
+                } catch {
                     return false;
                 }
                 return true;
@@ -219,10 +218,9 @@ export class Navpopup {
         if (!dragHandle) {
             dragHandle = this.mainDiv;
         }
-        const np = this;
         drag.endHook = (x, y) => {
             Navpopup.tracker.dirty = true;
-            np.reposition(x, y);
+            this.reposition(x, y);
         };
         drag.init(dragHandle, this.mainDiv);
     }
@@ -250,7 +248,7 @@ export class Navpopup {
         this.width = parseInt(String(this.mainDiv.offsetWidth), 10);
         this.height = parseInt(String(this.mainDiv.offsetHeight), 10);
     }
-    isWithin(x?: number, y?: number, _fuzz?: number, _parent?: HTMLElement | null) {
+    isWithin(x?: number, y?: number) {
         if (!this.visible) {
             return false;
         }
@@ -267,9 +265,8 @@ export class Navpopup {
         this.downloads.push(download);
     }
     abortDownloads() {
-        for (let i = 0; i < this.downloads.length; ++i) {
-            const d = this.downloads[i];
-            if (d && d.abort) {
+        for (const d of this.downloads) {
+            if (d?.abort) {
                 d.abort();
             }
         }

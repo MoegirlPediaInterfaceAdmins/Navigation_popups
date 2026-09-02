@@ -11,7 +11,7 @@ import { getPageInfo } from "./pageinfo.ts";
 import { Previewmaker } from "./previewmaker.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { Title } from "./titles.ts";
-import { anyChild, getJsObj, map, zeroFill } from "./tools.ts";
+import { anyChild, assume, getJsObj, map, zeroFill } from "./tools.ts";
 // one page entry of an action=query&prop=revisions response
 interface RevisionPage {
     missing?: boolean | string;
@@ -137,19 +137,19 @@ export const loadAPIPreview = (queryType: string, article: Title, navpop: Navpop
 const linkList = (list: string[]) => {
     list.sort((x, y) => x === y ? 0 : x < y ? -1 : 1);
     const buf: (string | null)[] = [];
-    for (let i = 0; i < list.length; ++i) {
+    for (const item of list) {
         buf.push(wikiLink({
-            article: new Title(list[i]),
-            text: list[i].split(" ").join("&nbsp;"),
+            article: new Title(item),
+            text: item.split(" ").join("&nbsp;"),
             action: "view",
         }));
     }
     return buf.join(popupString("separator"));
 };
 const getTimeOffset = () => {
-    const tz = mw.user.options.get("timecorrection");
+    const tz = mw.user.options.get("timecorrection") as string | null;
     if (tz) {
-        if (tz.indexOf("|") > -1) {
+        if (tz.includes("|")) {
             return parseInt(tz.split("|")[1], 10);
         }
     }
@@ -175,7 +175,7 @@ const useTimeOffset = () => {
         return true;
     }
     const tz = mw.user.options.get("timecorrection");
-    if (tz && tz.indexOf("ZoneInfo|") === -1) {
+    if (tz?.indexOf("ZoneInfo|") === -1) {
         return true;
     }
     return false;
@@ -196,7 +196,7 @@ const getLocales = () => {
     }
     return pg.user.locales;
 };
-const getMWDateFormat = () => mw.user.options.get("date");
+const getMWDateFormat = () => mw.user.options.get("date") as string | null;
 const editPreviewTable = (article: Title, h: RevisionRow[], reallyContribs?: boolean) => {
     let html = ["<table>"];
     let day: string | null = null;
@@ -323,7 +323,7 @@ const formattedTime = (date: Date) => {
     return date.toLocaleTimeString(getLocales(), options);
 };
 const fetchUserGroupNames = (userinfoResponse: string | undefined) => {
-    const queryObj = getJsObj<RevisionQuery>(userinfoResponse ?? "") as RevisionQuery;
+    const queryObj = getJsObj(userinfoResponse ?? "") as RevisionQuery;
     const user = anyChild(queryObj.query?.users ?? {});
     const messages: string[] = [];
     if (user?.groups) {
@@ -359,7 +359,7 @@ const showAPIPreview = (queryType: string, html: string | null | undefined, id: 
 };
 const APIrevisionPreviewHTML = (article: Title, download: Downloader): string | undefined => {
     try {
-        const jsObj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        const jsObj = getJsObj(download.data ?? "") as RevisionQuery;
         const q = jsObj.query;
         if (!q?.pages) {
             return "Revision preview failed :(";
@@ -375,7 +375,7 @@ const APIrevisionPreviewHTML = (article: Title, download: Downloader): string | 
         const content = page.revisions?.[0]?.slots?.main?.contentmodel === "wikitext" ? page.revisions[0].slots.main.content : null;
         if (typeof content === "string") {
             download.data = content;
-            download.lastModified = new Date(page.revisions![0].timestamp ?? "");
+            download.lastModified = new Date(assume(page.revisions)[0].timestamp ?? "");
         }
         if (page.pageprops?.wikibase_item) {
             download.wikibaseItem = page.pageprops.wikibase_item;
@@ -387,7 +387,7 @@ const APIrevisionPreviewHTML = (article: Title, download: Downloader): string | 
 };
 const APIbacklinksPreviewHTML = (article: Title, download: Downloader): string => {
     try {
-        const jsObj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        const jsObj = getJsObj(download.data ?? "") as RevisionQuery;
         const q = jsObj.query;
         if (!q) {
             return "backlinksPreviewHTML went wonky";
@@ -397,8 +397,8 @@ const APIbacklinksPreviewHTML = (article: Title, download: Downloader): string =
         if (!list) {
             return popupString("No backlinks found");
         }
-        for (let i = 0; i < list.length; i++) {
-            const t = new Title(list[i].title);
+        for (const entry of list) {
+            const t = new Title(entry.title);
             html.push(`<a href="${pg.wiki.titlebase}${t.urlString()}">${t.toString().entify()}</a>`);
         }
         html = html.join(popupString("separator"));
@@ -417,7 +417,7 @@ pg.fn.APIsharedImagePagePreviewHTML = (obj: RevisionQuery & { requestid?: number
         const page = anyChild(obj.query.pages);
         const content = page?.revisions?.[0]?.slots?.main?.contentmodel === "wikitext" ? page.revisions[0].slots.main.content : null;
         if (typeof content === "string" && pg?.current?.link?.navpopup) {
-            const p = new Previewmaker(content, pg.current.link.navpopup.article!, pg.current.link.navpopup);
+            const p = new Previewmaker(content, assume(pg.current.link.navpopup.article), pg.current.link.navpopup);
             p.makePreview();
             setPopupHTML(p.html, "popupSecondPreview", popupid);
         }
@@ -425,7 +425,7 @@ pg.fn.APIsharedImagePagePreviewHTML = (obj: RevisionQuery & { requestid?: number
 };
 const APIimagepagePreviewHTML = (article: Title, download: Downloader, navpop: Navpopup): string => {
     try {
-        const jsObj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        const jsObj = getJsObj(download.data ?? "") as RevisionQuery;
         const q = jsObj.query;
         if (!q?.pages) {
             return "API imagepage preview failed :(";
@@ -452,7 +452,7 @@ const APIimagepagePreviewHTML = (article: Title, download: Downloader, navpop: N
                 setPopupTrailer(info, navpop.idNumber);
             }
         }
-        if (page && page.imagerepository === "shared") {
+        if (page?.imagerepository === "shared") {
             const art = new Title(article);
             const encart = encodeURIComponent(`File:${art.stripNamespace()}`);
             const shared_url = `${pg.wiki.apicommonsbase}?format=json&formatversion=2&callback=pg.fn.APIsharedImagePagePreviewHTML&requestid=${navpop.idNumber}&action=query&prop=revisions&rvslots=main&rvprop=content&titles=${encart}`;
@@ -467,12 +467,12 @@ const APIimagepagePreviewHTML = (article: Title, download: Downloader, navpop: N
 };
 const APIimagelinksPreviewHTML = (article: Title, download: Downloader): string => {
     try {
-        const jsobj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        const jsobj = getJsObj(download.data ?? "") as RevisionQuery;
         const list = jsobj.query?.imageusage;
         if (list) {
             const ret: string[] = [];
-            for (let i = 0; i < list.length; i++) {
-                ret.push(list[i].title);
+            for (const entry of list) {
+                ret.push(entry.title);
             }
             if (ret.length === 0) {
                 return popupString("No image links found");
@@ -486,14 +486,14 @@ const APIimagelinksPreviewHTML = (article: Title, download: Downloader): string 
 };
 const APIcategoryPreviewHTML = (article: Title, download: Downloader): string => {
     try {
-        const jsobj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        const jsobj = getJsObj(download.data ?? "") as RevisionQuery;
         const list = jsobj.query?.categorymembers;
         let ret: string[] | string = [];
         if (!list) {
             return popupString("Empty category");
         }
-        for (let p = 0; p < list.length; p++) {
-            ret.push(list[p].title);
+        for (const entry of list) {
+            ret.push(entry.title);
         }
         if (ret.length === 0) {
             return popupString("Empty category");
@@ -511,7 +511,7 @@ const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string =>
     let ret: string[] | string = [];
     let queryobj: RevisionQuery;
     try {
-        queryobj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        queryobj = getJsObj(download.data ?? "") as RevisionQuery;
     } catch {
         return "Userinfo preview failed :(";
     }
@@ -589,9 +589,9 @@ const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string =>
     }
     if (queryobj.query?.blocks) {
         ret.push(popupString("IP user"));
-        for (let l = 0; l < queryobj.query.blocks.length; l++) {
-            let rbstr = queryobj.query.blocks[l].rangestart === queryobj.query.blocks[l].rangeend ? "BLOCK" : "RANGEBLOCK";
-            rbstr = !Array.isArray(queryobj.query.blocks[l].restrictions) ? `Has ${rbstr.toLowerCase()}s` : `${rbstr}ED`;
+        for (const block of queryobj.query.blocks) {
+            let rbstr = block.rangestart === block.rangeend ? "BLOCK" : "RANGEBLOCK";
+            rbstr = !Array.isArray(block.restrictions) ? `Has ${rbstr.toLowerCase()}s` : `${rbstr}ED`;
             ret.push(`<b>${popupString(rbstr)}</b>`);
         }
     }
@@ -601,7 +601,7 @@ const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string =>
 const APIcontribsPreviewHTML = (article: Title, download: Downloader, navpop: Navpopup): string => APIhistoryPreviewHTML(article, download, navpop, true);
 const APIhistoryPreviewHTML = (article: Title, download: Downloader, navpop: Navpopup, reallyContribs?: boolean): string => {
     try {
-        const jsobj = getJsObj<RevisionQuery>(download.data ?? "") as RevisionQuery;
+        const jsobj = getJsObj(download.data ?? "") as RevisionQuery;
         let edits: RevisionRow[] = [];
         if (reallyContribs) {
             edits = jsobj.query?.usercontribs ?? [];

@@ -30,9 +30,9 @@ const setUserInfo = async () => {
     };
     pg.user.canReview = false;
     if (getValueOf("popupReview")) {
-        const data = await getMwApi().get(params);
+        const data = await getMwApi().get(params) as { query: { users: { rights: string[] }[] } };
         const rights = data.query.users[0].rights;
-        pg.user.canReview = rights.indexOf("review") !== -1;
+        pg.user.canReview = rights.includes("review");
     }
 };
 const fetchSpecialPageNames = async () => {
@@ -44,7 +44,7 @@ const fetchSpecialPageNames = async () => {
         uselang: "content",
         maxage: 3600,
     };
-    const data = await getMwApi().get(params);
+    const data = await getMwApi().get(params) as { query: { specialpagealiases: typeof pg.wiki.specialpagealiases } };
     pg.wiki.specialpagealiases = data.query.specialpagealiases;
 };
 const setTitleBase = () => {
@@ -63,7 +63,7 @@ const setTitleBase = () => {
 };
 const setMainRegex = () => {
     const reStart = "[^:]*://";
-    let preTitles = `(?:${literalizeRegex(String(mw.config.get("wgScript")))}|${literalizeRegex(String(mw.config.get("wgScriptPath")))}/(?:index[.]php|wiki[.]phtml))`;
+    let preTitles = `(?:${literalizeRegex(mw.config.get("wgScript"))}|${literalizeRegex(mw.config.get("wgScriptPath"))}/(?:index[.]php|wiki[.]phtml))`;
     preTitles += `[?]title=|${literalizeRegex(`${pg.wiki.articlePath}/`)}`;
     const reEnd = `(${preTitles})([^&?#]*)[^#]*(?:#(.+))?`;
     pg.re.main = RegExp(reStart + literalizeRegex(pg.wiki.sitebase) + reEnd);

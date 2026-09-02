@@ -13,7 +13,9 @@ const defaultize = (x: string) => {
 const newOption = (x: string, def: string | number | boolean | null | object | undefined) => {
     pg.optionDefault[x] = def;
 };
-export const setDefault = (x: string, def: string | number | boolean | null | object | undefined) => { newOption(x, def); };
+export const setDefault = (x: string, def: string | number | boolean | null | object | undefined) => {
+        newOption(x, def);
+    };
 export const getValueOf = (varName: string) => {
     defaultize(varName);
     return pg.option[varName];
@@ -22,8 +24,8 @@ export const setOptions = () => {
     let userIsSysop = false;
     const groups = mw.config.get("wgUserGroups");
     if (groups) {
-        for (let g = 0; g < groups.length; ++g) {
-            if (groups[g] === "sysop") {
+        for (const group of groups) {
+            if (group === "sysop") {
                 userIsSysop = true;
             }
         }
