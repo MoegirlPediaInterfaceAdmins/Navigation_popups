@@ -17,11 +17,12 @@
 
 ```
 src/
-├── entry.ts           # 入口：按原片段顺序 import 全部模块（顶层副作用链靠它保序）、双载入门闸、jQuery-ready 注册
+├── entry.ts           # 入口：按原片段顺序 import 全部模块（顶层副作用链靠它保序）、jQuery-ready 注册
 ├── globals.ts         # pg 全局对象、双载入守卫（alreadyLoaded 旗标）、log/errlog（对应上游 main.js）
 ├── popupStrings.ts    # 237 项 wgULS 简繁翻译表（上游靠外部注入 window.popupStrings）
 ├── actions.ts … run.ts  # 30 个模块沿用上游文件名（一一对应，见 build/fragments.json）
-└── types/             # pg 接口与站点全局（wgULS/moment 等）环境声明
+└── types/             # 纯类型：pg.ts（Pg 分域接口）、anchors.ts（HTMLAnchorElement 增强）、
+                       #   globals.d.ts（wgULS/moment/wikEd 等站点全局声明）
 build/fragments.json   # 模块 ↔ 上游文件对应清单 + 迁移基线信息
 scripts/build.mjs      # Rollup API 构建 + 产物断言（无 import/export 残留、模块全量、LF/无 BOM）
 scripts/esmify.mjs     # 一次性迁移辅助（import/export 织入），保留作迁移记录
@@ -30,17 +31,35 @@ dist/                  # 构建产物（不入库）
 docs/upstream-sync.md  # 上游同步操作指南（执行同步任务时读取）
 ```
 
+## 模块分层
+
+```
+entry.ts ────────────── 顶层：import 全部模块（顺序 = 原片段拼接顺序）、ready/钩子注册
+  │
+  ├─ 功能模块层（actions/navlinks/navpopup/previewmaker/querypreview/… 30 个）
+  │    互相 import、运行期互调是上游结构的常态；rollup 对循环依赖放行（见下）
+  │
+  ├─ popupStrings.ts ── 萌百独有 i18n 表（仅依赖 globals）
+  │
+  └─ 基础层：globals.ts（pg、双载入守卫、log/errlog）
+       tools/titles/strings/options/namespaces 等被广泛依赖的工具模块
+```
+
+分层不是硬约束——`rollup.config.mjs` 的 `onwarn` 只放行 `CIRCULAR_DEPENDENCY`（跨模块调用全部发生在运行期，此时所有模块体已求值完毕），其余警告一律 fatal。但**新代码应尽量向下依赖、避免加剧环**；顶层副作用顺序约束见下节。
+
 ## 构建与质量门禁
 
 ```bash
 npm ci     # 安装依赖
 npm test   # 全部门禁：
-           #   build      Rollup 打包 33 模块（treeshake 关闭，语句全保留）
-           #   eslint     src 严集（@annangela/eslint-config typescript：strict-type-checked
-           #              + stylistic-type-checked）+ 产物（browser 预设）+ 脚本（node 预设）
-           #   tsc        src 全 strict 类型检查 + 产物语法检查（同一 program）
-           #   terser     用旧仓库部署同款参数试压缩（结果丢弃）
-           #   idempotent 连续两次构建字节一致
+           #   build      Rollup 打包 33 模块（treeshake 关闭，语句全保留；断言模块全量、
+           #              产物无 import/export 残留、LF/无 BOM、末尾换行）
+           #   eslint     eslint . --max-warnings 0：src 严集（@annangela/eslint-config
+           #              typescript：strict-type-checked + stylistic-type-checked，0 违规）
+           #              + 产物（browser 预设）+ 脚本（node 预设）
+           #   tsc        单 program 双职责：src 全 strict 类型检查（0 错误）+ 产物语法检查
+           #   terser     用旧仓库部署同款参数试压缩（结果丢弃，仅验证产物可压缩）
+           #   idempotent 连续两次构建字节一致，且与磁盘 dist 一致
 ```
 
 模块全量断言：`build/fragments.json` 清单中的每个模块必须出现在 bundle 依赖图里（漏 import 会在构建时报错）。
@@ -49,21 +68,32 @@ npm test   # 全部门禁：
 
 entry.ts 的 import 顺序 = 原单文件片段顺序。Rollup 在此基础上按依赖拓扑微调模块位置，已验证的关键顺序约束（`pg` 字面量最先；`domdrag` 填充 `pg.structures.original` 先于 `structures` 的 `copyStructure`；entry 的 ready/钩子注册最后）在产物中保持成立。改动 entry import 顺序或增删带顶层副作用的代码时，必须重新核对这些约束。
 
-## 类型化状态与债务清单
+## 类型与 lint 纪律
 
-- **已真类型化**：`globals.ts`、`entry.ts`、`src/types/**`（`Pg` 分域接口起步，域暂为宽松 record）。
-- **承接债务**：其余 30 个 legacy 模块带 `// @ts-nocheck -- …` 与 `/* eslint-disable -- … */` 头（迁移时 strict tsc/严集 eslint 存量约 1900 项类型错误、主要是隐式 any 参数与 `pg` 动态属性访问）。**解除流程**：逐文件移除两行承接头 → 按报错补类型（优先收紧 `types/pg.ts` 的对应域，禁止新增裸 `any`）→ `npm test` 全绿 → 独立 PR。新代码一律全类型，不允许新增承接头。
+全部 33 个模块都在 strict tsc + 严集 eslint 之下，**当前基线为 0 类型错误 / 0 lint 违规**，无 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`。保持这个基线的规则：
+
+- 上游运行时不变量（“此处调用方保证非空/必为某形状”）用 `tools.ts` 的 `assume<T>()` 表达——恒等函数、运行时零开销。不要用 `!`（被 `no-non-null-assertion` 禁），也不要用会被 `non-nullable-type-assertion-style` 改写的裸 `as`。
+- 与上游行为有实质冲突的规则点，用**单行 scoped `eslint-disable-… -- 理由`** 承接（现状 38 处 next-line + 1 处文件级：`shortcutkeys.ts` 整文件构建在 legacy keypress/`window.event` API 之上）。理由必须写明上游行为依据，禁止无理由 disable。
+- 两处仅有的全局豁免：src 的 `no-use-before-define` 与 `camelcase` 关闭（`eslint.config.js`，上游自底向上的辅助函数排序与标识符 1:1 保留）。
 
 ## 发布与回传
 
-1. 修改源码，`npm test` 全绿后合并到 `master`。
+1. 修改源码，`npm test` 全绿后合并到 `master`（CI 对 master push 与 PR 跑同一套门禁）。
 2. 打 tag（`v*`）或手动触发 **Release** 工作流：
    - `build-and-gate`：重跑全部门禁，将 `dist/Gadget-popups.js` 与其 sha256 作为 artifact 上传；
    - `sync-back`：向旧仓库推分支并开 PR 的回传任务，**当前以 falsy 条件停用**（`.github/workflows/release.yml` 注释写明启用步骤：fine-grained PAT → secret `OLD_REPO_TOKEN` → 改 `if` 条件）。产物无变化时自动跳过。
 
 ### 上线后人工冒烟清单（每次产物变更后）
 
-鉴于功能一致性验证采用静态门禁档位，产物变更合入旧仓库后请在站点过一遍：hover 弹窗出现与消失、条目/用户/编辑计数链接组、diff 预览与历史预览、快捷键呼出、双载入守卫（重复导入不重复初始化）、动态内容（echo 通知/预览刷新）场景。
+鉴于功能一致性验证采用静态门禁档位（仅构建期检查，无运行时对照），产物变更合入旧仓库部署后，请在站点上人工过一遍核心路径：
+
+- [ ] **hover 弹窗**：悬停普通条目链/用户链/讨论页链/红链/消歧义链，弹窗正常出现、移出后消失、可拖拽；
+- [ ] **用户预览链接组**：编辑计数、arin 等链接行为正常（`links.ts` 含 zh 站点定制链接）；
+- [ ] **diff 预览**：悬停 diff 链接出双栏 diff；历史页悬停出历史预览；图片/分类等 API 预览正常；
+- [ ] **快捷键**：弹出后按字母跳转锚点、Esc 关闭（legacy keypress 路径）；
+- [ ] **双载入守卫**：重复导入脚本不二次初始化（控制台无重复 setup 日志、无行为异常）；
+- [ ] **动态内容**：echo 通知、VisualEditor/wikEd 场景下预览刷新正常；
+- [ ] **旧仓库 CI**：回传 PR 的 lint 通过。
 
 ## 上游同步
 
@@ -71,7 +101,7 @@ entry.ts 的 import 顺序 = 原单文件片段顺序。Rollup 在此基础上�
 
 ## 贡献流程
 
-1. 修改 `src/*.ts`（保持既有代码风格：4 空格缩进、双引号、模板字符串、async/await；新代码必须全类型）；
+1. 修改 `src/*.ts`（保持既有代码风格：4 空格缩进、双引号、模板字符串、async/await；新代码必须全类型，见「类型与 lint 纪律」）；
 2. `npm test` 全绿；
 3. PR 描述附上产物相对上一版的功能性变更摘要；
-4. 合并后按需打 tag 触发 Release。
+4. 合并后按需打 tag 触发 Release，并按冒烟清单人工验证。
