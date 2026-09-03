@@ -1,4 +1,4 @@
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { popupFilterCountCategories, popupFilterCountImages, popupFilterCountLinks, popupFilterDisambigDetect, popupFilterLastModified, popupFilterPageSize, popupFilterStubDetect, popupFilterWikibaseItem } from "./pageinfo.ts";
 import { popupString } from "./strings.ts";
 const defaultize = (x: string) => {

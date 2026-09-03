@@ -1,5 +1,5 @@
 import { setupTooltips } from "./actions.ts";
-import { errlog, log, pg } from "./globals.ts";
+import { errlog, log, pg } from "../globals.ts";
 import type { Navpopup } from "./navpopup.ts";
 import { checkPopupPosition } from "./mouseout.ts";
 import { getValueOf } from "./options.ts";

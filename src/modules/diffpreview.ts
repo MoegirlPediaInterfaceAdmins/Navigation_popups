@@ -3,7 +3,7 @@ import { countCrossings, diff, diffString, entryOf, shortenDiffString } from "./
 import type { DiffCell } from "./diff.ts";
 import type { Downloader } from "./downloader.ts";
 import { getPageWithCaching } from "./getpage.ts";
-import { errlog, pg } from "./globals.ts";
+import { errlog, pg } from "../globals.ts";
 import { setPopupHTML, setPopupTipsAndHTML } from "./htmloutput.ts";
 import { getMwApi } from "./init.ts";
 import { generalLink, titledWikiLink } from "./links.ts";

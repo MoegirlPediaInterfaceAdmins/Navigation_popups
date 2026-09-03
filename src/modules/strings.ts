@@ -1,5 +1,5 @@
-import { pg } from "./globals.ts";
-import { popupStrings } from "./popupStrings.ts";
+import { pg } from "../globals.ts";
+import { popupStrings } from "../popupStrings.ts";
 import { simplePrintf } from "./tools.ts";
 pg.string = {
     article: "article",

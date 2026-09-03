@@ -1,4 +1,4 @@
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 import { imageHTML } from "./htmloutput.ts";
 import { navLinksHTML, navlinkStringToHTML } from "./navlinks.ts";
 import { getValueOf } from "./options.ts";

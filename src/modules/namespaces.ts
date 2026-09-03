@@ -1,4 +1,4 @@
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { upcaseFirst } from "./tools.ts";
 export const setNamespaces = () => {
     pg.nsSpecialId = -1;

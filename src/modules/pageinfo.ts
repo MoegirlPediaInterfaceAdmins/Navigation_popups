@@ -1,5 +1,5 @@
 import type { Moment } from "moment";
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { getValueOf } from "./options.ts";
 import { popupString, tprintf } from "./strings.ts";
 import type { Downloader } from "./downloader.ts";

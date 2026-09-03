@@ -1,4 +1,4 @@
-import { errlog, log, pg } from "./globals.ts";
+import { errlog, log, pg } from "../globals.ts";
 export const nonGlobalRegex = (re: RegExp) => {
     const s = re.toString();
     let flags = "";

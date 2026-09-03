@@ -1,4 +1,4 @@
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 import { setPopupHTML, setPopupTipsAndHTML } from "./htmloutput.ts";
 import { Insta, wiki2html } from "./livepreview.ts";
 import type { Navpopup } from "./navpopup.ts";

@@ -2,7 +2,7 @@ import { setupTooltips } from "./actions.ts";
 import { autoClickToken } from "./autoedit.ts";
 import { abortAllDownloads, startDownload } from "./downloader.ts";
 import type { Downloader } from "./downloader.ts";
-import { errlog, log, pg } from "./globals.ts";
+import { errlog, log, pg } from "../globals.ts";
 import { getMwApi, setupCache } from "./init.ts";
 import { getValueOf } from "./options.ts";
 import { addPopupShortcut } from "./shortcutkeys.ts";

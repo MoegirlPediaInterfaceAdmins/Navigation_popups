@@ -1,7 +1,7 @@
 import { setupTooltips } from "./actions.ts";
-import type { SpecialPageAlias } from "./types/pg.ts";
+import type { SpecialPageAlias } from "../types/pg.ts";
 import { setupDebugging } from "./debug.ts";
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 import { setupLivePreview } from "./livepreview.ts";
 import { nsRe, nsReImage, setInterwiki, setNamespaces, setRedirs } from "./namespaces.ts";
 import { Navpopup } from "./navpopup.ts";

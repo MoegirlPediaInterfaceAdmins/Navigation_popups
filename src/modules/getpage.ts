@@ -1,7 +1,7 @@
 import type { Downloader } from "./downloader.ts";
 import { fakeDownload, startDownload } from "./downloader.ts";
 import type { Navpopup } from "./navpopup.ts";
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 export const getPageWithCaching = (url: string, onComplete: (d: Downloader) => void | Promise<void>, owner: Navpopup) => {
     log(`getPageWithCaching, url=${url}`);
     const i = findInPageCache(url);

@@ -1,7 +1,7 @@
 import { completedNavpopTask, insertPreview, pendingNavpopTask, prepPreviewmaker } from "./actions.ts";
 import type { Downloader } from "./downloader.ts";
 import { getPageWithCaching } from "./getpage.ts";
-import { errlog, log, pg } from "./globals.ts";
+import { errlog, log, pg } from "../globals.ts";
 import { setPopupHTML, setPopupTipsAndHTML, setPopupTrailer } from "./htmloutput.ts";
 import { getMwApi } from "./init.ts";
 import { wikiLink } from "./links.ts";

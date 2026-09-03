@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-deprecated -- the shortcut-keys feature is built on the
    legacy keypress/keyCode/window.event API by design */
 import { killPopup } from "./actions.ts";
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";
 type PopupHandleKeypress = NonNullable<GlobalEventHandlers["onkeypress"]> & { lastPopupLinkSelected?: Element | null };

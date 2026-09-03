@@ -1,4 +1,4 @@
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { assume } from "./tools.ts";
 interface InstaConfUser {
     name?: string;

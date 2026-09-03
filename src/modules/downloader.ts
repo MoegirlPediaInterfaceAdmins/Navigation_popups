@@ -1,4 +1,4 @@
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import type { Navpopup } from "./navpopup.ts";
 export class Downloader {
     id: number | string | null = null;

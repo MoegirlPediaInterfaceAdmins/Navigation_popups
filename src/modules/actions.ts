@@ -2,7 +2,7 @@ import { makeFixDabs, popupRedlinkHTML } from "./dab.ts";
 import { loadDiff } from "./diffpreview.ts";
 import { abortAllDownloads } from "./downloader.ts";
 import type { Downloader } from "./downloader.ts";
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 import { fillEmptySpans, popupHTML, setPopupHTML, setPopupTrailer } from "./htmloutput.ts";
 import { getValidImageFromWikiText, loadImage } from "./images.ts";
 import { redirLink } from "./links.ts";

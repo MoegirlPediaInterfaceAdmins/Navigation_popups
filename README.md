@@ -20,10 +20,10 @@ src/
 ├── entry.ts           # 入口：按原片段顺序 import 全部模块（顶层副作用链靠它保序）、jQuery-ready 注册
 ├── globals.ts         # pg 全局对象、双载入守卫（alreadyLoaded 旗标）、log/errlog（对应上游 main.js）
 ├── popupStrings.ts    # 237 项 wgULS 简繁翻译表（上游靠外部注入 window.popupStrings）
-├── actions.ts … run.ts  # 30 个模块沿用上游文件名（一一对应，见 build/fragments.json）
+├── modules/           # 30 个模块沿用上游文件名（一一对应，见 build/fragments.json）
 └── types/             # 纯类型：pg.ts（Pg 分域接口）、anchors.ts（HTMLAnchorElement 增强）、
                        #   globals.d.ts（wgULS/moment/wikEd 等站点全局声明）
-build/fragments.json   # 模块 ↔ 上游文件对应清单 + 迁移基线信息
+build/fragments.json   # 模块 ↔ 上游文件对应清单 + 迁移基线信息（file 字段含 modules/ 前缀）
 scripts/build.mjs      # Rollup API 构建 + 产物断言（无 import/export 残留、模块全量、LF/无 BOM）
 scripts/esmify.mjs     # 一次性迁移辅助（import/export 织入），保留作迁移记录
 rollup.config.mjs      # IIFE 输出、treeshake 关闭、banner（eslint 头 + @source oldid + "use strict"）
@@ -34,15 +34,15 @@ docs/upstream-sync.md  # 上游同步操作指南（执行同步任务时读取�
 ## 模块分层
 
 ```
-entry.ts ────────────── 顶层：import 全部模块（顺序 = 原片段拼接顺序）、ready/钩子注册
+src/entry.ts ────────── 顶层：import 全部模块（顺序 = 原片段拼接顺序）、ready/钩子注册
   │
-  ├─ 功能模块层（actions/navlinks/navpopup/previewmaker/querypreview/… 30 个）
+  ├─ src/modules/ ───── 功能模块层（actions/navlinks/navpopup/previewmaker/… 30 个）
   │    互相 import、运行期互调是上游结构的常态；rollup 对循环依赖放行（见下）
   │
-  ├─ popupStrings.ts ── 萌百独有 i18n 表（仅依赖 globals）
+  ├─ src/popupStrings.ts ── 萌百独有 i18n 表（仅依赖 globals）
   │
-  └─ 基础层：globals.ts（pg、双载入守卫、log/errlog）
-       tools/titles/strings/options/namespaces 等被广泛依赖的工具模块
+  └─ 基础层：src/globals.ts（pg、双载入守卫、log/errlog）
+       modules/ 内的 tools/titles/strings/options/namespaces 等被广泛依赖的工具模块
 ```
 
 分层不是硬约束——`rollup.config.mjs` 的 `onwarn` 只放行 `CIRCULAR_DEPENDENCY`（跨模块调用全部发生在运行期，此时所有模块体已求值完毕），其余警告一律 fatal。但**新代码应尽量向下依赖、避免加剧环**；顶层副作用顺序约束见下节。
