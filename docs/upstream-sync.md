@@ -9,7 +9,9 @@
 - 上游部署页面是 31 个源文件的构建期拼接产物，各源文件边界由 `// STARTFILE: <name>.js` / `// ENDFILE: <name>.js` 注释标记。**除第一个标记外，所有标记行都有且仅有一个前导 TAB**（即 `\t// STARTFILE: x.js`），切分时不要按行首严格匹配。
 - 上游源文件是语法不闭合的片段（`main.js` 打开 `$( () => {` 不闭合，`run.js` 末尾 `});` 闭合）。本仓库已改为 ESM 模块：`src/*.ts` 每个文件独立合法，`$( () => {` 包裹与双载入守卫在 `entry.ts` / `globals.ts`。
 - **模块 ↔ 上游文件对应表就是 `build/fragments.json`**（`main.js → globals.ts`、`_popupStrings → popupStrings.ts`、`run.js → run.ts`（仅 run 函数；ready 分支与钩子注册在 `entry.ts`）、其余同名）。
-- 顶层副作用顺序约束：entry 的 import 顺序 = 原片段顺序；Rollup 拓扑微调后仍须满足——`pg` 字面量最先（globals.ts）、`domdrag.ts` 填充 `pg.structures.original` 先于 `structures.ts` 的 `copyStructure` 调用、entry 的注册最后。若同步引入新的顶层副作用，必须核对依赖顺序（必要时调整 entry 的 import 序，并保持无循环依赖加剧）。
+- 顶层副作用顺序约束：entry 的 import 顺序 = 原片段顺序；Rollup 拓扑微调后仍须满足——`pg` 字面量最先（globals.ts）、`domdrag.ts` 填充 `pg.structures.original` 先于 `structures.ts` 的 `copyStructure` 调用、entry 的注册最后。若同步引入新的顶层副作用，必须核对依赖顺序（必要时调整 entry 的 import 序）。
+- 循环依赖：模块互相 import、运行期互调是上游结构的常态，rollup `onwarn` 只放行 `CIRCULAR_DEPENDENCY`（其余警告一律 fatal）。同步时不必消环，但避免加剧；跨模块调用都发生在所有模块体求值完毕之后。
+- **质量基线**：全部 33 模块处于 strict tsc + 严集 eslint 之下，当前为 **0 类型错误 / 0 lint 违规**，无 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`。移植后的代码必须保持这个基线（见 §4）。
 - 构建零转换假设：esbuild 转译会**剥掉普通注释**（产物中只剩 banner）；源码注释照常写。
 
 ## 1. 拉取上游
@@ -46,14 +48,18 @@ curl -fsSL 'https://en.wikipedia.org/w/index.php?title=MediaWiki:Gadget-popups.j
 
 - 只把**确实需要**的上游修复/功能移植进对应模块，用萌百风格改写；每处变更都要能说清来源（上游哪个文件哪处改动）。
 - **移植形态**：上游的 `function foo(a, b) {…}` → `export const foo = (a: T1, b: T2): R => {…}`（仅在模块自身需要导出时 export；被其他模块引用的必须 export 并在引用方 import）。新增顶层声明后运行 `npm run build`——若被引用却未导出，rollup 会报 `is not exported by`。
-- **类型要求**：新代码必须全类型（参数/返回值/结构），**禁止新增 `any`** 与新的 `@ts-nocheck`/`eslint-disable` 承接头。若在仍带承接头的 legacy 模块内工作，鼓励顺手移除该文件的承接头并补全类型（独立 PR 优先）。
+- **类型要求**：新代码必须全类型（参数/返回值/结构），**禁止新增 `any` 与任何 ts-comment**（`@ts-ignore`/`@ts-nocheck`/`@ts-expect-error` 全仓为零，保持）。strict tsc 与严集 eslint 都是零基线，移植完 `npm test` 必须仍然全绿。
+- **非空断言的写法**：上游常见的"此处必非空/必为某形状"运行时不变量，用 `tools.ts` 的 `assume<T>(value)` 表达——恒等函数、运行时零开销。不要写 `!`（`no-non-null-assertion` 禁止），也不要写会被 `non-nullable-type-assertion-style` 改写回 `!` 的裸 `as`；确需双重断言时 `as unknown as T`。
+- **与 lint 规则冲突的上游行为**：若上游行为本身触发某规则（如 retry 计数用 `|| 0`、`window.event`/`keyCode` legacy API、`unescape`），用**单行 scoped `eslint-disable-<rule> -- 理由`** 承接，理由必须注明上游行为依据（存量约 38 处可作范例；`shortcutkeys.ts` 是唯一的文件级豁免）。禁止无理由 disable、禁止多行 disable 注释（不生效）。
+- **TS 语法注意**：`noFallthroughCasesInSwitch` 下，上游的 switch 贯串分支要改写成合并 case 标签（`case A: case B:`）；类型窄化用字面量 `typeof x === "string"`（`typeof x === typeof ""` 不窄化）；`Record` 索引访问的判空以实际类型为准。字符串语义等价转换可放心用：`String(x)` 与模板拼接 `` `${x}` `` 运行时一致。
 - 上游新增/删除源文件（31 个之外）→ 新建/删除对应模块，同步更新 `build/fragments.json` 与 `entry.ts` 的 import 序（保持原拼接顺序语义）。
 - 同步完成后更新 `rollup.config.mjs` banner 里的 `@source` oldid。
 
 ## 5. 验证与发布
 
 ```bash
-npm test          # 全部门禁必须绿（rollup 零警告、eslint 严集、tsc strict、terser、幂等）
+npm test          # 全部门禁必须绿（rollup 除循环依赖外零警告、eslint 严集 0 违规、
+                  #   tsc strict 0 错误、terser 可压缩、幂等）
 ```
 
 提交（conventional commits，注明上游 oldid），合并到 master 后打 tag `vX.Y.Z` 触发 Release 工作流上传 artifact；回传任务当前停用（见 `.github/workflows/release.yml` 注释）。产物合入旧仓库部署后，按 README 的**人工冒烟清单**过一遍核心路径。
@@ -63,4 +69,5 @@ npm test          # 全部门禁必须绿（rollup 零警告、eslint 严集、t
 - 禁止整文件覆盖式同步（上游 JS 直接替换 TS 模块）；
 - 禁止对源码运行格式化工具或提交无关改动；
 - 不得开启 tree shaking、不得改动「treeshake: false / 模块全量断言 / entry import 顺序即副作用顺序」这三条构建不变量；
+- 禁止新增 `any`、ts-comment（`@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`）与无理由的 eslint disable；
 - 任何产物变更合入旧仓库后执行人工冒烟清单。
