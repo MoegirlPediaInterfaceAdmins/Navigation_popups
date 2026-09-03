@@ -1,0 +1,30 @@
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+      time: '07:30'
+      timezone: Asia/Shanghai
+    commit-message:
+      prefix: gha
+      include: scope
+    groups:
+      gha:
+        patterns:
+          - "*"
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+      time: '07:30'
+      timezone: Asia/Shanghai
+    commit-message:
+      prefix: npm
+      include: scope
+    groups:
+      npm:
+        patterns:
+          - "*"
