@@ -36,7 +36,7 @@ const listLinks = (wikitext: string, oldTarget: unknown, titleToEdit: string | u
     if (wikPos) {
         const wikTarget = `wiktionary:${friendlyCurrentArticleName.replace(RegExp("^(.+)\\s+[(][^)]+[)]\\s*$"), "$1")}`;
         let meth: "unshift" | "push";
-        if (String(wikPos).toLowerCase() === "first") {
+        if (typeof wikPos === "string" && wikPos.toLowerCase() === "first") {
             meth = "unshift";
         } else {
             meth = "push";

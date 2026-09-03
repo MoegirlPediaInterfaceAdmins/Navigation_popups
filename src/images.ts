@@ -96,10 +96,6 @@ const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: D
 };
 function toggleSize(this: GlobalEventHandlers) {
     const imgContainer = this as HTMLElement;
-    if (!imgContainer) {
-        alert("imgContainer is null :/");
-        return;
-    }
     const img = imgContainer.firstChild as HTMLElement | null;
     if (!img) {
         alert("img is null :/");

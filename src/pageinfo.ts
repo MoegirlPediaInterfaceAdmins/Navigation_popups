@@ -112,6 +112,7 @@ const addunit = (num: number, str: string) => `${num} ${num !== 1 ? popupString(
 const runPopupFilters = (list: PopupFilterFn[], data: string, download: Downloader) => {
     const ret: string[] = [];
     for (const filter of list) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- popupFilters is user config; may hold non-functions
         if (filter && typeof filter === "function") {
             const s = filter(data, download, download.owner?.article);
             if (s) {
@@ -125,8 +126,8 @@ export const getPageInfo = (data: string, download: Downloader) => {
     if (!data || data.length === 0) {
         return popupString("Empty page");
     }
-    const popupFilters = (getValueOf("popupFilters") || []) as PopupFilterFn[];
-    const extraPopupFilters = (getValueOf("extraPopupFilters") || []) as PopupFilterFn[];
+    const popupFilters = (getValueOf("popupFilters") ?? []) as PopupFilterFn[];
+    const extraPopupFilters = (getValueOf("extraPopupFilters") ?? []) as PopupFilterFn[];
     const pageInfoArray = runPopupFilters(popupFilters.concat(extraPopupFilters), data, download);
     let pageInfo = pageInfoArray.join(popupString("comma"));
     if (pageInfo !== "") {

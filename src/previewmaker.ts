@@ -51,10 +51,7 @@ export class Previewmaker {
         const cl = this.makeRegexp(closing, "^");
         const sb = subopening ? this.makeRegexp(subopening, "^") : null;
         const sc = subclosing ? this.makeRegexp(subclosing, "^") : cl;
-        if (!op || !cl) {
-            alert("Navigation Popups error: op or cl is null! something is wrong.");
-            return "";
-        }
+
         if (!op.test(txt)) {
             return txt;
         }
@@ -82,11 +79,11 @@ export class Previewmaker {
                 break;
             }
         }
-        return ret + (repl || "") + txt;
+        return ret + (repl ?? "") + txt;
     }
     makeRegexp = (x: string | RegExp, _prefix?: string, _suffix?: string): RegExp => {
-        const prefix = _prefix || "";
-        const suffix = _suffix || "";
+        const prefix = _prefix ?? "";
+        const suffix = _suffix ?? "";
         let reStr = "";
         let flags = "";
         if (isString(x)) {

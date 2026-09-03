@@ -138,7 +138,7 @@ const navlinkStringToArray = (_s: string, article: Title, params: Record<string,
     }
     return ret;
 };
-const navlinkSubstituteHTML = (s: string) => s.split("*").join(String(getValueOf("popupNavLinkSeparator"))).split("<menurow>").join('<li class="popup_menu_row">').split("</menurow>").join("</li>").split("<menu>").join('<ul class="popup_menu">').split("</menu>").join("</ul>");
+const navlinkSubstituteHTML = (s: string) => s.split("*").join(getValueOf("popupNavLinkSeparator") as string).split("<menurow>").join('<li class="popup_menu_row">').split("</menurow>").join("</li>").split("<menu>").join('<ul class="popup_menu">').split("</menu>").join("</ul>");
 const navlinkDepth = (magic: string, s: string) => s.split(`<${magic}>`).length - s.split(`</${magic}>`).length;
 export const navlinkStringToHTML = (s: string, article: Title, params?: Record<string, string | null>) => {
     const p = navlinkStringToArray(s, article, params ?? {});
@@ -185,15 +185,9 @@ class NavlinkTag implements LinkSpec {
         this.getNewWin();
         this.getPrintFunction();
         let html: string | null = "";
-        let opening: string, closing: string;
         const tagType = "span";
-        if (!tagType) {
-            opening = "";
-            closing = "";
-        } else {
-            opening = `<${tagType} class="popup_${this.id}">`;
-            closing = `</${tagType}>`;
-        }
+        const opening = `<${tagType} class="popup_${this.id}">`;
+        const closing = `</${tagType}>`;
         if (typeof this.print !== "function") {
             errlog(`Oh dear - invalid print function for a navlinkTag, id=${this.id}`);
         } else {
@@ -398,6 +392,7 @@ class NavlinkTag implements LinkSpec {
                 }
                 this.print = titledWikiLink;
                 if (typeof this.title === "undefined" && typeof pg.current.link?.href !== "undefined") {
+                    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
                     this.title = safeDecodeURI(pg.current.link.originalTitle ? pg.current.link.originalTitle : this.article) as string;
                     if (typeof this.oldid !== "undefined" && this.oldid) {
                         this.title = tprintf("Revision %s of %s", [this.oldid, this.title]);

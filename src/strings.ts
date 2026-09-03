@@ -223,6 +223,7 @@ localStorage.removeItem("popupNoTranslation");
 const popupNoTranslation = new Set<string>();
 window.popupNoTranslation = popupNoTranslation;
 export const popupString = (str: string) => {
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain, @typescript-eslint/no-unnecessary-condition -- the typeof guard is load-bearing (popupStrings may be undeclared); the index access may miss at runtime
     if (typeof popupStrings !== "undefined" && popupStrings?.[str]) {
         return popupStrings[str];
     }

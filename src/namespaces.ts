@@ -12,7 +12,7 @@ export const setNamespaces = () => {
 export const setRedirs = () => {
     const r = "redirect";
     const R = "REDIRECT";
-    const redirLists: Record<string, string[]> = {
+    const redirLists: Partial<Record<string, (string | RegExp)[]>> = {
         ar: [R, "تحويل"],
         be: [r, "перанакіраваньне"],
         bg: [r, "пренасочване", "виж"],
@@ -48,7 +48,7 @@ export const setRedirs = () => {
         yi: [R, "ווייטערפירן"],
         zh: [R, "重定向"],
     };
-    const redirList: (string | RegExp)[] = redirLists[pg.wiki.lang] || [r, R];
+    const redirList: (string | RegExp)[] = redirLists[pg.wiki.lang] ?? [r, R];
     pg.re.redirect = RegExp(`^\\s*[#](${redirList.join("|")}).*?\\[{2}([^\\|\\]]*)(|[^\\]]*)?\\]{2}\\s*(.*)`, "i");
 };
 export const setInterwiki = () => {

@@ -65,12 +65,12 @@ export const loadDiff = async (article: Title, oldid: string | number | null, di
             params.torelative = "prev";
             break;
         case "next":
-            params.fromrev = oldid || 0;
+            params.fromrev = oldid ?? 0;
             params.torelative = "next";
             break;
         default:
-            params.fromrev = oldid || 0;
-            params.torev = diff || 0;
+            params.fromrev = oldid ?? 0;
+            params.torev = diff ?? 0;
             break;
     }
     const data = await api.get(params) as { compare: { fromrevid: number; torevid: number } };
@@ -110,7 +110,7 @@ const addReviewLink = async (navpop: Navpopup, target: string) => {
     };
     const data = await getMwApi().get(params) as { query: { pages: { flagged?: { stable_revid?: number } }[] } };
 
-    const stable_revid = data.query.pages[0].flagged?.stable_revid || 0;
+    const stable_revid = data.query.pages[0].flagged?.stable_revid ?? 0;
     if (stable_revid === diffData.oldRev.revid) {
         const a = document.createElement("a");
         a.innerHTML = popupString("mark patrolled");

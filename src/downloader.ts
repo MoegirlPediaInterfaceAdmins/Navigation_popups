@@ -87,7 +87,7 @@ export class Downloader {
     }
 }
 pg.misc.downloadsInProgress = {};
-const newDownload = (url: string, id: number | string | ((d: Downloader) => void) | null | undefined, callback?: (d: Downloader) => void, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void) => void)): Downloader | string => {
+const newDownload = (url: string, id: number | string | ((d: Downloader) => void | Promise<void>) | null | undefined, callback?: (d: Downloader) => void | Promise<void>, _onfailure?: number | ((d: Downloader, url: string, id: number | undefined, callback?: (d: Downloader) => void | Promise<void>) => void)): Downloader | string => {
     let onfailure = _onfailure;
     const d = new Downloader(url);
     if (!d.http) {
@@ -95,6 +95,7 @@ const newDownload = (url: string, id: number | string | ((d: Downloader) => void
     }
     d.id = typeof id === "number" ? id : null;
     d.setTarget();
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 0 is a meaningful retry count; coercing it to 2 is deliberate upstream behavior
     if (!onfailure) {
         onfailure = 2;
     }
@@ -106,7 +107,7 @@ const newDownload = (url: string, id: number | string | ((d: Downloader) => void
                     d.data = d.getData() ?? undefined;
                     d.lastModified = d.getLastModifiedDate();
                     // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
-                    callback?.(d);
+                    void callback?.(d);
                 } else if (typeof onfailure === "number") {
                     if (onfailure > 0) {
                         newDownload(url, id, callback, onfailure - 1);
@@ -120,7 +121,7 @@ const newDownload = (url: string, id: number | string | ((d: Downloader) => void
     d.setCallback(f);
     return d;
 };
-export const fakeDownload = (url: string, id: number | undefined, callback: (d: Downloader) => void, data?: string, lastModified?: Date | string | null, owner?: Navpopup | null) => {
+export const fakeDownload = (url: string, id: number | undefined, callback?: (d: Downloader) => void | Promise<void>, data?: string, lastModified?: Date | string | null, owner?: Navpopup | null) => {
     const d = newDownload(url, callback);
     if (typeof d === "string") {
         return;
@@ -130,7 +131,7 @@ export const fakeDownload = (url: string, id: number | undefined, callback: (d: 
     d.data = data ?? undefined;
     d.lastModified = lastModified ?? null;
     // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
-    callback(d);
+    return callback?.(d);
 };
 export const startDownload = (
     url: string,

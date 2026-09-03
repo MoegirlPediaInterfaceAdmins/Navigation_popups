@@ -38,7 +38,7 @@ if (!alreadyLoaded) {
 // Runtime feature detection: older MediaWiki installs may lack escapeRegExp
 // (typed as always present upstream), and mw.RegExp.escape is deprecated but
 // is precisely the fallback the upstream code relies on.
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- types mark it always-present; the runtime fallback is upstream behavior
 if (!mw.util.escapeRegExp) {
     // eslint-disable-next-line @typescript-eslint/no-deprecated -- upstream fallback, revisit on the next upstream sync
     mw.util.escapeRegExp = mw.RegExp.escape;
