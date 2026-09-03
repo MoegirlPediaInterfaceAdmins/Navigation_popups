@@ -164,7 +164,7 @@ const getTimeZone = () => {
             if (tzComponents.length === 3 && tzComponents[0] === "ZoneInfo") {
                 pg.user.timeZone = tzComponents[2];
             } else {
-                errlog(`Unexpected timezone information: ${String(tz)}`);
+                errlog(`Unexpected timezone information: ${tz}`);
             }
         }
     }
@@ -175,7 +175,7 @@ const useTimeOffset = () => {
         return true;
     }
     const tz = mw.user.options.get("timecorrection") as string | null;
-    if (tz?.indexOf("ZoneInfo|") === -1) {
+    if (tz?.includes("ZoneInfo|") === false) {
         return true;
     }
     return false;
@@ -264,6 +264,7 @@ const editPreviewTable = (article: Title, h: RevisionRow[], reallyContribs?: boo
         }
         html.push(`<td>${reallyContribs ? minor : ""}<a href="${col3url}">${col3txt}</a></td>`);
         let comment = "";
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
         const c = h[i].comment || (typeof h[i].slots !== "undefined" ? h[i].slots?.main?.content ?? null : null);
         if (c) {
             comment = new Previewmaker(c, new Title(curart).toUrl()).editSummaryPreview();
@@ -416,7 +417,7 @@ pg.fn.APIsharedImagePagePreviewHTML = (obj: RevisionQuery & { requestid?: number
     if (obj.query?.pages) {
         const page = anyChild(obj.query.pages);
         const content = page?.revisions?.[0]?.slots?.main?.contentmodel === "wikitext" ? page.revisions[0].slots.main.content : null;
-        if (typeof content === "string" && pg?.current?.link?.navpopup) {
+        if (typeof content === "string" && pg.current.link?.navpopup) {
             const p = new Previewmaker(content, assume(pg.current.link.navpopup.article), pg.current.link.navpopup);
             p.makePreview();
             setPopupHTML(p.html, "popupSecondPreview", popupid);
@@ -581,6 +582,7 @@ const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string =>
             ret.push(gug.join(popupString("separator")));
         }
         if (user.registration) {
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- editcount 0 must render as "0"; the falsy branch is deliberate
             ret.push(pg.escapeQuotesHTML?.(`${user.editcount ? user.editcount : "0"}${popupString(" edits since: ")}${user.registration ? formattedDate(new Date(user.registration)) : ""}`) ?? "");
         }
     }

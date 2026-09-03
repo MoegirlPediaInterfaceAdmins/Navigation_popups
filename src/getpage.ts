@@ -8,9 +8,10 @@ export const getPageWithCaching = (url: string, onComplete: (d: Downloader) => v
     let d;
     if (i > -1) {
         const page = pg.cache.pages[i];
-        fakeDownload(url, owner.idNumber, onComplete, page.data, page.lastModified, owner);
+        void fakeDownload(url, owner.idNumber, onComplete, page.data, page.lastModified, owner);
     } else {
         d = getPage(url, onComplete, owner);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- newDownload can return an "ohdear" string at runtime
         if (d && owner?.addDownload && !(typeof d === "string")) {
             owner.addDownload(d);
             d.owner = owner;

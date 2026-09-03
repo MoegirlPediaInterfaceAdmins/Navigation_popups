@@ -182,7 +182,7 @@ export interface HistoryInfo {
     firstNewEditor?: HistoryMarker;
 }
 const processLastContribInfo = (info: HistoryInfo, stuff: { page: string; newWin: boolean }): void => {
-    if (!info.edits?.length) {
+    if (!info.edits.length) {
         alert("Popups: an odd thing happened. Please retry.");
         return;
     }
@@ -202,7 +202,7 @@ pg.fn.getDiffSinceMyEdit = (wikipage: string, newWin: boolean): void => {
     });
 };
 const processDiffSinceMyEdit = (info: HistoryInfo, stuff: { page: string; newWin: boolean }): void => {
-    if (!info.edits?.length) {
+    if (!info.edits.length) {
         alert("Popups: something fishy happened. Please try again.");
         return;
     }
@@ -232,16 +232,16 @@ pg.fn.purgePopups = (): void => {
     abortAllDownloads();
 };
 const processAllPopups = (nullify?: boolean, banish?: boolean) => {
-    for (let i = 0; pg.current.links && i < pg.current.links.length; ++i) {
-        if (!pg.current.links[i].navpopup) {
+    for (const link of pg.current.links) {
+        if (!link.navpopup) {
             continue;
         }
         if (nullify || banish) {
-            assume(pg.current.links[i].navpopup).banish();
+            assume(link.navpopup).banish();
         }
-        pg.current.links[i].simpleNoMore = false;
+        link.simpleNoMore = false;
         if (nullify) {
-            pg.current.links[i].navpopup = null;
+            link.navpopup = null;
         }
     }
 };
@@ -442,6 +442,7 @@ export const changeLinkTargetLink = (x: {
     let currentArticleRegexBit = chs + cA.substring(1);
     currentArticleRegexBit = currentArticleRegexBit.split(/(?:[_ ]+|%20)/g).join("(?:[_ ]+|%20)").split("\\(").join("(?:%28|\\()").split("\\)").join("(?:%29|\\))");
     currentArticleRegexBit = `\\s*(${currentArticleRegexBit}(?:#[^\\[\\|]*)?)\\s*`;
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
     const title = x.title || mw.config.get("wgPageName").split("_").join(" ");
     const lk = titledWikiLink({
         article: new Title(title),
@@ -615,7 +616,7 @@ export const editorListLink = (l: LinkSpec): string | null => {
     if (!saneLinkCheck(l)) {
         return null;
     }
-    const article = l.article.articleFromTalkPage() || l.article;
+    const article = l.article.articleFromTalkPage() ?? l.article;
     const url = `https://xtools.wmflabs.org/articleinfo/${encodeURI(pg.wiki.hostname)}/${article.urlString()}?uselang=${mw.config.get("wgUserLanguage")}`;
     return generalNavLink({
         url: url,

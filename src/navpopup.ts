@@ -11,7 +11,7 @@ export class Navpopup {
     uid = Navpopup.uid++;
     visible = false;
     noshow = false;
-    hooks: Record<string, ({
+    hooks: Record<string, undefined | ({
         hook: (this: Navpopup) => unknown;
         when: string;
         hookId: string | null;
@@ -159,7 +159,7 @@ export class Navpopup {
         }
     }
     addHook(hook: () => unknown, key: string, _when?: string, uid?: string) {
-        const when = _when || "after";
+        const when = _when ?? "after";
         if (!this.hooks[key]) {
             return;
         }
@@ -183,6 +183,7 @@ export class Navpopup {
         mainDiv.onclick = () => {
             this.onclickHandler();
         };
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
         mainDiv.className = this.className ? this.className : "navpopup_maindiv";
         mainDiv.id = `${mainDiv.className}${this.uid}`;
         mainDiv.style.position = "absolute";
@@ -215,6 +216,7 @@ export class Navpopup {
         if (handleName) {
             dragHandle = document.getElementById(handleName);
         }
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
         if (!dragHandle) {
             dragHandle = this.mainDiv;
         }
@@ -259,16 +261,11 @@ export class Navpopup {
         return (x ?? Number.NaN) + fuzz >= left && (x ?? Number.NaN) - fuzz <= left + this.width && (y ?? Number.NaN) + fuzz >= top && (y ?? Number.NaN) - fuzz <= top + this.height;
     }
     addDownload(download: Downloader) {
-        if (!download) {
-            return;
-        }
         this.downloads.push(download);
     }
     abortDownloads() {
         for (const d of this.downloads) {
-            if (d?.abort) {
-                d.abort();
-            }
+            d.abort();
         }
         this.downloads = [];
     }

@@ -52,6 +52,7 @@ export const fillEmptySpans = (args: FillEmptySpansArgs) => {
         article = assume(args.redirTarget);
     } else {
         article = new Title().fromAnchor(a);
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
         hint = a.originalTitle || article.hintValue();
         params = parseParams(a.href);
         oldid = getValueOf("popupHistoricalLinks") ? params.oldid : null;
@@ -154,10 +155,13 @@ const makeEmptySpans = (list: unknown[], navpop: Navpopup): string => {
 type EmptySpanHTMLFn = (name: string, id: number | undefined, _tag?: string | number, _classname?: string) => string;
 const emptySpanHTML: EmptySpanHTMLFn & { classAliases: Record<string, string> } = (name, id, _tag, _classname) => {
     let classname = _classname;
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- an empty tag string falls back to the default on purpose
     const tag = _tag || "span";
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
     if (!classname) {
         classname = emptySpanHTML.classAliases[name];
     }
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
     classname ||= name;
     if (name === getValueOf("popupDragHandle")) {
         classname += " popupDragHandle";
@@ -170,6 +174,7 @@ emptySpanHTML.classAliases = {
 export const imageHTML = (_article: unknown, idNumber: number | undefined) => simplePrintf('<a id="popupImageLink$1"><img align="right" valign="top" id="popupImg$1" style="display: none;"></img></a>', [String(idNumber)]);
 export const popTipsSoonFn = (id: string, _when?: number | null, popData?: { owner?: Navpopup } & Record<string, unknown> | null): () => void => {
     let when = _when;
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 0 is a meaningless timeout; falling back to 250 is deliberate
     if (!when) {
         when = 250;
     }

@@ -235,10 +235,7 @@ export class Title extends Stringwrapper {
         this.setUtf(String(this.value) + x);
     }
     urlString(_x?: unknown) {
-        let x = _x as { omitAnchor?: boolean; keepSpaces?: boolean };
-        if (!x) {
-            x = {};
-        }
+        const x = (_x ?? {}) as { omitAnchor?: boolean; keepSpaces?: boolean };
         let v = this.toString(true);
         if (!x.omitAnchor && this.anchor) {
             v += `#${this.urlAnchor()}`;

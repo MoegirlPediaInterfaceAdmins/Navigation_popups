@@ -53,7 +53,7 @@ export class Drag {
         obj.popups_draggable = true;
         obj.hmode = true;
         obj.vmode = true;
-        obj.root = (oRoot || o) as DragHandle;
+        obj.root = oRoot as DragHandle;
         if (isNaN(parseInt(obj.root.style.left, 10))) {
             obj.root.style.left = "0px";
         }

@@ -68,10 +68,8 @@ const parseSubstitute = (_str: string): false | EditCmd => {
     flags = "";
     if (str.length) {
         tmp = skipOver(str, ";") || skipToEnd(str);
-        if (tmp) {
-            flags = tmp.segment;
-            str = tmp.remainder;
-        }
+        flags = tmp.segment;
+        str = tmp.remainder;
     }
     return {
         action: substitute,
@@ -234,11 +232,9 @@ const autoEdit3 = () => {
 };
 const bannerMessage = (s: string) => {
     const headings = document.getElementsByTagName("h1");
-    if (headings) {
-        const div = document.createElement("div");
-        div.innerHTML = `<font size=+1><b>${pg.escapeQuotesHTML?.(s) ?? ""}</b></font>`;
-        headings[0].parentNode?.insertBefore(div, headings[0]);
-    }
+    const div = document.createElement("div");
+    div.innerHTML = `<font size=+1><b>${pg.escapeQuotesHTML?.(s) ?? ""}</b></font>`;
+    headings[0].parentNode?.insertBefore(div, headings[0]);
 };
 interface RvPage {
     revisions?: { timestamp: string; revid: number; user: string; userhidden?: boolean }[];

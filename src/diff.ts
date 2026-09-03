@@ -133,6 +133,7 @@ const makeDiffHashtable = (src: DiffCell[]) => {
         if (jsReservedProperties.test(key)) {
             src[i] = `${key}<!-- -->`;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- sparse record: keys appear dynamically at runtime
         if (!ret[key]) {
             ret[key] = [];
         }
@@ -149,7 +150,8 @@ export const diff = (o: DiffCell[], n: DiffCell[]): { o: DiffCell[]; n: DiffCell
     const os = makeDiffHashtable(o);
     let i: string | number;
     for (i in ns) {
-        if (ns[i].length === 1 && os[i]?.length === 1) {
+        const osi = os[i] as number[] | undefined;
+        if (ns[i].length === 1 && osi?.length === 1) {
             n[ns[i][0]] = {
                 text: textOf(n[ns[i][0]]),
                 row: os[i][0],

@@ -50,7 +50,7 @@ String.prototype.entify = function () {
 const removeNulls = (val: string | null) => val !== null;
 export const joinPath = (list: (string | null)[]) => list.filter(removeNulls).join("/");
 export const simplePrintf = (str: string, subs: unknown[]) => {
-    if (!str || !subs) {
+    if (!str) {
         return str;
     }
     const ret: unknown[] = [];

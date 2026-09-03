@@ -20,7 +20,7 @@ const getEditboxSelection = (): string => {
     }
     const selStart = editbox.selectionStart;
     const selEnd = editbox.selectionEnd;
-    return editbox.value.substring(selStart ?? 0, selEnd ?? 0);
+    return editbox.value.substring(selStart, selEnd);
 };
 export const doSelectionPopup = () => {
     const sel = getEditboxSelection();
@@ -86,7 +86,7 @@ export class Mousetracker {
         this.hooks.push(f);
     }
     runHooks() {
-        if (!this.hooks?.length) {
+        if (!this.hooks.length) {
             return;
         }
         let remove = false;
@@ -115,23 +115,18 @@ export class Mousetracker {
     track(_e?: MouseEvent) {
         let e = _e;
         // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
-        e ||= window.event as MouseEvent | undefined;
+        e ??= window.event as MouseEvent | undefined;
         let x: number, y: number;
         if (e) {
             if (e.pageX) {
                 x = e.pageX;
                 y = e.pageY;
             } else if (typeof e.clientX !== "undefined") {
-                let left = 0, top = 0;
                 const docElt = document.documentElement;
-                if (docElt) {
-                    left = docElt.scrollLeft;
-                }
-                left ||= document.body.scrollLeft || document.scrollLeft || 0;
-                if (docElt) {
-                    top = docElt.scrollTop;
-                }
-                top ||= document.body.scrollTop || document.scrollTop || 0;
+                // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 0 offsets fall through to the next fallback; the || chain is deliberate
+                const left = docElt.scrollLeft || document.body.scrollLeft || document.scrollLeft || 0;
+                // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 0 offsets fall through to the next fallback; the || chain is deliberate
+                const top = docElt.scrollTop || document.body.scrollTop || document.scrollTop || 0;
                 x = e.clientX + left;
                 y = e.clientY + top;
             } else {
@@ -156,11 +151,7 @@ export class Mousetracker {
         if (diff > 1) {
             this.lastHook_x = x;
             this.lastHook_y = y;
-            if (this.dirty) {
-                this.dirty = false;
-            } else {
-                this.runHooks();
-            }
+            this.runHooks();
         }
     }
     enable() {
