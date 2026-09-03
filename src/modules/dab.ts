@@ -1,4 +1,4 @@
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 import { setPopupHTML } from "./htmloutput.ts";
 import { changeLinkTargetLink } from "./links.ts";
 import { getValueOf } from "./options.ts";

@@ -1,5 +1,5 @@
-import { log, pg } from "./globals.ts";
-import type { StructureContext } from "./types/pg.ts";
+import { log, pg } from "../globals.ts";
+import type { StructureContext } from "../types/pg.ts";
 import { navlinkStringToHTML } from "./navlinks.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";

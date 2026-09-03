@@ -1,5 +1,5 @@
 import { removeModifierKeyHandler, restoreTitle } from "./actions.ts";
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { Navpopup } from "./navpopup.ts";
 import { getValueOf } from "./options.ts";
 const fuzzyCursorOffMenus = (_x: number | undefined, _y: number | undefined, _fuzz: number, parent: HTMLElement | null) => {

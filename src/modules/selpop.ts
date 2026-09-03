@@ -1,5 +1,5 @@
 import { mouseOverWikiLink2 } from "./actions.ts";
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { popTipsSoonFn } from "./htmloutput.ts";
 import { wiki2html } from "./livepreview.ts";
 import { runStopPopupTimer } from "./mouseout.ts";

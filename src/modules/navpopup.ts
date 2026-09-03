@@ -2,7 +2,7 @@ import { Drag } from "./domdrag.ts";
 import type { Downloader } from "./downloader.ts";
 import type { Title } from "./titles.ts";
 import type { DiffSide } from "./diffpreview.ts";
-import { log } from "./globals.ts";
+import { log } from "../globals.ts";
 import { Mousetracker } from "./selpop.ts";
 export class Navpopup {
     static uid = 0;

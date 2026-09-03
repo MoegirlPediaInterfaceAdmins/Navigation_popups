@@ -7,8 +7,8 @@
 ## 0. 前置事实（已核实，直接采信）
 
 - 上游部署页面是 31 个源文件的构建期拼接产物，各源文件边界由 `// STARTFILE: <name>.js` / `// ENDFILE: <name>.js` 注释标记。**除第一个标记外，所有标记行都有且仅有一个前导 TAB**（即 `\t// STARTFILE: x.js`），切分时不要按行首严格匹配。
-- 上游源文件是语法不闭合的片段（`main.js` 打开 `$( () => {` 不闭合，`run.js` 末尾 `});` 闭合）。本仓库已改为 ESM 模块：`src/*.ts` 每个文件独立合法，`$( () => {` 包裹与双载入守卫在 `entry.ts` / `globals.ts`。
-- **模块 ↔ 上游文件对应表就是 `build/fragments.json`**（`main.js → globals.ts`、`_popupStrings → popupStrings.ts`、`run.js → run.ts`（仅 run 函数；ready 分支与钩子注册在 `entry.ts`）、其余同名）。
+- 上游源文件是语法不闭合的片段（`main.js` 打开 `$( () => {` 不闭合，`run.js` 末尾 `});` 闭合）。本仓库已改为 ESM 模块：每个文件独立合法，`$( () => {` 包裹与双载入守卫在 `entry.ts` / `globals.ts`。目录布局：`src/` 顶层只有 `entry.ts`、`globals.ts`、`popupStrings.ts` 与 `types/`，**30 个上游对应模块在 `src/modules/`**。
+- **模块 ↔ 上游文件对应表就是 `build/fragments.json`**（`main.js → globals.ts`、`_popupStrings → popupStrings.ts`、`run.js → run.ts`（仅 run 函数；ready 分支与钩子注册在 `entry.ts`）、其余同名；`file` 字段是相对 `src/` 的路径，模块层带 `modules/` 前缀）。
 - 顶层副作用顺序约束：entry 的 import 顺序 = 原片段顺序；Rollup 拓扑微调后仍须满足——`pg` 字面量最先（globals.ts）、`domdrag.ts` 填充 `pg.structures.original` 先于 `structures.ts` 的 `copyStructure` 调用、entry 的注册最后。若同步引入新的顶层副作用，必须核对依赖顺序（必要时调整 entry 的 import 序）。
 - 循环依赖：模块互相 import、运行期互调是上游结构的常态，rollup `onwarn` 只放行 `CIRCULAR_DEPENDENCY`（其余警告一律 fatal）。同步时不必消环，但避免加剧；跨模块调用都发生在所有模块体求值完毕之后。
 - **质量基线**：全部 33 模块处于 strict tsc + 严集 eslint 之下，当前为 **0 类型错误 / 0 lint 违规**，无 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`。移植后的代码必须保持这个基线（见 §4）。
@@ -52,7 +52,7 @@ curl -fsSL 'https://en.wikipedia.org/w/index.php?title=MediaWiki:Gadget-popups.j
 - **非空断言的写法**：上游常见的"此处必非空/必为某形状"运行时不变量，用 `tools.ts` 的 `assume<T>(value)` 表达——恒等函数、运行时零开销。不要写 `!`（`no-non-null-assertion` 禁止），也不要写会被 `non-nullable-type-assertion-style` 改写回 `!` 的裸 `as`；确需双重断言时 `as unknown as T`。
 - **与 lint 规则冲突的上游行为**：若上游行为本身触发某规则（如 retry 计数用 `|| 0`、`window.event`/`keyCode` legacy API、`unescape`），用**单行 scoped `eslint-disable-<rule> -- 理由`** 承接，理由必须注明上游行为依据（存量约 38 处可作范例；`shortcutkeys.ts` 是唯一的文件级豁免）。禁止无理由 disable、禁止多行 disable 注释（不生效）。
 - **TS 语法注意**：`noFallthroughCasesInSwitch` 下，上游的 switch 贯串分支要改写成合并 case 标签（`case A: case B:`）；类型窄化用字面量 `typeof x === "string"`（`typeof x === typeof ""` 不窄化）；`Record` 索引访问的判空以实际类型为准。字符串语义等价转换可放心用：`String(x)` 与模板拼接 `` `${x}` `` 运行时一致。
-- 上游新增/删除源文件（31 个之外）→ 新建/删除对应模块，同步更新 `build/fragments.json` 与 `entry.ts` 的 import 序（保持原拼接顺序语义）。
+- 上游新增/删除源文件（31 个之外）→ 在 `src/modules/` 新建/删除对应模块，同步更新 `build/fragments.json`（`file` 填 `modules/<name>.ts`）与 `entry.ts` 的 import 序（`./modules/<name>.ts`，保持原拼接顺序语义）。
 - 同步完成后更新 `rollup.config.mjs` banner 里的 `@source` oldid。
 
 ## 5. 验证与发布

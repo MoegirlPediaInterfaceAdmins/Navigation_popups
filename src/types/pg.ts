@@ -4,9 +4,9 @@
 // plus assertions at read sites are preferred over `any` so that the strict
 // type-checked lint rules keep working.
 
-import type { Downloader } from "../downloader.ts";
-import type { Navpopup } from "../navpopup.ts";
-import type { Title } from "../titles.ts";
+import type { Downloader } from "../modules/downloader.ts";
+import type { Navpopup } from "../modules/navpopup.ts";
+import type { Title } from "../modules/titles.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pg domains carry heterogeneous runtime data
 export type AnyRecord = Record<string, any>;

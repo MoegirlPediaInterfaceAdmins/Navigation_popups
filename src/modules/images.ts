@@ -3,7 +3,7 @@ import type { Downloader } from "./downloader.ts";
 import type { Navpopup } from "./navpopup.ts";
 import type { Title } from "./titles.ts";
 import { getPageWithCaching } from "./getpage.ts";
-import { log, pg } from "./globals.ts";
+import { log, pg } from "../globals.ts";
 import { popTipsSoonFn } from "./htmloutput.ts";
 import { getValueOf } from "./options.ts";
 import { popupString } from "./strings.ts";

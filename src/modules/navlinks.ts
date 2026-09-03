@@ -1,6 +1,6 @@
 import { autoClickToken } from "./autoedit.ts";
 import { titledDiffLink } from "./diffpreview.ts";
-import { errlog, pg } from "./globals.ts";
+import { errlog, pg } from "../globals.ts";
 import { arinLink, editCounterLink, editorListLink, globalSearchLink, googleLink, magicHistoryLink, magicWatchLink, popupMenuLink, specialLink, titledWikiLink, wikiLink } from "./links.ts";
 import type { LinkSpec } from "./links.ts";
 import { getValueOf } from "./options.ts";

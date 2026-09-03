@@ -1,4 +1,4 @@
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { getValueOf } from "./options.ts";
 import { assume } from "./tools.ts";
 class Stringwrapper {

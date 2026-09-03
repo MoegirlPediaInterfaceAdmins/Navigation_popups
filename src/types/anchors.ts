@@ -1,5 +1,5 @@
 // The gadget attaches the popup object to the anchor that opened it.
-import type { Navpopup } from "../navpopup.ts";
+import type { Navpopup } from "../modules/navpopup.ts";
 
 declare global {
     interface HTMLAnchorElement {

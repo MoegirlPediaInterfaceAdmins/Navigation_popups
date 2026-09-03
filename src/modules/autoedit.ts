@@ -1,6 +1,6 @@
 import type { Downloader } from "./downloader.ts";
 import { startDownload } from "./downloader.ts";
-import { pg } from "./globals.ts";
+import { pg } from "../globals.ts";
 import { setupPopups } from "./init.ts";
 import { popupString, tprintf } from "./strings.ts";
 import { anyChild, assume, getJsObj, simplePrintf } from "./tools.ts";
