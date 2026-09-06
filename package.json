@@ -21,7 +21,7 @@
         "@annangela/eslint-config": "^15.0.0",
         "eslint": "^10.9.1",
         "terser": "^5.51.2",
-        "typescript": "^6.0.3"
+        "typescript": "^7.0.2"
     },
     "devDependencies": {
         "@types/jquery": "^4.0.1",
