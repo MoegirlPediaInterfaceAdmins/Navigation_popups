@@ -7,6 +7,8 @@ export default defineConfig({
         // popupStrings 等模块在顶层求值翻译表，wgULS 必须先于任何 src 模块
         // 的 import 存在，因此用 setupFiles（先于测试文件的 import 执行）。
         setupFiles: ["tests/helpers/setup.ts"],
+        // tests/helpers/mockMw.ts 用 vi.stubGlobal 挂 mw，测试文件间自动卸载
+        unstubGlobals: true,
         coverage: {
             provider: "v8",
             include: ["src/**/*.ts"],
