@@ -12,6 +12,8 @@
     },
     "include": [
         "src",
+        "tests",
+        "vitest.config.ts",
         "node_modules/moment/moment.d.ts",
         "node_modules/types-mediawiki",
         "dist"

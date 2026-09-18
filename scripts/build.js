@@ -6,8 +6,7 @@ import { rollup } from "rollup";
 import rollupOptions from "../rollup.config.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const manifest = JSON.parse(await fs.promises.readFile(path.join(root, "build", "fragments.json"), "utf8"));
-const distFile = path.join(root, manifest.artifact.output);
+const distFile = rollupOptions.output.file;
 const { input, plugins, treeshake, onwarn, output } = rollupOptions;
 
 // Holds the artifact to the repo's own lint config (the dist/** block of
@@ -19,15 +18,6 @@ const artifactVerifier = new ESLint({ cwd: root });
 const bundle = await rollup({ input, plugins, treeshake, onwarn });
 
 export const build = async () => {
-    // Every module listed in the manifest must be part of the bundle graph —
-    // a module nobody imports would silently drop out otherwise.
-    const moduleIds = bundle.cache.modules.map((m) => m.id.replaceAll("\\", "/"));
-    const missing = manifest.modules
-        .filter(({ file }) => !moduleIds.some((id) => id.endsWith(`/${file}`)))
-        .map(({ file }) => file);
-    if (missing.length > 0) {
-        throw new Error(`modules missing from the bundle graph (add them to entry.ts imports): ${missing.join(", ")}`);
-    }
     const generated = await bundle.generate(output);
     if (generated.output.length !== 1 || generated.output[0].type !== "chunk") {
         throw new Error(`expected a single output chunk, got ${generated.output.length}`);
@@ -88,7 +78,7 @@ export const build = async () => {
 const write = async (buf) => {
     await fs.promises.mkdir(path.dirname(distFile), { recursive: true });
     await fs.promises.writeFile(distFile, buf);
-    console.log(`Built ${path.relative(root, distFile)} (${buf.length} bytes) from ${manifest.modules.length} modules`);
+    console.log(`Built ${path.relative(root, distFile)} (${buf.length} bytes)`);
 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

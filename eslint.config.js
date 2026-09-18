@@ -8,6 +8,7 @@ export default [
         ignores: [
             "node_modules",
             ".cache",
+            "coverage",
             "**/.*/**",
             // .husky/ 是点目录、会被上一条 `**/.*/**` 整体忽略，而其中的 .mjs 是需要检查的源码，
             // 需显式反忽略才能被 lint（与旧仓同款）。
@@ -25,6 +26,7 @@ export default [
         ...configs.typescript,
         files: [
             "src/**/*.ts",
+            "tests/**/*.ts",
         ],
         languageOptions: {
             ...configs.typescript.languageOptions,
@@ -62,12 +64,13 @@ export default [
         },
     },
     {
-        // The upstream event/XHR flow is callback-driven by design; the
+        // The event/XHR flow is callback-driven by design; the
         // interface codes repo turns this rule off for all browser files, so
         // both the sources and the artifact follow suit (keeping it off in
         // the banner would surface as an unused directive over there).
         files: [
             "src/**/*.ts",
+            "tests/**/*.ts",
             "dist/**/*",
         ],
         rules: {
@@ -106,6 +109,7 @@ export default [
             "rollup.config.js",
             "eslint.config.js",
             "commitlint.config.mjs",
+            "vitest.config.ts",
         ],
         rules: {
             // Running in trusted environment (same exemptions as MoegirlPediaInterfaceCodes)

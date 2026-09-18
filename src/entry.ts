@@ -1,89 +1,30 @@
-// Entry point. Imports are ordered exactly like the fragments of the original
-// single-file gadget: module bodies run in this order, which the top-level
-// side-effect chain (pg.structures population in domdrag -> structures, the
-// String.prototype.parenSplit polyfill, the pg.string table, ...) relies on.
-// Named imports double as side-effect imports for their modules; the rest are
-// imported for their side effects only.
-import { alreadyLoaded, pg } from "./globals.ts";
-import { setupTooltips } from "./modules/actions.ts";
-import "./modules/autoedit.ts";
-import "./modules/dab.ts";
-import "./modules/debug.ts";
-import "./modules/diff.ts";
-import "./modules/diffpreview.ts";
-import "./modules/domdrag.ts";
-import "./modules/downloader.ts";
-import "./modules/getpage.ts";
-import "./modules/htmloutput.ts";
-import "./modules/images.ts";
-import { setupPopups } from "./modules/init.ts";
-import "./modules/links.ts";
-import "./modules/livepreview.ts";
-import { posCheckerHook } from "./modules/mouseout.ts";
-import "./modules/namespaces.ts";
-import "./modules/navlinks.ts";
-import { Navpopup } from "./modules/navpopup.ts";
-import "./modules/options.ts";
-import "./modules/pageinfo.ts";
-import "./modules/parensplit.ts";
-import "./modules/previewmaker.ts";
-import "./modules/querypreview.ts";
-import { run } from "./modules/run.ts";
-import "./modules/selpop.ts";
-import "./modules/shortcutkeys.ts";
-import "./modules/strings.ts";
-import "./modules/structures.ts";
-import "./modules/titles.ts";
-import "./modules/tools.ts";
-import "./popupStrings.ts";
+// 入口：本仓库中唯一允许注册全局副作用的模块。
+//
+// 双载入守卫沿用原版语义：window.pg 已存在且不是元素节点时，说明另一份
+// 实例已在运行（mw.loader 正常不会双载入，但用户脚本手动引入时可能发生），
+// 本份保持静默退出。
+//
+// 与原版（模块求值期展开全部定义与初始化）不同，重写版的所有初始化都
+// 经由 boot() 在 ready/load 回调中显式执行——模块顶层零副作用是本仓库
+// 的架构约束，也是测试可以直接 import 各模块的前提。
+//
+// window.pg 的装配不能推迟到 boot()：boot 在 ready 之后才运行，若标记
+// 晚于守卫检查，ready 前的窗口期内另一份实例会通过守卫造成双载入，
+// 因此守卫通过后立即同步标记。
+import { boot } from "./boot.ts";
+import { state } from "./state.ts";
+
+const alreadyLoaded = !!window.pg && !(window.pg instanceof HTMLElement);
 
 if (!alreadyLoaded) {
+    window.pg = state;
     $(() => {
         if (document.readyState === "complete") {
-            run();
+            boot();
         } else {
-            $(window).on("load", run);
-        }
-        (() => {
-            let once = true;
-            const dynamicContentHandler = ($content: JQuery<Element>) => {
-                if ($content.attr("id") === "mw-content-text") {
-                    if (once) {
-                        once = false;
-                        return;
-                    }
-                }
-                const registerHooksForVisibleNavpops = () => {
-                    // pg.current.links is a loosely-typed domain on pg (see
-                    // types/pg.ts); narrow it once instead of unsafe-any chains.
-                    const links = pg.current.links as { navpopup?: Navpopup }[] | undefined;
-                    for (let i = 0; links && i < links.length; ++i) {
-                        const navpop = links[i]?.navpopup;
-                        if (!navpop?.isVisible()) {
-                            continue;
-                        }
-                        Navpopup.tracker.addHook(posCheckerHook(navpop));
-                    }
-                };
-                const doIt = () => {
-                    registerHooksForVisibleNavpops();
-                    $content.each(function (this: Element) {
-                        this.ranSetupTooltipsAlready = false;
-                        setupTooltips(this);
-                    });
-                };
-                // Fire-and-forget, as in the original run() flow.
-                void setupPopups(doIt);
-            };
-            document
-                .querySelectorAll(".mw-parser-output")
-                .forEach((content) => {
-                    dynamicContentHandler($(content));
-                });
-            mw.hook("wikipage.content").add(dynamicContentHandler);
-            mw.hook("ext.echo.overlay.beforeShowingOverlay").add(($overlay: JQuery<Element>) => {
-                dynamicContentHandler($overlay.find(".mw-echo-state"));
+            $(window).on("load", () => {
+                boot();
             });
-        })();
+        }
     });
 }
