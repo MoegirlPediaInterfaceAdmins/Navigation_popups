@@ -1,0 +1,10 @@
+{
+    "conventionalCommits.scopes": [
+        "js",
+        "css",
+        "build",
+        "ci",
+        "docs",
+        "deps"
+    ]
+}

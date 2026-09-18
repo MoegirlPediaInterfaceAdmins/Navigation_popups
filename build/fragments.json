@@ -1,0 +1,203 @@
+{
+    "artifact": {
+        "name": "Gadget-popups.js",
+        "output": "dist/Gadget-popups.js",
+        "targetPathInInterfaceCodes": "src/gadgets/Navigation_popups/Gadget-popups.js",
+        "encoding": "utf-8",
+        "lineEndings": "lf"
+    },
+    "source": {
+        "repository": "https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes",
+        "commit": "5adc9438f079d6b77157ff9f3649008f60ac915a",
+        "path": "src/gadgets/Navigation_popups/Gadget-popups.js",
+        "lines": 6529,
+        "upstream": {
+            "page": "https://en.wikipedia.org/wiki/MediaWiki:Gadget-popups.js",
+            "oldid": 1322962085
+        }
+    },
+    "stylesheets": {
+        "artifact": {
+            "name": "Gadget-popups.css",
+            "output": "dist/Gadget-popups.css",
+            "targetPathInInterfaceCodes": "src/gadgets/Navigation_popups/Gadget-popups.css",
+            "encoding": "utf-8",
+            "lineEndings": "lf"
+        },
+        "source": {
+            "repository": "https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes",
+            "path": "src/gadgets/Navigation_popups/Gadget-popups.css",
+            "lines": 409,
+            "upstream": {
+                "page": "https://en.wikipedia.org/wiki/MediaWiki:Gadget-navpop.css",
+                "oldid": 825269631
+            }
+        },
+        "files": [
+            {
+                "file": "css/main.scss",
+                "note": "flat section = upstream Gadget-navpop.css + moegirl custom (.navpopup line-height, .popupPreview td word-break pair)"
+            },
+            {
+                "file": "css/_darkmode.scss",
+                "note": "moegirl-only dark-mode block (16 rule groups x 2 media variants via dark-mode-variants mixin); never overwrite from upstream"
+            }
+        ]
+    },
+    "modules": [
+        {
+            "file": "globals.ts",
+            "upstream": "main.js",
+            "note": "pg object, double-load guard (as alreadyLoaded flag), window.pg, escapeRegExp fallback, log/errlog (moved here from upstream debug.js)"
+        },
+        {
+            "file": "popupStrings.ts",
+            "upstream": null,
+            "note": "moegirl-only builtin i18n table (upstream expects window.popupStrings to be provided externally); was _popupStrings.js"
+        },
+        {
+            "file": "modules/actions.ts",
+            "upstream": "actions.js",
+            "note": "adds Moeskin/vector-2022 container selector chains"
+        },
+        {
+            "file": "modules/domdrag.ts",
+            "upstream": "domdrag.js",
+            "note": "class Drag; also holds pg.structures.original moved from upstream structures.js head"
+        },
+        {
+            "file": "modules/structures.ts",
+            "upstream": "structures.js"
+        },
+        {
+            "file": "modules/autoedit.ts",
+            "upstream": "autoedit.js",
+            "note": "adds wpChangeTags (Popups / Automation tool)"
+        },
+        {
+            "file": "modules/downloader.ts",
+            "upstream": "downloader.js"
+        },
+        {
+            "file": "modules/livepreview.ts",
+            "upstream": "livepreview.js"
+        },
+        {
+            "file": "modules/pageinfo.ts",
+            "upstream": "pageinfo.js",
+            "note": "formatAge rewritten with moment calendar diff"
+        },
+        {
+            "file": "modules/titles.ts",
+            "upstream": "titles.js",
+            "note": "namespaceId wrapped in try/catch"
+        },
+        {
+            "file": "modules/getpage.ts",
+            "upstream": "getpage.js"
+        },
+        {
+            "file": "modules/parensplit.ts",
+            "upstream": "parensplit.js",
+            "note": "String.prototype.parenSplit polyfill; nonGlobalRegex moved out to tools.ts"
+        },
+        {
+            "file": "modules/tools.ts",
+            "upstream": "tools.js",
+            "note": "nonGlobalRegex moved in from upstream parensplit.js; findInArray/nextOne/isNumber/isObject/isFunction/repeatString dropped"
+        },
+        {
+            "file": "modules/dab.ts",
+            "upstream": "dab.js"
+        },
+        {
+            "file": "modules/htmloutput.ts",
+            "upstream": "htmloutput.js"
+        },
+        {
+            "file": "modules/mouseout.ts",
+            "upstream": "mouseout.js"
+        },
+        {
+            "file": "modules/previewmaker.ts",
+            "upstream": "previewmaker.js",
+            "note": "previewSteps dropped"
+        },
+        {
+            "file": "modules/querypreview.ts",
+            "upstream": "querypreview.js",
+            "note": "group-no-autoconfirmed bold display, Chinese enumeration punctuation"
+        },
+        {
+            "file": "modules/debug.ts",
+            "upstream": "debug.js",
+            "note": "stubbed to a one-liner; log/errlog live in globals.ts"
+        },
+        {
+            "file": "modules/images.ts",
+            "upstream": "images.js"
+        },
+        {
+            "file": "modules/namespaces.ts",
+            "upstream": "namespaces.js",
+            "note": "interwiki trimmed to zh/en/ja"
+        },
+        {
+            "file": "modules/selpop.ts",
+            "upstream": "selpop.js",
+            "note": "also holds class Mousetracker moved from upstream navpopup.js"
+        },
+        {
+            "file": "modules/navpopup.ts",
+            "upstream": "navpopup.js",
+            "note": "class Navpopup only (Mousetracker moved to selpop.ts)"
+        },
+        {
+            "file": "modules/diff.ts",
+            "upstream": "diff.js"
+        },
+        {
+            "file": "modules/init.ts",
+            "upstream": "init.js",
+            "note": "deps via ResourceLoader, Api-User-Agent, uselang content, maxage 3600"
+        },
+        {
+            "file": "modules/navlinks.ts",
+            "upstream": "navlinks.js"
+        },
+        {
+            "file": "modules/shortcutkeys.ts",
+            "upstream": "shortcutkeys.js"
+        },
+        {
+            "file": "modules/diffpreview.ts",
+            "upstream": "diffpreview.js",
+            "note": "async/await; also holds titledDiffLink moved from upstream links.js"
+        },
+        {
+            "file": "modules/links.ts",
+            "upstream": "links.js",
+            "note": "edit-counter/arin/google links adjusted for zh"
+        },
+        {
+            "file": "modules/options.ts",
+            "upstream": "options.js",
+            "note": "useDefaultOptions dropped"
+        },
+        {
+            "file": "modules/strings.ts",
+            "upstream": "strings.js",
+            "note": "popupString uses popupNoTranslation Set + console.info"
+        },
+        {
+            "file": "modules/run.ts",
+            "upstream": "run.js",
+            "note": "run() = autoEdit()+setupPopups(); ready/load branch and hook registration IIFE moved to entry.ts"
+        },
+        {
+            "file": "entry.ts",
+            "upstream": null,
+            "note": "import chain in original fragment order (drives top-level side-effect order), double-load gate, jQuery-ready wrapper that used to open in _header.js and close at the end of run.js"
+        }
+    ]
+}

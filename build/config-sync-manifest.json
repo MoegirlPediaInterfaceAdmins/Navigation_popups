@@ -1,0 +1,203 @@
+{
+    "//": "旧仓(MoegirlPediaInterfaceCodes) → 本仓配置同步清单。byte-equal：与旧仓逐字节一致，漂移时 config-sync 直接覆盖；adapted：有意偏差，漂移时存档待人工适配。.mailmap 为种子拷贝、两仓各自演进，不登记。eslint.config.js 为本仓独立三分治结构，不登记。",
+    "oldRepository": "MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes",
+    "oldBranch": "master",
+    "items": [
+        {
+            "oldPath": ".npmrc",
+            "newPath": ".npmrc",
+            "strategy": "byte-equal",
+            "note": "registry 钉扎，原样复制",
+            "lastSyncedHash": "214c29d1395919ce175f26d140526368127981ba"
+        },
+        {
+            "oldPath": ".prettierrc.yaml",
+            "newPath": ".prettierrc.yaml",
+            "strategy": "byte-equal",
+            "note": "格式化配置，原样复制（JS 格式化实际由 eslint @stylistic 执行，与旧仓同款分工）",
+            "lastSyncedHash": "0eadf1a2a2cea8e3933a92f6d8f18c24bed1583f"
+        },
+        {
+            "oldPath": ".editorconfig",
+            "newPath": ".editorconfig",
+            "strategy": "byte-equal",
+            "note": "编辑器配置，原样复制",
+            "lastSyncedHash": "614915aa209a29ecaa8ab30075f9915e17c06084"
+        },
+        {
+            "oldPath": ".markdownlint.yaml",
+            "newPath": ".markdownlint.yaml",
+            "strategy": "byte-equal",
+            "note": "MD013 关、MD033 放行 details/summary，原样复制",
+            "lastSyncedHash": "bff0b7b3fa685760cbaa1fe64ad08fae1dffac83"
+        },
+        {
+            "oldPath": ".browserslistrc",
+            "newPath": ".browserslistrc",
+            "strategy": "byte-equal",
+            "note": "供 postcss autoprefixer 与 use-baseline 门禁，原样复制",
+            "lastSyncedHash": "3bbd2ee57f6518aeac6e517d00ab82e9a4484994"
+        },
+        {
+            "oldPath": ".postcssrc.yaml",
+            "newPath": ".postcssrc.yaml",
+            "strategy": "byte-equal",
+            "note": "postcss 插件链，原样复制（消费方为新写精简版 scripts/postcss/index.js）",
+            "lastSyncedHash": "843929ab26b7768578f2ffa1c6af17f2fd038bd1"
+        },
+        {
+            "oldPath": ".github/dependabot.yaml",
+            "newPath": ".github/dependabot.yaml",
+            "strategy": "byte-equal",
+            "note": "v4 实证补齐为与旧仓逐字节一致（旧仓多 3 行头注释 + 2 处行内注释）",
+            "lastSyncedHash": "4a2b7902a782db3407fed8971b8dd860b313ad22"
+        },
+        {
+            "oldPath": ".github/workflows/CodeQL.yaml",
+            "newPath": ".github/workflows/CodeQL.yaml",
+            "strategy": "byte-equal",
+            "note": "工作流文件逐字节一致；codeql-config.yaml 为本仓新建（paths-ignore: [dist]），不登记（旧仓 config 把 Navigation_popups 整目录排除，语义不同）",
+            "lastSyncedHash": "0a544b946ee9b68f7d5f1a9d111098a634d22f33"
+        },
+        {
+            "oldPath": ".husky/install.mjs",
+            "newPath": ".husky/install.mjs",
+            "strategy": "byte-equal",
+            "note": "husky 静默安装脚本，原样复制",
+            "lastSyncedHash": "637912884d433217ad651ff92dec71803dfc8975"
+        },
+        {
+            "oldPath": ".husky/commit-msg",
+            "newPath": ".husky/commit-msg",
+            "strategy": "byte-equal",
+            "note": "commitlint 钩子，原样复制",
+            "lastSyncedHash": "26d79a29020bdbec1b975209e657dc6bc5c6bf9b"
+        },
+        {
+            "oldPath": ".husky/pre-commit",
+            "newPath": ".husky/pre-commit",
+            "strategy": "byte-equal",
+            "note": "mailmap 预检钩子，原样复制（调用的 scripts/emailmapChecker/index.js 本仓亦已移植）",
+            "lastSyncedHash": "f480e932f39a808cb924d787f03bf63e359caed1"
+        },
+        {
+            "oldPath": ".husky/post-merge",
+            "newPath": ".husky/post-merge",
+            "strategy": "byte-equal",
+            "note": "package-lock 变更后重装依赖钩子，原样复制（npm run ci 在本仓为 npm ci 的直连）",
+            "lastSyncedHash": "2635e2767a03581e61ebe375a58cdccee3e07883"
+        },
+        {
+            "oldPath": ".husky/post-rewrite",
+            "newPath": ".husky/post-rewrite",
+            "strategy": "byte-equal",
+            "note": "同 post-merge",
+            "lastSyncedHash": "c7e44924e6a0c045a9c943798e298251b58ae3ec"
+        },
+        {
+            "oldPath": "scripts/commitLint/index.js",
+            "newPath": "scripts/commitLint/index.js",
+            "strategy": "byte-equal",
+            "note": "commitLint 校验器，整文件移植未改动",
+            "lastSyncedHash": "0b20eaee8a48f0b7ac45daa2e6bb03a98aa8cb65"
+        },
+        {
+            "oldPath": "scripts/commitLint/lintMessage.js",
+            "newPath": "scripts/commitLint/lintMessage.js",
+            "strategy": "byte-equal",
+            "note": "commitlint 编程式封装（parserPreset 修复），整文件移植未改动",
+            "lastSyncedHash": "cb3eb6f9356a74f64e127d0c7b17bbee5e01c6c3"
+        },
+        {
+            "oldPath": "scripts/emailmapChecker/index.js",
+            "newPath": "scripts/emailmapChecker/index.js",
+            "strategy": "byte-equal",
+            "note": "mailmap 检查器（本地+CI 双模式、bot 豁免），整文件移植未改动",
+            "lastSyncedHash": "7c5ec8abb062d8e60a93f04cf27d20ea3247cd9c"
+        },
+        {
+            "oldPath": "scripts/gitHooks/runCiOnPackageLockChange.js",
+            "newPath": "scripts/gitHooks/runCiOnPackageLockChange.js",
+            "strategy": "byte-equal",
+            "note": "git 钩子辅助，整文件移植未改动",
+            "lastSyncedHash": "b778415a85747aca3ae7f850fa3525dce1f5b363"
+        },
+        {
+            "oldPath": "scripts/modules/console.js",
+            "newPath": "scripts/modules/console.js",
+            "strategy": "byte-equal",
+            "note": "时间戳 console 代理，整文件移植未改动",
+            "lastSyncedHash": "38adae7707e5cd832654b4af6559b012166ee2ef"
+        },
+        {
+            "oldPath": "scripts/modules/toLocalTimeZoneStrings.js",
+            "newPath": "scripts/modules/toLocalTimeZoneStrings.js",
+            "strategy": "byte-equal",
+            "note": "本地时区时间格式化，整文件移植未改动",
+            "lastSyncedHash": "2888a55a37348cab79d220ee043092665d3ae178"
+        },
+        {
+            "oldPath": "scripts/modules/fixZero.js",
+            "newPath": "scripts/modules/fixZero.js",
+            "strategy": "byte-equal",
+            "note": "补零工具，整文件移植未改动",
+            "lastSyncedHash": "52b6a5e2bd5e160d6ba4d1d21cef9efe1faa86b5"
+        },
+        {
+            "oldPath": "scripts/modules/mailmap.js",
+            "newPath": "scripts/modules/mailmap.js",
+            "strategy": "byte-equal",
+            "note": ".mailmap 解析器，整文件移植未改动",
+            "lastSyncedHash": "2e3d6d0d45e83e1ad12c132e305b3d12da7dd092"
+        },
+        {
+            "oldPath": "scripts/modules/git.js",
+            "newPath": "scripts/modules/git.js",
+            "strategy": "byte-equal",
+            "note": "simple-git 封装，整文件移植未改动",
+            "lastSyncedHash": "f6bbb44c07a7a19f9464b805eee109c4443d1aef"
+        },
+        {
+            "oldPath": "scripts/modules/jsonModule.js",
+            "newPath": "scripts/modules/jsonModule.js",
+            "strategy": "byte-equal",
+            "note": "JSON(C) 读写，整文件移植未改动",
+            "lastSyncedHash": "341dbbee56039b21344480b3bad6a8d6bff40e2d"
+        },
+        {
+            "oldPath": "scripts/modules/workflowEvent.js",
+            "newPath": "scripts/modules/workflowEvent.js",
+            "strategy": "byte-equal",
+            "note": "GITHUB_EVENT_PATH 载荷读取，整文件移植未改动",
+            "lastSyncedHash": "b357d34e05bade132cc4375a977d87c75c4d35df"
+        },
+        {
+            "oldPath": "commitlint.config.mjs",
+            "newPath": "commitlint.config.mjs",
+            "strategy": "adapted",
+            "note": "type-enum 去除 auto（本仓无 postCommit 自动提交），保留 npm/gha；其余规则原样",
+            "lastSyncedHash": "90953418e491c6fc0bab8906b160a2bd1477a77c"
+        },
+        {
+            "oldPath": ".stylelintrc.yaml",
+            "newPath": ".stylelintrc.yaml",
+            "strategy": "adapted",
+            "note": "规则集原样；ignoreFiles 重写（本仓产物在 dist/ 必须受检，旧仓忽略 dist；旧仓 prism gadget 忽略项不存在于本仓）",
+            "lastSyncedHash": "29d254f7cd82340ade1774b18147d39fa15b6968"
+        },
+        {
+            "oldPath": ".github/workflows/commitLint.yaml",
+            "newPath": ".github/workflows/commitLint.yaml",
+            "strategy": "adapted",
+            "note": "结构/触发/if 条件复刻；action pin 换本仓版本（checkout v5.1.0 / setup-node v6.5.0），依赖安装用 npm ci（旧仓为 AnnAngela/cached_node-modules 封装）",
+            "lastSyncedHash": "942aaf49498277a8ec23b633902561fd31a34020"
+        },
+        {
+            "oldPath": "scripts/modules/octokit.js",
+            "newPath": "scripts/modules/octokit.js",
+            "strategy": "adapted",
+            "note": "裁剪移植：保留 GITHUB_TOKEN 认证/retry/{owner}{repo} 地址补全/事件旗标；裁掉 createAppAuth 分支、createIssue、auto_assign 依赖（postCommit 专用，且本仓无 .github/auto_assign.yaml）",
+            "lastSyncedHash": "f7bc0b59bfd2f3518772119f758e03568d82139b"
+        }
+    ]
+}

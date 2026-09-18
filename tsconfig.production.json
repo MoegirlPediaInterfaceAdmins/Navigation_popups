@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": false,
+        "target": "es2020",
+        "module": "preserve",
+        "moduleResolution": "bundler",
+        "outDir": "dist/_compiled",
+        "rootDir": "dist",
+        "noEmit": false,
+        "skipLibCheck": true,
+        "lib": [
+            "ESNext",
+            "DOM"
+        ],
+        "types": [],
+        "newLine": "lf"
+    },
+    "include": [
+        "dist/Gadget-popups.js"
+    ]
+}

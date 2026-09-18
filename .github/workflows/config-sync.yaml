@@ -1,0 +1,44 @@
+name: config sync
+
+# 周检旧仓（MoegirlPediaInterfaceCodes）的工具链配置漂移并开 PR。
+# manifest：build/config-sync-manifest.json（byte-equal / adapted 两类策略）。
+# PAT（secret CONFIG_SYNC_TOKEN，仅本仓 Contents RW + Pull requests RW）提交与开 PR：
+# GITHUB_TOKEN 创建的 PR 不触发其他 workflow（CI/commitLint 不会跑），人审兜底不采用。
+on:
+  schedule:
+    - cron: 30 23 * * 1 # Every Tuesday 07:30 CST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  config-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          show-progress: false
+          # 提交身份用 PAT，不用 GITHUB_TOKEN 的默认持久化凭据
+          persist-credentials: false
+      - name: Use Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Configure git identity
+        run: |
+          # 与 release.yml 回传身份同款：过旧仓与本仓 mailmap 门禁的 bot 豁免
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Detect drift and open sync PRs
+        run: node scripts/config-sync/index.mjs --apply
+        env:
+          GITHUB_TOKEN: ${{ secrets.CONFIG_SYNC_TOKEN }}
+          GH_TOKEN: ${{ secrets.CONFIG_SYNC_TOKEN }}
+      - name: Fail on missing token hint
+        if: failure()
+        run: echo "::error::config-sync 失败。若是 401/403，请确认 secret CONFIG_SYNC_TOKEN（fine-grained PAT：仅本仓库，Contents RW + Pull requests RW）已配置。"

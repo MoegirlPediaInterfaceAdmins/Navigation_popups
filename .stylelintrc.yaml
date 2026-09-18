@@ -1,0 +1,49 @@
+extends: stylelint-config-standard
+
+reportDescriptionlessDisables: true
+
+reportInvalidScopeDisables: true
+
+reportNeedlessDisables: true
+
+# 与旧仓差异（有意偏差，登记于 build/config-sync-manifest.json）：
+# 旧仓 ignoreFiles 忽略 dist/（其产物不入库、回传文件在 src/）；本仓产物即回传对象、
+# 位于 dist/，必须被检查，故不忽略 dist，且旧仓 prism gadget 的三条忽略路径不存在于本仓。
+
+plugins:
+  - stylelint-plugin-use-baseline
+
+rules:
+  selector-id-pattern: null
+  selector-class-pattern: null
+  no-descending-specificity: null
+  number-max-precision: null
+  selector-no-vendor-prefix: null
+  value-no-vendor-prefix: null
+  at-rule-no-vendor-prefix: null
+  media-feature-name-no-vendor-prefix: null
+  property-no-vendor-prefix: null
+  selector-attribute-quotes: null
+  function-no-unknown:
+    - true
+    - ignoreFunctions:
+        - alpha
+  comment-empty-line-before: null
+  selector-type-no-unknown:
+    - true
+    - ignoreTypes:
+        - ogvjs
+        - rb
+        - moe-badges
+        - moe-badge
+  no-duplicate-selectors: null
+  declaration-property-value-no-unknown: true
+  plugin/use-baseline:
+    - true
+    - severity: warning
+      available: newly
+      ignoreProperties:
+        user-select:
+          - /^(?:auto|text|none|all)$/
+        resize:
+          - /^(?:none|both|horizontal|vertical|block|inline)$/
