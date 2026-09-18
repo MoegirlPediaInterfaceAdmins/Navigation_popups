@@ -22,8 +22,6 @@ export default [
     {
         // Sources: full strict typescript-eslint set (strict-type-checked +
         // stylistic-type-checked, as shipped by @annangela/eslint-config).
-        // no-undef is off for TS files — unknown names are owned by
-        // tsc --noEmit (types-mediawiki/@types/jquery ambient declarations).
         ...configs.typescript,
         files: [
             "src/**/*.ts",
@@ -37,23 +35,21 @@ export default [
                 wgULS: false,
                 wgUVS: false,
                 moment: false,
+                // runtime globals owned by the wikEd gadget when it is present
+                wikEdUseWikEd: false,
+                WikEdUpdateFrame: false,
+                // type-position-only names: no-undef cannot distinguish type
+                // positions from value positions, so ambient types must be
+                // declared here; a value-position misuse is still caught by
+                // tsc (TS2693: "only refers to a type").
+                JQuery: false,
+                HTMLCollectionOf: false,
+                EventListener: false,
+                GlobalEventHandlers: false,
             },
         },
         rules: {
             ...configs.typescript.rules,
-            "no-undef": "off",
-            // Carried-over lint debt: legacy files carry "@ts-nocheck -- <reason>"
-            // headers and a blanket eslint-disable, lifted file by file (README).
-            "@typescript-eslint/ban-ts-comment": [
-                "error",
-                {
-                    "ts-expect-error": "allow-with-description",
-                    "ts-nocheck": "allow-with-description",
-                    "ts-ignore": true,
-                    minimumDescriptionLength: 3,
-                },
-            ],
-            "@eslint-community/eslint-comments/no-unlimited-disable": "off",
             // Upstream source shape is preserved verbatim where rewriting it
             // would hurt the sync workflow or change module-init order:
             // - no-use-before-define: upstream orders helpers bottom-up; const
@@ -66,9 +62,26 @@ export default [
         },
     },
     {
-        // The bundled artifact keeps the browser-preset gate (same config the
-        // interface codes repo lints it with); its banner carries the
-        // eslint-disable directives.
+        // The upstream event/XHR flow is callback-driven by design; the
+        // interface codes repo turns this rule off for all browser files, so
+        // both the sources and the artifact follow suit (keeping it off in
+        // the banner would surface as an unused directive over there).
+        files: [
+            "src/**/*.ts",
+            "dist/**/*",
+        ],
+        rules: {
+            "promise/prefer-await-to-callbacks": "off",
+        },
+    },
+    {
+        // The bundled artifact keeps the browser-preset gate. The interface
+        // codes repo ignores its own **/dist/** but lints the synced-back
+        // artifact (which lands under src/gadgets/Navigation_popups/) with
+        // base+browser settings, so this entry mirrors that; every rule the
+        // generated output cannot satisfy is disabled in the artifact banner
+        // instead (config and banner must not both carry a rule — the losing
+        // side would be an unused directive).
         ...configs.browser,
         files: [
             "dist/**/*",
@@ -156,36 +169,6 @@ export default [
                     message: "Use unary + instead of Number().",
                 },
             ],
-        },
-    },
-    {
-        files: [
-            "dist/**/*",
-        ],
-        rules: {
-            "promise/prefer-await-to-callbacks": "off",
-            // Style rules (and this plugin specifically, which chokes on the
-            // rollup IIFE wrapper) do not apply to generated output.
-            "prefer-arrow-functions/prefer-arrow-functions": "off",
-            // The artifact carries its global "use strict" in the banner; the
-            // rollup IIFE adds a redundant function-level one.
-            strict: "off",
-            // esbuild strips plain comments when transpiling, so the upstream
-            // "// fall through" notes that satisfy these comment-aware rules
-            // in source form are gone from the artifact.
-            "no-fallthrough": "off",
-            "require-atomic-updates": "off",
-            // Pure style rules do not apply to generated output (esbuild
-            // prints its own formatting: single quotes, no trailing commas).
-            "@stylistic/quotes": "off",
-            "@stylistic/comma-dangle": "off",
-            "@stylistic/space-before-function-paren": "off",
-            "@stylistic/operator-linebreak": "off",
-            "@stylistic/max-statements-per-line": "off",
-            "@stylistic/indent": "off",
-            "@stylistic/multiline-ternary": "off",
-            "@stylistic/space-unary-ops": "off",
-            "@stylistic/padded-blocks": "off",
         },
     },
 ];

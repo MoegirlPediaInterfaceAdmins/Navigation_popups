@@ -5,7 +5,8 @@ interface InstaConfUser {
     signature?: string;
 }
 interface InstaConf {
-    baseUrl?: string;
+    // `| undefined`: wiki2html() resets it to undefined when called without a base url
+    baseUrl?: string | undefined;
     user: InstaConfUser;
     wiki: {
         lang: string;
@@ -54,8 +55,10 @@ export const setupLivePreview = () => {
             months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
         },
     };
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
-    Insta.conf.user.name ||= "Wikipedian";
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- falsy fallback is deliberate upstream behavior (empty name gets replaced); ??= is not equivalent, and ||= downgrades to a lintable pattern in the es2020 artifact
+    if (!Insta.conf.user.name) {
+        Insta.conf.user.name = "Wikipedian";
+    }
     Insta.conf.user.signature = `[[${Insta.conf.locale.user}:${Insta.conf.user.name}|${Insta.conf.user.name}]]`;
     Insta.BLOCK_IMAGE = new RegExp(`^\\[\\[(?:File|Image|${Insta.conf.locale.image}):.*?\\|.*?(?:frame|thumbnail|thumb|none|right|left|center)`, "i");
 };
@@ -376,18 +379,18 @@ Insta.convert = (wiki: string | string[]): string => {
         const dateStr = f("?:?, ? ? ? (UTC)", date.getUTCHours(), minutes, date.getUTCDate(), Insta.conf.locale.months[date.getUTCMonth()], date.getUTCFullYear());
         str = str
             .replace(/~{5}(?!~)/g, dateStr).replace(/~{4}(?!~)/g, `${String(Insta.conf.user.name)} ${dateStr}`).replace(/~{3}(?!~)/g, String(Insta.conf.user.name))
-            .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):[^|]*?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
+            .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):[^|]*?)\\]\\](\\w*)`, "gi"), (_$0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
             .replace(RegExp(`\\[\\[(?:${Insta.conf.locale.category}|${Insta.conf.wiki.interwiki}):.*?\\]\\]`, "gi"), "")
-            .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):.*?)\\|([^\\]]+?)\\]\\](\\w*)`, "gi"), ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
-            .replace(/\[\[(\/[^|]*?)\]\]/g, ($0: string, $1: string) => f("<a href='?'>?</a>", String(Insta.conf.baseUrl) + htmlescape_attr($1), htmlescape_text($1)))
-            .replace(/\[\[(\/.*?)\|(.+?)\]\]/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", String(Insta.conf.baseUrl) + htmlescape_attr($1), htmlescape_text($2)))
-            .replace(/\[\[([^[|]*?)\]\](\w*)/g, ($0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
-            .replace(/\[\[([^[]*?)\|([^\]]+?)\]\](\w*)/g, ($0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
-            .replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, ($0: string, $1: string | undefined, $2: string, $3: string | undefined) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1 ?? "") + htmlescape_attr($2) + htmlescape_attr($3 ?? ""), htmlescape_text($2)))
-            .replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, ($0: string, $1: string, $2: string, $3: string, $4: string) => f("<a class='external' href='?:?'>?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($4)))
-            .replace(/\[http:\/\/(.*?)\]/g, ($0: string, $1: string) => f("<a class='external' href='http://?'>[#]</a>", htmlescape_attr($1)))
-            .replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, ($0: string, $1: string, $2: string, $3: string) => f("<a class='external' href='?:?'>?:?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($1), htmlescape_text($2) + htmlescape_text($3)))
-            .replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*[^.,!?;: $])/g, ($0: string, $1: string, $2: string, $3: string, $4: string) => f("?<a class='external' href='?:?'>?:?</a>", htmlescape_text($1), htmlescape_attr($2), htmlescape_attr($3) + htmlescape_attr($4), htmlescape_text($2), htmlescape_text($3) + htmlescape_text($4)))
+            .replace(RegExp(`\\[\\[:((?:${Insta.conf.locale.category}|Image|File|${Insta.conf.locale.image}|${Insta.conf.wiki.interwiki}):.*?)\\|([^\\]]+?)\\]\\](\\w*)`, "gi"), (_$0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
+            .replace(/\[\[(\/[^|]*?)\]\]/g, (_$0: string, $1: string) => f("<a href='?'>?</a>", String(Insta.conf.baseUrl) + htmlescape_attr($1), htmlescape_text($1)))
+            .replace(/\[\[(\/.*?)\|(.+?)\]\]/g, (_$0: string, $1: string, $2: string) => f("<a href='?'>?</a>", String(Insta.conf.baseUrl) + htmlescape_attr($1), htmlescape_text($2)))
+            .replace(/\[\[([^[|]*?)\]\](\w*)/g, (_$0: string, $1: string, $2: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($1) + htmlescape_text($2)))
+            .replace(/\[\[([^[]*?)\|([^\]]+?)\]\](\w*)/g, (_$0: string, $1: string, $2: string, $3: string) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1), htmlescape_text($2) + htmlescape_text($3)))
+            .replace(/\[\[([^\]]*?:)?(.*?)( *\(.*?\))?\|\]\]/g, (_$0: string, $1: string | undefined, $2: string, $3: string | undefined) => f("<a href='?'>?</a>", Insta.conf.paths.articles + htmlescape_attr($1 ?? "") + htmlescape_attr($2) + htmlescape_attr($3 ?? ""), htmlescape_text($2)))
+            .replace(/\[(https?|news|ftp|mailto|gopher|irc):(\/*)([^\]]*?) (.*?)\]/g, (_$0: string, $1: string, $2: string, $3: string, $4: string) => f("<a class='external' href='?:?'>?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($4)))
+            .replace(/\[http:\/\/(.*?)\]/g, (_$0: string, $1: string) => f("<a class='external' href='http://?'>[#]</a>", htmlescape_attr($1)))
+            .replace(/\[(news|ftp|mailto|gopher|irc):(\/*)(.*?)\]/g, (_$0: string, $1: string, $2: string, $3: string) => f("<a class='external' href='?:?'>?:?</a>", htmlescape_attr($1), htmlescape_attr($2) + htmlescape_attr($3), htmlescape_text($1), htmlescape_text($2) + htmlescape_text($3)))
+            .replace(/(^| )(https?|news|ftp|mailto|gopher|irc):(\/*)([^ $]*[^.,!?;: $])/g, (_$0: string, $1: string, $2: string, $3: string, $4: string) => f("?<a class='external' href='?:?'>?:?</a>", htmlescape_text($1), htmlescape_attr($2), htmlescape_attr($3) + htmlescape_attr($4), htmlescape_text($2), htmlescape_text($3) + htmlescape_text($4)))
             .replace("__NOTOC__", "").replace("__NOINDEX__", "").replace("__INDEX__", "").replace("__NOEDITSECTION__", "");
         return parse_inline_formatting(str);
     };

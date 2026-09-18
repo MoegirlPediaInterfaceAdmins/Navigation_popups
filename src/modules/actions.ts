@@ -17,7 +17,7 @@ import { addPopupShortcuts, rmPopupShortcuts } from "./shortcutkeys.ts";
 import { popupString } from "./strings.ts";
 import { Title, anchorContainsImage, isPopupLink, parseParams } from "./titles.ts";
 import { joinPath, literalizeRegex, simplePrintf } from "./tools.ts";
-export const setupTooltips = (_container?: unknown, remove = false, force = false, popData: { owner?: Navpopup } & Record<string, unknown> | null = null) => {
+export const setupTooltips = (_container?: unknown, remove = false, force = false, popData: { owner?: Navpopup | undefined } & Record<string, unknown> | null = null) => {
     let container = _container as Element | Document | null | undefined;
     // eslint-disable-next-line @typescript-eslint/no-base-to-string -- debug log stringifies the container node on purpose
     log(`setupTooltips, container=${String(container)}, remove=${String(remove)}`);
@@ -46,13 +46,13 @@ const defaultPopupsContainer = (): Element | Document => {
     }
     return document;
 };
-const setupTooltipsLoop = (anchors: HTMLCollectionOf<HTMLAnchorElement>, begin: number, howmany: number, sleep: number, remove: boolean, popData: { owner?: Navpopup } & Record<string, unknown> | null) => {
+const setupTooltipsLoop = (anchors: HTMLCollectionOf<HTMLAnchorElement>, begin: number, howmany: number, sleep: number, remove: boolean, popData: { owner?: Navpopup | undefined } & Record<string, unknown> | null) => {
     log(simplePrintf("setupTooltipsLoop(%s,%s,%s,%s,%s)", [anchors, begin, howmany, sleep, remove, popData]));
     const finish = begin + howmany;
     const loopend = Math.min(finish, anchors.length);
     let j = loopend - begin;
     log(`setupTooltips: anchors.length=${anchors.length}, begin=${begin}, howmany=${howmany}, loopend=${loopend}, remove=${String(remove)}`);
-    const doTooltip: (a: HTMLAnchorElement, popData: { owner?: Navpopup } & Record<string, unknown> | null) => void = remove ? removeTooltip : addTooltip;
+    const doTooltip: (a: HTMLAnchorElement, popData: { owner?: Navpopup | undefined } & Record<string, unknown> | null) => void = remove ? removeTooltip : addTooltip;
     if (j > 0) {
         do {
             const a = anchors[loopend - j];
@@ -84,7 +84,7 @@ const rmTocTooltips = () => {
         }
     }
 };
-const addTooltip = (a: HTMLAnchorElement, popData?: { owner?: Navpopup } & Record<string, unknown> | null) => {
+const addTooltip = (a: HTMLAnchorElement, popData?: { owner?: Navpopup | undefined } & Record<string, unknown> | null) => {
     if (!isPopupLink(a)) {
         return;
     }
@@ -137,8 +137,15 @@ export const removeModifierKeyHandler = (a: HTMLAnchorElement) => {
 function mouseOverWikiLink(this: GlobalEventHandlers, _evt?: MouseEvent) {
     const self = this as HTMLAnchorElement;
     let evt = _evt;
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
-    evt ??= window.event as MouseEvent | undefined;
+    // es2020 targets downgrade `??=` into an assignment pattern that trips
+    // logical-assignment-operators on the artifact; the if form below is the
+    // exact same nullish semantics for both source and artifact linting
+    // (same motive for the other former `??=`/`||=` sites).
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- ??= downgrades to a lintable pattern in the es2020 artifact
+    if (evt === undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
+        evt = window.event as MouseEvent | undefined;
+    }
     if (getValueOf("popupModifier")) {
         const action = getValueOf("popupModifierAction");
         const key = action === "disable" ? "keyup" : "keydown";
@@ -184,12 +191,15 @@ const modifierPressed = (_evt?: MouseEvent) => {
     if (!mod) {
         return false;
     }
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
-    evt ??= window.event as MouseEvent | undefined;
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- ??= downgrades to a lintable pattern in the es2020 artifact
+    if (evt === undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
+        evt = window.event as MouseEvent | undefined;
+    }
     // eslint-disable-next-line @typescript-eslint/no-base-to-string -- popupModifier comes from user options as string|boolean only; the widened union's object arm cannot occur at runtime (upstream behavior preserved)
     return !!(evt && mod && (evt as unknown as Record<string, unknown>)[`${String(mod).toLowerCase()}Key`]);
 };
-const isCorrectModifier = (a: HTMLAnchorElement, evt?: MouseEvent) => {
+const isCorrectModifier = (_a: HTMLAnchorElement, evt?: MouseEvent) => {
     if (!getValueOf("popupModifier")) {
         return true;
     }
@@ -332,7 +342,10 @@ const nonsimplePopupContent = (a: HTMLAnchorElement, article: Title) => {
     }
 };
 export const pendingNavpopTask = (navpop: Navpopup) => {
-    navpop.pending ??= 0;
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- ??= downgrades to a lintable pattern in the es2020 artifact
+    if (navpop.pending === null) {
+        navpop.pending = 0;
+    }
     ++navpop.pending;
     debugData(navpop);
 };

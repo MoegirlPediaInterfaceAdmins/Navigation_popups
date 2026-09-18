@@ -36,8 +36,9 @@ export const loadImage = (image: Title, navpop: Navpopup) => {
     } else {
         navpop.addHook(go, "unhide", "after", "DOWNLOAD_IMAGE_QUERY_DATA");
     }
+    return undefined;
 };
-const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: Downloader) => {
+const popupsInsertImage = (id: number | undefined, _navpop: Navpopup, download: Downloader) => {
     log("popupsInsertImage");
     let imageinfo: { thumburl?: string; url: string; mime: string; descriptionurl: string };
     try {
@@ -93,6 +94,7 @@ const popupsInsertImage = (id: number | undefined, navpop: Navpopup, download: D
             a.title = popupString("Open full-size image");
             return;
     }
+    return undefined;
 };
 function toggleSize(this: GlobalEventHandlers) {
     const imgContainer = this as HTMLElement;

@@ -161,8 +161,9 @@ const emptySpanHTML: EmptySpanHTMLFn & { classAliases: Record<string, string> } 
     if (!classname) {
         classname = emptySpanHTML.classAliases[name];
     }
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string is a meaningful value here; the || branch is deliberate upstream behavior
-    classname ||= name;
+    if (!classname) {
+        classname = name;
+    }
     if (name === getValueOf("popupDragHandle")) {
         classname += " popupDragHandle";
     }
@@ -172,7 +173,7 @@ emptySpanHTML.classAliases = {
     popupSecondPreview: "popupPreview",
 };
 export const imageHTML = (_article: unknown, idNumber: number | undefined) => simplePrintf('<a id="popupImageLink$1"><img align="right" valign="top" id="popupImg$1" style="display: none;"></img></a>', [String(idNumber)]);
-export const popTipsSoonFn = (id: string, _when?: number | null, popData?: { owner?: Navpopup } & Record<string, unknown> | null): () => void => {
+export const popTipsSoonFn = (id: string, _when?: number | null, popData?: { owner?: Navpopup | undefined } & Record<string, unknown> | null): () => void => {
     let when = _when;
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 0 is a meaningless timeout; falling back to 250 is deliberate
     if (!when) {
@@ -185,6 +186,6 @@ export const popTipsSoonFn = (id: string, _when?: number | null, popData?: { own
         setTimeout(popTips, when, popData);
     };
 };
-export const setPopupTipsAndHTML = (html: string | Node | null | undefined, divname: string, idnumber?: number, popData?: { owner?: Navpopup } & Record<string, unknown> | null): void => {
+export const setPopupTipsAndHTML = (html: string | Node | null | undefined, divname: string, idnumber?: number, popData?: { owner?: Navpopup | undefined } & Record<string, unknown> | null): void => {
     setPopupHTML(html, divname, idnumber, getValueOf("popupSubpopups") ? popTipsSoonFn(divname + String(idnumber), null, popData) : null);
 };

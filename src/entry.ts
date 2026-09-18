@@ -5,37 +5,37 @@
 // Named imports double as side-effect imports for their modules; the rest are
 // imported for their side effects only.
 import { alreadyLoaded, pg } from "./globals.ts";
-import "./popupStrings.ts";
 import { setupTooltips } from "./modules/actions.ts";
-import "./modules/domdrag.ts";
-import "./modules/structures.ts";
 import "./modules/autoedit.ts";
-import "./modules/downloader.ts";
-import "./modules/livepreview.ts";
-import "./modules/pageinfo.ts";
-import "./modules/titles.ts";
-import "./modules/getpage.ts";
-import "./modules/parensplit.ts";
-import "./modules/tools.ts";
 import "./modules/dab.ts";
+import "./modules/debug.ts";
+import "./modules/diff.ts";
+import "./modules/diffpreview.ts";
+import "./modules/domdrag.ts";
+import "./modules/downloader.ts";
+import "./modules/getpage.ts";
 import "./modules/htmloutput.ts";
+import "./modules/images.ts";
+import { setupPopups } from "./modules/init.ts";
+import "./modules/links.ts";
+import "./modules/livepreview.ts";
 import { posCheckerHook } from "./modules/mouseout.ts";
+import "./modules/namespaces.ts";
+import "./modules/navlinks.ts";
+import { Navpopup } from "./modules/navpopup.ts";
+import "./modules/options.ts";
+import "./modules/pageinfo.ts";
+import "./modules/parensplit.ts";
 import "./modules/previewmaker.ts";
 import "./modules/querypreview.ts";
-import "./modules/debug.ts";
-import "./modules/images.ts";
-import "./modules/namespaces.ts";
-import "./modules/selpop.ts";
-import { Navpopup } from "./modules/navpopup.ts";
-import "./modules/diff.ts";
-import { setupPopups } from "./modules/init.ts";
-import "./modules/navlinks.ts";
-import "./modules/shortcutkeys.ts";
-import "./modules/diffpreview.ts";
-import "./modules/links.ts";
-import "./modules/options.ts";
-import "./modules/strings.ts";
 import { run } from "./modules/run.ts";
+import "./modules/selpop.ts";
+import "./modules/shortcutkeys.ts";
+import "./modules/strings.ts";
+import "./modules/structures.ts";
+import "./modules/titles.ts";
+import "./modules/tools.ts";
+import "./popupStrings.ts";
 
 if (!alreadyLoaded) {
     $(() => {

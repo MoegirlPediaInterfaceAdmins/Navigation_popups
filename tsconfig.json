@@ -8,15 +8,7 @@
         "allowImportingTsExtensions": true,
         "types": [
             "jquery"
-        ],
-        "allowUmdGlobalAccess": true,
-        "exactOptionalPropertyTypes": false,
-        "noImplicitReturns": false,
-        "noUnusedLocals": false,
-        "noUnusedParameters": false,
-        "removeComments": false,
-        "allowUnreachableCode": true,
-        "allowUnusedLabels": true
+        ]
     },
     "include": [
         "src",

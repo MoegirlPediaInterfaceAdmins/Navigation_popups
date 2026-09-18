@@ -11,35 +11,37 @@ import { Title, parseParams, safeDecodeURI } from "./titles.ts";
 import { anyChild, assume, getJsObj, simplePrintf } from "./tools.ts";
 // A navlink spec as built by navlinks.ts: an article plus the display
 // and target options of one popup navlink. Fields are optional because
-// different builders consume different subsets.
+// different builders consume different subsets. Members widened with
+// `| undefined` are explicitly assigned undefined by pass-through
+// call sites (exactOptionalPropertyTypes distinguishes the two).
 export interface LinkSpec {
     article: Title;
-    action?: string;
+    action?: string | undefined;
     actionName?: string;
-    text?: string;
-    newWin?: boolean | null;
-    title?: string | null;
-    oldid?: string | null;
-    noPopup?: boolean | number | null;
-    onclick?: string;
-    className?: string | null;
+    text?: string | undefined;
+    newWin?: boolean | null | undefined;
+    title?: string | null | undefined;
+    oldid?: string | null | undefined;
+    noPopup?: boolean | number | null | undefined;
+    onclick?: string | undefined;
+    className?: string | null | undefined;
     id?: string;
     specialpage?: string;
     sep?: string | null;
     rcid?: string;
     diff?: string | null;
     from?: string | number | null;
-    to?: string | null;
+    to?: string | null | undefined;
 }
 // the subset generalLink/generalNavLink actually consume (no article)
 export interface GeneralLinkSpec {
     url: string;
-    newWin?: boolean | null;
+    newWin?: boolean | null | undefined;
     title?: string | null;
-    text?: string | null;
-    className?: string | null;
-    noPopup?: boolean | number | null;
-    onclick?: string;
+    text?: string | null | undefined;
+    className?: string | null | undefined;
+    noPopup?: boolean | number | null | undefined;
+    onclick?: string | undefined;
 }
 export const wikiLink = (l: LinkSpec): string | null => {
     if (!(typeof l.article === typeof {} && typeof l.action === typeof "" && typeof l.text === typeof "")) {
@@ -167,13 +169,13 @@ pg.fn.getLastContrib = (wikipage: string, newWin: boolean): void => {
     });
 };
 interface HistoryEdit {
-    oldid?: number;
-    editor?: string;
+    oldid?: number | undefined;
+    editor?: string | undefined;
 }
 interface HistoryMarker {
     index: number;
-    oldid?: number;
-    previd?: number | null;
+    oldid?: number | undefined;
+    previd?: number | null | undefined;
 }
 export interface HistoryInfo {
     edits: HistoryEdit[];
@@ -420,7 +422,7 @@ const appendParamsToLink = (linkstr: string | null, params: string): string | nu
 export const changeLinkTargetLink = (x: {
     newTarget?: string | null;
     oldTarget: string;
-    title?: string | null;
+    title?: string | null | undefined;
     newWin?: boolean | null;
     text: string;
     hint?: string | null;

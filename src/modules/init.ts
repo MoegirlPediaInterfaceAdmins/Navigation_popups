@@ -147,12 +147,10 @@ interface SetupPopups {
     completed?: boolean;
 }
 export const setupPopups: SetupPopups = async (
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- setup API hands control to the caller callback
     callback?: () => void,
 ) => {
     if (setupPopups.completed) {
         if (typeof callback === "function") {
-            // eslint-disable-next-line promise/prefer-await-to-callbacks -- init API hands results to caller callbacks
             callback();
         }
         return;
@@ -168,6 +166,15 @@ export const setupPopups: SetupPopups = async (
              "mediawiki.jqueryMsg",
         ].concat(mw.config.get("wgVersion").startsWith("1.31") ? ["mediawiki.api.messages"] : [])).then(fetchSpecialPageNames).then(() => {
          */
+    // The flag write lives in its own synchronous function: require-atomic-updates
+    // would otherwise pair it with the `completed` read above across the awaits,
+    // while the flag stays a single-shot marker by design.
+    const markSetupCompleted = () => {
+        setupPopups.completed = true;
+        if (typeof callback === "function") {
+            callback();
+        }
+    };
     await fetchSpecialPageNames();
     setupDebugging();
     setSiteInfo();
@@ -183,11 +190,5 @@ export const setupPopups: SetupPopups = async (
     setupTooltips();
     log("In setupPopups(), just called setupTooltips()");
     Navpopup.tracker.enable();
-
-    // eslint-disable-next-line require-atomic-updates -- single-shot init; the assignment happens after async setup by design
-    setupPopups.completed = true;
-    if (typeof callback === "function") {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks -- init API hands results to caller callbacks
-        callback();
-    }
+    markSetupCompleted();
 };

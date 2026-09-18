@@ -358,7 +358,7 @@ const showAPIPreview = (queryType: string, html: string | null | undefined, id: 
     }
     setPopupTipsAndHTML(html, target, id);
 };
-const APIrevisionPreviewHTML = (article: Title, download: Downloader): string | undefined => {
+const APIrevisionPreviewHTML = (_article: Title, download: Downloader): string | undefined => {
     try {
         const jsObj = getJsObj(download.data ?? "") as RevisionQuery;
         const q = jsObj.query;
@@ -385,8 +385,9 @@ const APIrevisionPreviewHTML = (article: Title, download: Downloader): string | 
     } catch {
         return "Revision preview failed :(";
     }
+    return undefined;
 };
-const APIbacklinksPreviewHTML = (article: Title, download: Downloader): string => {
+const APIbacklinksPreviewHTML = (_article: Title, download: Downloader): string => {
     try {
         const jsObj = getJsObj(download.data ?? "") as RevisionQuery;
         const q = jsObj.query;
@@ -466,7 +467,7 @@ const APIimagepagePreviewHTML = (article: Title, download: Downloader, navpop: N
         return "API imagepage preview failed :(";
     }
 };
-const APIimagelinksPreviewHTML = (article: Title, download: Downloader): string => {
+const APIimagelinksPreviewHTML = (_article: Title, download: Downloader): string => {
     try {
         const jsobj = getJsObj(download.data ?? "") as RevisionQuery;
         const list = jsobj.query?.imageusage;
@@ -485,7 +486,7 @@ const APIimagelinksPreviewHTML = (article: Title, download: Downloader): string 
         return "Image links preview generation failed :(";
     }
 };
-const APIcategoryPreviewHTML = (article: Title, download: Downloader): string => {
+const APIcategoryPreviewHTML = (_article: Title, download: Downloader): string => {
     try {
         const jsobj = getJsObj(download.data ?? "") as RevisionQuery;
         const list = jsobj.query?.categorymembers;
@@ -508,7 +509,7 @@ const APIcategoryPreviewHTML = (article: Title, download: Downloader): string =>
         return "Category preview failed :(";
     }
 };
-const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string => {
+const APIuserInfoPreviewHTML = (_article: Title, download: Downloader): string => {
     let ret: string[] | string = [];
     let queryobj: RevisionQuery;
     try {
@@ -601,7 +602,7 @@ const APIuserInfoPreviewHTML = (article: Title, download: Downloader): string =>
     return ret;
 };
 const APIcontribsPreviewHTML = (article: Title, download: Downloader, navpop: Navpopup): string => APIhistoryPreviewHTML(article, download, navpop, true);
-const APIhistoryPreviewHTML = (article: Title, download: Downloader, navpop: Navpopup, reallyContribs?: boolean): string => {
+const APIhistoryPreviewHTML = (article: Title, download: Downloader, _navpop: Navpopup, reallyContribs?: boolean): string => {
     try {
         const jsobj = getJsObj(download.data ?? "") as RevisionQuery;
         let edits: RevisionRow[] = [];

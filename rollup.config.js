@@ -5,15 +5,28 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 
 // The banner reproduces the header the original single-file gadget carried:
 // eslint directives for the artifact, provenance and the do-not-copy warning.
-// "use strict" sits at the very top of the file (outside the IIFE), exactly
-// where the original had it.
-// The three extra disables beyond the original header are required by the
-// es2020 target: esbuild downlevels `??=`/`||=` back to plain assignments and
-// emits var/let in its class-field helpers, while the base lint preset
-// demands the (es2021+) logical-assignment forms. The artifact must stay
-// es2020 (the deploy side compiles with tsc es2020 + terser ecma 2020), so
-// the rules cannot apply to it.
-const banner = `/* eslint-disable no-unused-vars, no-use-before-define, camelcase, no-var, prefer-const, logical-assignment-operators */
+// "use strict" is the artifact's only strict directive — build.js strips the
+// per-module prologues esbuild injects, so this one survives alone.
+// The artifact ships as bare top-level statements (format "es"): the gadget
+// always reaches the wiki through mw.loader.implement, whose function scope
+// isolates top-level names (var declarations included), so no IIFE wrapper
+// is needed and the entry module has no imports/exports left to keep.
+// Only two rules stay disabled here, both structural:
+// - no-use-before-define: upstream orders helpers bottom-up; reordering the
+//   mutually-recursive modules would change module evaluation order, which
+//   the gadget depends on (sources disable it for the same reason).
+// - camelcase: upstream identifiers and wiki/DOM contract names
+//   (wpTextbox1, wikEdUseWikEd, last_attr…) are kept 1:1 so upstream
+//   patches still apply.
+// Everything else the es2020 target used to force (logical assignments, var
+// in class-field helpers, esbuild's own formatting) is now taken care of at
+// the source level (no `??=`/`||=` left) and by build.js, which runs the
+// repo eslint with fix over the artifact and re-lints it as a gate — so any
+// rule listed here must keep at least one real violation (an unused disable
+// directive is itself an error). Keep the disable list free of continuation
+// `*` prefixes: eslint splits it on commas and would read "* rule" as a
+// rule name.
+const banner = `/* eslint-disable no-use-before-define, camelcase */
 /* global wikEdUseWikEd, WikEdUpdateFrame */
 /**
  * @source https://en.wikipedia.org/_?oldid=1322962085
@@ -51,7 +64,11 @@ export default {
         throw new Error(`Unexpected rollup warning: ${warning.code ?? "UNKNOWN"}: ${warning.message}`);
     },
     output: {
-        format: "iife",
+        // Bare top-level statements: mw ResourceLoader wraps the script in
+        // mw.loader.implement's function scope, which already isolates the
+        // top-level names (see the banner note above). The entry module has
+        // no imports/exports, so "es" emits a plain flat chunk.
+        format: "es",
         banner,
         file: `${root}dist/Gadget-popups.js`,
         // terser on the interface codes side runs with toplevel:false and

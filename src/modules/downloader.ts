@@ -10,8 +10,10 @@ export class Downloader {
     async = true;
     http?: XMLHttpRequest;
     url: string;
-    data?: string;
-    owner?: Navpopup | null;
+    // `| undefined`: reset via `data ?? undefined` after a failed/empty fetch
+    data?: string | undefined;
+    // `| undefined`: fakeDownload's owner parameter is pass-through optional
+    owner?: Navpopup | null | undefined;
     // set by querypreview once the wikibase item of the page is known
     wikibaseItem?: string;
     wikibaseRepo?: string;
@@ -26,6 +28,7 @@ export class Downloader {
             return null;
         }
         this.http.send(x);
+        return undefined;
     }
     abort() {
         if (!this.http) {
@@ -33,6 +36,7 @@ export class Downloader {
         }
         this.aborted = true;
         this.http.abort();
+        return undefined;
     }
     getData() {
         if (!this.http) {
@@ -46,6 +50,7 @@ export class Downloader {
         }
         this.http.open(this.method, this.url, this.async);
         this.http.setRequestHeader("Api-User-Agent", pg.api.userAgent ?? "");
+        return undefined;
     }
     getReadyState() {
         if (!this.http) {
@@ -57,7 +62,11 @@ export class Downloader {
         if (!this.http) {
             return;
         }
-        (pg.misc.downloadsInProgress ??= {})[String(this.id)] = this;
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- ??= downgrades to a lintable pattern in the es2020 artifact
+        if (pg.misc.downloadsInProgress === undefined) {
+            pg.misc.downloadsInProgress = {};
+        }
+        pg.misc.downloadsInProgress[String(this.id)] = this;
         this.http.send(null);
     }
     getLastModifiedDate() {
@@ -106,7 +115,6 @@ const newDownload = (url: string, id: number | string | ((d: Downloader) => void
                 if (d.getStatus() === 200) {
                     d.data = d.getData() ?? undefined;
                     d.lastModified = d.getLastModifiedDate();
-                    // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
                     void callback?.(d);
                 } else if (typeof onfailure === "number") {
                     if (onfailure > 0) {
@@ -130,13 +138,11 @@ export const fakeDownload = (url: string, id: number | undefined, callback?: (d:
     d.id = id ?? null;
     d.data = data ?? undefined;
     d.lastModified = lastModified ?? null;
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
     return callback?.(d);
 };
 export const startDownload = (
     url: string,
     id: number | string | null | undefined,
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- upstream XHR/event flow is callback-driven by design
     callback: (d: Downloader) => void,
 ): Downloader | string => {
     const d = newDownload(url, id, callback);

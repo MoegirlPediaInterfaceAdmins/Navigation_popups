@@ -27,7 +27,7 @@ const defaultNavlinkSpec = () => {
     str += "if(admin){<br><<unprotect|unprotectShort>>|<<protect|shortcut=p>>|<<protectlog|log>>*<<undelete|undeleteShort>>|<<delete|shortcut=d>>|<<deletelog|log>>}";
     return str;
 };
-export const navLinksHTML = (article: Title, hint?: string | null, params?: Record<string, string | null>) => {
+export const navLinksHTML = (article: Title, _hint?: string | null, params?: Record<string, string | null>) => {
     const str = `<span class="popupNavLinks">${defaultNavlinkSpec()}</span>`;
     return navlinkStringToHTML(str, article, params);
 };
@@ -170,14 +170,16 @@ class NavlinkTag implements LinkSpec {
     oldid?: string | null;
     rcid?: string;
     diff?: string | null;
-    newWin?: boolean | null;
+    // `| undefined`: getNewWin() copies the raw option-map lookup straight over
+    newWin?: boolean | null | undefined;
     noPopup?: boolean | number | null;
     specialpage?: string;
     sep?: string | null;
     action?: string;
     actionName?: string;
     from?: string | number | null;
-    to?: string | null;
+    // `| undefined`: oldEdit copies this.oldid (optional) straight over
+    to?: string | null | undefined;
     shortcut?: string;
     print?: NavlinkPrintFn;
     [key: string]: unknown;

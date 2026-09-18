@@ -18,7 +18,8 @@ export interface SpecialPageAlias {
 
 export interface CachedPage {
     url: string;
-    data?: string;
+    // `| undefined`: filled from Downloader.data, absent until the fetch lands
+    data?: string | undefined;
     lastModified?: string | Date | null;
 }
 
@@ -27,9 +28,11 @@ export interface CachedPage {
 export interface PopupStructure {
     popupLayout?: () => (string | string[])[];
     popupTitle?: (x: StructureContext) => string;
+    // `| undefined`: structures.ts copies the (optional) popupTitle/popupTopLinks
+    // members over as a whole value, which carries their undefined arm
     popupTopLinks?: (x: StructureContext, shorter?: boolean) => string;
-    popupRedirTitle?: (x: StructureContext) => string;
-    popupRedirTopLinks?: (x: StructureContext, shorter?: boolean) => string;
+    popupRedirTitle?: ((x: StructureContext) => string) | undefined;
+    popupRedirTopLinks?: ((x: StructureContext, shorter?: boolean) => string) | undefined;
     popupOtherLinks?: (x: StructureContext) => string;
     popupImage?: (x: StructureContext) => string;
     popupPreview?: (x: StructureContext) => string;

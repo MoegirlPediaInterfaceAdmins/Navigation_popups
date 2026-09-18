@@ -180,7 +180,9 @@ export const autoEdit: (() => void) & { alreadyRan?: boolean } = () => {
         } else {
             autoEdit2();
         }
+        return undefined;
     });
+    return undefined;
 };
 const autoEdit2 = (d?: Downloader) => {
     let summary = mw.util.getParamValue("autosummary");

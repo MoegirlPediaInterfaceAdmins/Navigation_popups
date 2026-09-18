@@ -20,7 +20,7 @@ export const popupFilterCountCategories = (data: string) => {
     const num = countCategories(data);
     return `${num}&nbsp;${num !== 1 ? popupString("categories") : popupString("category")}`;
 };
-export const popupFilterLastModified = (data: string, download: Downloader) => {
+export const popupFilterLastModified = (_data: string, download: Downloader) => {
     const lastmod = download.lastModified;
     const age = moment(lastmod); // formatAge 现仅直接接受 moment 对象
     if (lastmod && getValueOf("popupLastModified")) {
@@ -28,7 +28,7 @@ export const popupFilterLastModified = (data: string, download: Downloader) => {
     }
     return "";
 };
-export const popupFilterWikibaseItem = (data: string, download: Downloader) => {
+export const popupFilterWikibaseItem = (_data: string, download: Downloader) => {
     if (!download.wikibaseItem || !download.wikibaseRepo) {
         return "";
     }
@@ -140,7 +140,7 @@ const countLinks = (wikiText: string) => wikiText.split("[[").length - 1;
 const countImages = (wikiText: string) => (wikiText.parenSplit(pg.re.image as RegExp).length - 1) / (+(pg.re.imageBracketCount as number) + 1);
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- same as above
 const countCategories = (wikiText: string) => (wikiText.parenSplit(pg.re.category as RegExp).length - 1) / (+(pg.re.categoryBracketCount as number) + 1);
-export const popupFilterStubDetect = (data: string, download: Downloader, article: Title) => {
+export const popupFilterStubDetect = (data: string, _download: Downloader, article: Title) => {
     const counts = stubCount(data, article);
     if (counts && counts.real) {
         return popupString("stub");
@@ -150,7 +150,7 @@ export const popupFilterStubDetect = (data: string, download: Downloader, articl
     }
     return "";
 };
-export const popupFilterDisambigDetect = (data: string, download: Downloader, article: Title) => {
+export const popupFilterDisambigDetect = (data: string, _download: Downloader, article: Title) => {
     if (!getValueOf("popupAllDabsStubs") && article.namespace()) {
         return "";
     }

@@ -7,17 +7,9 @@
         "rootDir": "dist",
         "types": [],
         "allowImportingTsExtensions": false,
-        "allowUmdGlobalAccess": false,
-        "strict": false,
-        "noImplicitAny": false,
-        "noImplicitThis": false,
-        "strictBindCallApply": false,
-        "strictFunctionTypes": false,
-        "strictNullChecks": false,
-        "strictPropertyInitialization": false,
-        "useUnknownInCatchVariables": false,
-        "noImplicitOverride": false,
-        "noFallthroughCasesInSwitch": false
+        // exactOptionalPropertyTypes must be explicitly false here: it is
+        // inherited as true from tsconfig.json, and enabling it under
+        // strictNullChecks: false is a config-level error (TS5052).
     },
     "include": [
         "dist/Gadget-popups.js"

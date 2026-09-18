@@ -13,7 +13,8 @@ export class Previewmaker {
     // a Title sneaks in here via APIsharedImagePagePreviewHTML (upstream
     // passes the article where a URL belongs); it stringifies fine
     baseUrl!: string | Title;
-    owner?: Navpopup;
+    // `| undefined`: constructor copies its optional owner parameter over
+    owner?: Navpopup | undefined;
     data!: string;
     html?: string;
     fullLength = 0;

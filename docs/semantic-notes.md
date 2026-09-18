@@ -64,17 +64,45 @@ esbuild 将 class 字段（`x = …`）降级为 `__publicField(ClassName, "x", 
 操作，去除无运行时影响）。`eslint.config.js` 已加 `no-restricted-syntax` 禁用
 `Boolean()`/`Number()` 两条构造函数调用，防回归。
 
-## 5. 产物 banner 的 eslint-disable 扩充（3 条）
+## 5. 产物无 IIFE 包装、构建期 lint-fix 与模块级 "use strict" 剥除
 
-**现象**：产物头部 eslint-disable 由原版的 3 条（`no-unused-vars,
-no-use-before-define, camelcase`）扩为 6 条（追加 `no-var, prefer-const,
-logical-assignment-operators`）。
+**现象**：相对原单文件版本，产物包装形态、排版与头部有四处连带改动：
 
-**安全论据**：构建 target es2020 下，esbuild 必然把源码中的 `??=`/`||=`
-（es2021 语法）降级回普通赋值表达式，且 class 字段辅助代码使用 var/let 形态；
-而 lint 基座的 base 预设要求使用逻辑赋值运算符（即要求 es2021+ 语法）——
-**规则要求与产物目标版本天然冲突**，产物必须保持 es2020（旧仓部署链为
-tsc es2020 + terser ecma 2020），故这三条规则对产物永久豁免。豁免通过产物
-banner 自带（而非改本仓 lint 配置的 dist 段），保证产物回传旧仓后经旧仓 CI
-的 browser 预设 lint 时同样通过（旧仓 `src/gadgets/Navigation_popups/` 无
-`.eslintrc.yaml` 局部豁免）。
+1. rollup 出料由 IIFE 包装改为**裸顶层语句**（`format: "es"`；entry 零导出，
+   无 import/export 残留，build.js 门禁校验）；
+2. 头部 eslint-disable 仅保留 2 条结构性的（`no-use-before-define,
+   camelcase`），其余豁免全部取消——产物在构建期内被 `eslint`（API 方式）
+   **自动修复排版并复检**，与手写代码同规则门禁；
+3. esbuild 给每个模块注入的 `"use strict";` 序言（34 条）由 build.js 剥除，
+   banner 的全局指令成为产物唯一一条；
+4. 产物排版由 esbuild 原生输出改为本仓 lint 基座要求的形态（4 空格缩进、
+   多行尾逗号等，260891 字节）。
+
+**安全论据**：
+
+- **无包装**：gadget 恒经 mw ResourceLoader 下发，`mw.loader.implement` 在函数层
+  执行页面脚本，顶层作用域天然隔离——顶层 `const/let` 本就不上 `window`，
+  `var`/函数声明在 RL 包装内是局部。若产物脱离 RL 被直接 `<script>` 引用，顶层
+  `var` 才会泄漏到全局，当前部署路径（wiki 页面脚本）不存在该用法。
+- **构建期 lint-fix**：es2020 目标曾经的必然违规已全部源头/管线消除——源码
+  零 `??=`/`||=`（7 处改写为语义等价的 if 形态；`??=` 的降级产物会触发
+  logical-assignment-operators，且其成员链降级引入 esbuild 的 `var _a` 辅助）；
+  esbuild 的 `let X = _X;` 类别名由 build.js 定点提升为 const（别名从不重赋值，
+  prefer-const 无 fixer）；其余排版规则（`@stylistic/*` 等）由 build.js 对产物
+  跑本仓 eslint 的 fix（fixer 不改语义、不改注释）统一重排，随后**免 fix 复检**
+  将产物 lint 变为构建门禁——banner 未豁免的任何违规都会使构建失败。排版改动
+  不触碰 AST 语义，acorn es2020 门禁与「tsc es2020 emit + terser」部署等价链
+  照常把关。保留的 2 条均为结构性：`no-use-before-define`——上游 helpers
+  bottom-up 排序是刻意的求值顺序契约，重排会改变模块求值顺序（src 侧同款
+  off）；`camelcase`——上游与 wiki/DOM 契约标识符（wpTextbox1、wikEdUseWikEd、
+  last_attr…）1:1 保留以便上游补丁仍可应用。两条均须在产物中有 ≥1 现存违规
+  （本仓 `reportUnusedDisableDirectives` 把零违规条目报为错误），且旧仓 CI 的
+  base+browser lint 对回传文件开启这两条（旧仓仅全局忽略自家 `**/dist/**`），
+  banner 保证两侧 CI 都过。`promise/prefer-await-to-callbacks` 走本仓 config
+  的 src+dist 统一 off 条目（旧仓对全部 browser 文件全局关闭该规则，进 banner
+  反而会成旧仓的 unused directive）。
+- **剥指令**：tsconfig 基座 `alwaysStrict: true` 令 esbuild 给每个模块注入一条
+  序言；TS 6.0 禁止显式设 `alwaysStrict: false`（TS5107），无法在源头关闭，
+  只能在 build.js 后处理剥除——只删整行恰为 `"use strict";` 的行，源内无该
+  字面量、无误伤面。剥除后产物唯一全局指令在 banner（与原版位置一致）；模块
+  序言与全局指令对这份平铺单层产物等价，strict 语义不变。

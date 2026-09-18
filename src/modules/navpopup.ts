@@ -40,7 +40,8 @@ export class Navpopup {
     originalArticle?: Title;
     // per-popup diff state, filled by diffpreview.ts (loadDiff/doneDiff)
     diffData?: { oldRev: DiffSide; newRev: DiffSide };
-    parentPopup?: Navpopup | null;
+    // `| undefined`: assigned from a.popData?.owner, which may be undefined
+    parentPopup?: Navpopup | null | undefined;
     parentAnchor?: HTMLAnchorElement | null;
     mouseLeavingTime?: number | null;
     stopPopupTimer?: number;

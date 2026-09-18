@@ -114,8 +114,11 @@ export class Mousetracker {
     }
     track(_e?: MouseEvent) {
         let e = _e;
-        // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
-        e ??= window.event as MouseEvent | undefined;
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- ??= downgrades to a lintable pattern in the es2020 artifact
+        if (e === undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-deprecated -- legacy window.event fallback is upstream behavior
+            e = window.event as MouseEvent | undefined;
+        }
         let x: number, y: number;
         if (e) {
             if (e.pageX) {

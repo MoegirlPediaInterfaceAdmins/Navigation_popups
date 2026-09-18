@@ -305,12 +305,14 @@ const diffDatesTableRow = (revision: RevisionData, label: string) => {
 };
 export interface DiffLinkSpec {
     article: Title;
-    to?: string | null;
+    // widened arms mirror LinkSpec so NavlinkTag (typed as LinkSpec) can be
+    // handed to the diff link builders (exactOptionalPropertyTypes)
+    to?: string | null | undefined;
     from?: string | number | null;
-    newWin?: boolean | null;
-    noPopup?: boolean | number | null;
-    text?: string;
-    title?: string | null;
+    newWin?: boolean | null | undefined;
+    noPopup?: boolean | number | null | undefined;
+    text?: string | undefined;
+    title?: string | null | undefined;
 }
 export const titledDiffLink = (l: DiffLinkSpec) => titledWikiLink({
     article: l.article,
