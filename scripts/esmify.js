@@ -1,6 +1,6 @@
 // One-shot helper for the TypeScript/ESM migration:
-//   node scripts/esmify.mjs --report   analyze only (side effects, dependency graph, cycles)
-//   node scripts/esmify.mjs --apply    weave import statements and export prefixes
+//   node scripts/esmify.js --report   analyze only (side effects, dependency graph, cycles)
+//   node scripts/esmify.js --apply    weave import statements and export prefixes
 // Run from the repo root. Uses the TypeScript AST; the identifier analysis is
 // a close approximation (local bindings minus references minus known globals),
 // the compiler takes over for anything it misses afterwards.

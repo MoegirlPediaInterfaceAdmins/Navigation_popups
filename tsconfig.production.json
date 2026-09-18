@@ -1,21 +1,23 @@
 {
     "$schema": "https://json.schemastore.org/tsconfig",
+    "extends": "./tsconfig.json",
     "compilerOptions": {
-        "allowJs": true,
-        "checkJs": false,
-        "target": "es2020",
-        "module": "preserve",
-        "moduleResolution": "bundler",
+        "noEmit": false,
         "outDir": "dist/_compiled",
         "rootDir": "dist",
-        "noEmit": false,
-        "skipLibCheck": true,
-        "lib": [
-            "ESNext",
-            "DOM"
-        ],
         "types": [],
-        "newLine": "lf"
+        "allowImportingTsExtensions": false,
+        "allowUmdGlobalAccess": false,
+        "strict": false,
+        "noImplicitAny": false,
+        "noImplicitThis": false,
+        "strictBindCallApply": false,
+        "strictFunctionTypes": false,
+        "strictNullChecks": false,
+        "strictPropertyInitialization": false,
+        "useUnknownInCatchVariables": false,
+        "noImplicitOverride": false,
+        "noFallthroughCasesInSwitch": false
     },
     "include": [
         "dist/Gadget-popups.js"

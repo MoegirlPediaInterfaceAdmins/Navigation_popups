@@ -90,7 +90,7 @@ export default [
         files: [
             "scripts/**/*",
             ".husky/*.mjs",
-            "rollup.config.mjs",
+            "rollup.config.js",
             "eslint.config.js",
             "commitlint.config.mjs",
         ],

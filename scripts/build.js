@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { rollup } from "rollup";
-import rollupOptions from "../rollup.config.mjs";
+import rollupOptions from "../rollup.config.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(await fs.promises.readFile(path.join(root, "build", "fragments.json"), "utf8"));

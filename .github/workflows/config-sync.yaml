@@ -35,7 +35,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Detect drift and open sync PRs
-        run: node scripts/config-sync/index.mjs --apply
+        run: node scripts/config-sync/index.js --apply
         env:
           GITHUB_TOKEN: ${{ secrets.CONFIG_SYNC_TOKEN }}
           GH_TOKEN: ${{ secrets.CONFIG_SYNC_TOKEN }}

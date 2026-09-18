@@ -111,7 +111,7 @@ const rawCode = await fs.promises.readFile(rawArtifact, "utf8");
 try {
     parse(rawCode, { ecmaVersion: 2020 });
 } catch (error) {
-    throw new Error(`raw artifact is not valid es2020 (es2021+ syntax leaked into the bundle — check the esbuild target in rollup.config.mjs): ${error.message}`, { cause: error });
+    throw new Error(`raw artifact is not valid es2020 (es2021+ syntax leaked into the bundle — check the esbuild target in rollup.config.js): ${error.message}`, { cause: error });
 }
 
 // Gate 2 — the deploy-order equivalence chain: tsc es2020 emit (as the

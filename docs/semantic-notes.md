@@ -18,7 +18,7 @@ jQuery-ready / `mw.hook` 注册触发，时序不变。原版在回调开头处�
 
 ## 2. 行内注释被剥离（产物只剩 banner）
 
-**现象**：esbuild 转译时剥离全部行内注释，产物仅保留 `rollup.config.mjs` 中的 banner
+**现象**：esbuild 转译时剥离全部行内注释，产物仅保留 `rollup.config.js` 中的 banner
 （eslint 头、`@source` oldid、勿复制警告、`"use strict"`）。
 
 **安全论据**：注释不影响运行时行为。旧仓部署侧本就对产物执行 terser 压缩

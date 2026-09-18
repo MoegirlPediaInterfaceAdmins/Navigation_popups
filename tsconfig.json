@@ -1,34 +1,27 @@
 {
     "$schema": "https://json.schemastore.org/tsconfig",
+    "extends": "./node_modules/@annangela/eslint-config/dist/tsconfigs/tsconfig.browser.json",
     "compilerOptions": {
-        // One program for both gates:
-        //  - src/**: strict type checking (checkJs is off, these are .ts)
-        //  - dist/**: syntax gate for the bundled artifact (allowJs + checkJs off)
-        "allowJs": true,
-        "checkJs": false,
         "noEmit": true,
+        "checkJs": false,
         "target": "es2020",
-        "lib": [
-            "ESNext",
-            "DOM",
-        ],
-        "module": "preserve",
-        "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "types": [
-            "jquery",
+            "jquery"
         ],
         "allowUmdGlobalAccess": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "noImplicitOverride": true,
-        "noFallthroughCasesInSwitch": true,
-        "newLine": "lf",
+        "exactOptionalPropertyTypes": false,
+        "noImplicitReturns": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "removeComments": false,
+        "allowUnreachableCode": true,
+        "allowUnusedLabels": true
     },
     "include": [
         "src",
         "node_modules/moment/moment.d.ts",
         "node_modules/types-mediawiki",
-        "dist",
-    ],
+        "dist"
+    ]
 }

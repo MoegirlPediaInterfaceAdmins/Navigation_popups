@@ -14,6 +14,7 @@
 - **质量基线**：全部 33 模块处于 strict tsc + 严集 eslint 之下，当前为 **0 类型错误 / 0 lint 违规**，无 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`。移植后的代码必须保持这个基线（见 §4）。
 - 构建零转换假设：esbuild 转译会**剥掉普通注释**（产物中只剩 banner）；源码注释照常写。
 - **构建 target 是 es2020**（对齐旧仓部署链 tsc es2020 + terser ecma 2020）：源码可用 es2022 语法，但 esbuild 会把 class 字段降级为 `__publicField` 辅助（见 `docs/semantic-notes.md` #3）；产物另有 acorn `ecmaVersion: 2020` parse 门禁兜底（es2021+ 语法**不得**以形态保留到产物——正常构建不会，改构建配置时注意）。产物 banner 的 eslint-disable 为 6 条（原版 3 条 + es2020 降级形态所需 `no-var, prefer-const, logical-assignment-operators`），同步时保留。
+- **tsconfig 继承结构**（改 tsconfig 前必读）：`tsconfig.json` extends `@annangela/eslint-config/dist/tsconfigs/tsconfig.browser.json`，再覆盖 target（es2020）、`types`（基底是 `["*"]` 全家桶，此处收窄为 jquery）并回退基底比 tsc 默认值收紧的选项（`exactOptionalPropertyTypes`、`noImplicitReturns`、`noUnusedLocals`、`noUnusedParameters`、`removeComments`、`allowUnreachableCode`、`allowUnusedLabels` 共 7 项）——解析后的有效配置与独立版本逐项一致；唯二例外是 `esModuleInterop` 与 `alwaysStrict`：TS 6.0 起二者显式设 `false` 直接报 TS5107（废弃、7.0 起恒为 true），只能继承基底的 `true`——对本仓库惰性（src 门禁 noEmit 且 bundler 解析本就允许合成默认导入；production 编译的是无 import/export 的 IIFE 产物，emit 逐字节不变，已实测 `"use strict"` 不会重复注入）。`tsconfig.production.json` extends `./tsconfig.json`，回落 `noEmit/types` 及源码门禁专属的 strict 族（其中 `allowImportingTsExtensions: false` 是硬性要求：该选项要求 noEmit，不回落会 TS5096）。extends 用 `./node_modules/…` 相对路径是唯一双解析器兼容形式：tsc 的 extends 不走包 exports 映射（exports 内 specifier 报 TS6053），而 rollup-plugin-esbuild 依赖的 get-tsconfig 恰恰只走 exports（dist 深路径被 exports 拦截）——相对路径以 `.` 开头直接按文件解析，两边都接受（与旧仓库同款做法）。
 - **模块边界曾以 AST 级验证**（espree 双侧解析 → jQuery 回调顶层语句序列 → 声明名锚点对齐，31 模块顺序与上游一致）。上游文件变更后可重跑该验证再生物段表；日常同步以 `build/fragments.json` 为唯一对应表。
 
 ## 1. 拉取上游
@@ -27,7 +28,7 @@ curl -fsSL 'https://en.wikipedia.org/w/index.php?title=MediaWiki:Gadget-popups.j
 curl -fsSL 'https://en.wikipedia.org/w/index.php?title=MediaWiki:Gadget-navpop.css&action=raw' -o /tmp/upstream-latest.css
 ```
 
-记录最新版 oldid（页面 `?action=info` 或历史页）；同步完成后更新 `rollup.config.mjs` banner（JS）与 `scripts/build-css.mjs` banner（CSS）里的 `@source` 链接，以及 `build/fragments.json` 两个 `oldid` 字段。
+记录最新版 oldid（页面 `?action=info` 或历史页）；同步完成后更新 `rollup.config.js` banner（JS）与 `scripts/build-css.js` banner（CSS）里的 `@source` 链接，以及 `build/fragments.json` 两个 `oldid` 字段。
 
 ## 2. 切分上游
 
@@ -57,7 +58,7 @@ curl -fsSL 'https://en.wikipedia.org/w/index.php?title=MediaWiki:Gadget-navpop.c
 - **与 lint 规则冲突的上游行为**：若上游行为本身触发某规则（如 retry 计数用 `|| 0`、`window.event`/`keyCode` legacy API、`unescape`），用**单行 scoped `eslint-disable-<rule> -- 理由`** 承接，理由必须注明上游行为依据（存量约 38 处可作范例；`shortcutkeys.ts` 是唯一的文件级豁免）。禁止无理由 disable、禁止多行 disable 注释（不生效）。
 - **TS 语法注意**：`noFallthroughCasesInSwitch` 下，上游的 switch 贯串分支要改写成合并 case 标签（`case A: case B:`）；类型窄化用字面量 `typeof x === "string"`（`typeof x === typeof ""` 不窄化）；`Record` 索引访问的判空以实际类型为准。字符串语义等价转换可放心用：`String(x)` 与模板拼接 `` `${x}` `` 运行时一致。
 - 上游新增/删除源文件（31 个之外）→ 在 `src/modules/` 新建/删除对应模块，同步更新 `build/fragments.json`（`file` 填 `modules/<name>.ts`）与 `entry.ts` 的 import 序（`./modules/<name>.ts`，保持原拼接顺序语义）。
-- 同步完成后更新 `rollup.config.mjs` banner 里的 `@source` oldid。
+- 同步完成后更新 `rollup.config.js` banner 里的 `@source` oldid。
 
 ### CSS 同步（Gadget-navpop.css）
 

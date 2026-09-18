@@ -25,10 +25,10 @@ src/
 │                      #   globals.d.ts（wgULS/moment/wikEd 等站点全局声明）
 └── css/               # main.scss（上游平铺 + 萌百定制）、_darkmode.scss（暗色 16 组 × 三变体 mixin）
 build/fragments.json   # 模块/样式 ↔ 上游文件对应清单 + 迁移基线信息（file 字段含 modules/ 前缀）
-scripts/build.mjs      # Rollup API 构建 + 产物断言（无 import/export 残留、模块全量、LF/无 BOM）
-scripts/build-css.mjs  # sass 编译 + 头注释注入 + rgba→rgb 现代语法后处理 + 幂等检查
-scripts/esmify.mjs     # 一次性迁移辅助（import/export 织入），保留作迁移记录
-rollup.config.mjs      # IIFE 输出、treeshake 关闭、banner（eslint 头 + @source oldid + "use strict"）
+scripts/build.js       # Rollup API 构建 + 产物断言（无 import/export 残留、模块全量、LF/无 BOM）
+scripts/build-css.js   # sass 编译 + 头注释注入 + rgba→rgb 现代语法后处理 + 幂等检查
+scripts/esmify.js      # 一次性迁移辅助（import/export 织入），保留作迁移记录
+rollup.config.js       # IIFE 输出、treeshake 关闭、banner（eslint 头 + @source oldid + "use strict"）
 dist/                  # 构建产物（不入库）
 docs/upstream-sync.md  # 上游同步操作指南（执行同步任务时读取）
 ```
@@ -47,7 +47,7 @@ src/entry.ts ────────── 顶层：import 全部模块（顺�
        modules/ 内的 tools/titles/strings/options/namespaces 等被广泛依赖的工具模块
 ```
 
-分层不是硬约束——`rollup.config.mjs` 的 `onwarn` 只放行 `CIRCULAR_DEPENDENCY`（跨模块调用全部发生在运行期，此时所有模块体已求值完毕），其余警告一律 fatal。但**新代码应尽量向下依赖、避免加剧环**；顶层副作用顺序约束见下节。
+分层不是硬约束——`rollup.config.js` 的 `onwarn` 只放行 `CIRCULAR_DEPENDENCY`（跨模块调用全部发生在运行期，此时所有模块体已求值完毕），其余警告一律 fatal。但**新代码应尽量向下依赖、避免加剧环**；顶层副作用顺序约束见下节。
 
 ## 构建与质量门禁
 
