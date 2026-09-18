@@ -24,7 +24,7 @@
 
 ## 3. 弹窗本体与结构
 
-- 每弹窗一个 `div.navpopup`（absolute、minWidth 350、id=`navpopup<uid>`、点击置顶）；hooks：create/unhide/hide × before/after（uid 去重、返回 true 注销）——懒加载〔默认开〕、maxWidth〔默认 350〕、快捷键挂载都靠 hooks。
+- 每弹窗一个 `div.navpopup`（absolute、minWidth 350、id=`navpopup_maindiv<uid>`、点击置顶）；hooks：create/unhide/hide × before/after（uid 去重、返回 true 注销）——懒加载〔默认开〕、maxWidth〔默认 350〕、快捷键挂载都靠 hooks。
 - 定位：右溢出时移出屏测宽再贴右缘（tooWide 一次性豁免）。
 - 结构 7 种：original/nostalgia/fancy/fancy2/menus/shortmenus〔默认〕/lite；布局槽顺序见 popupLayout（menus 系把 TopLinks 提到 Title 前）；`setPopupHTML` 目标不存在时 600ms 轮询重试；`popupActiveNavlinks` 时 TopLinks 槽内递归绑定子弹窗〔`popupSubpopups=true` 默认〕。
 - 重定向态：`popupRedir*` 槽显示目标与「修复重定向」链接〔`popupFixRedirs` 默认关〕。
