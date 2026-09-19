@@ -48,6 +48,7 @@ export default [
                 HTMLCollectionOf: false,
                 EventListener: false,
                 GlobalEventHandlers: false,
+                MouseEventInit: false,
             },
         },
         rules: {

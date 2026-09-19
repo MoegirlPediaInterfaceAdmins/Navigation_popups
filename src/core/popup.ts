@@ -63,7 +63,8 @@ export class Navpopup {
     idNumber?: number;
     parentAnchor?: HTMLAnchorElement | null;
     mouseLeavingTime?: number | null;
-    stopPopupTimer?: number;
+    // ReturnType 形式兼容 DOM（number）与 Node（Timeout）两套定时器类型环境
+    stopPopupTimer?: ReturnType<typeof setInterval>;
 
     constructor() {
         this.createMainDiv();
