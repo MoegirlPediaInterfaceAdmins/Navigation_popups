@@ -10,7 +10,9 @@ export default defineConfig({
         // tests/helpers/mockMw.ts 用 vi.stubGlobal 挂 mw，测试文件间自动卸载
         unstubGlobals: true,
         coverage: {
-            provider: "v8",
+            // istanbul（AST 插桩）而非 v8：v8 对 typeof 收窄等形态会产生空
+            // location 的合成边（永不计数），istanbul 的分支语义精确
+            provider: "istanbul",
             include: ["src/**/*.ts"],
             // ambient 类型声明无可执行代码；SCSS 不经 vitest 转译
             exclude: ["src/types/**"],

@@ -13,6 +13,8 @@ export interface MockXhrRequest {
 export interface MockXhrResponse {
     status: number;
     responseText: string;
+    /** 响应头（getLastModifiedDate 等用例断言 Last-Modified） */
+    headers?: Record<string, string>;
     /** 延迟（ms）后才进入 readyState 4，供中止/竞态用例控制时序 */
     delay?: number;
 }
@@ -35,10 +37,15 @@ export class MockXmlHttpRequest {
     responseText = "";
     aborted = false;
     request: MockXhrRequest | null = null;
+    private responseHeaders: Record<string, string> = {};
 
     open(method: string, url: string): void {
         this.request = { method, url, headers: {} };
         this.readyState = 1;
+    }
+
+    getResponseHeader(name: string): string | null {
+        return this.responseHeaders[name] ?? null;
     }
 
     setRequestHeader(name: string, value: string): void {
@@ -57,6 +64,9 @@ export class MockXmlHttpRequest {
             throw new Error("send called before open");
         }
         const request = this.request;
+        // 真 XHR 的 readystatechange 在状态变化时触发（1/2/3/4），此处先以
+        // 非完成态同步触发一次，覆盖调用方的 readyState===4 早退判定
+        this.onreadystatechange?.();
         void (async () => {
             const response = await respondRef.current(request);
             if (response.delay) {
@@ -70,6 +80,7 @@ export class MockXmlHttpRequest {
             }
             this.status = response.status;
             this.responseText = response.responseText;
+            this.responseHeaders = response.headers ?? {};
             this.readyState = 4;
             this.onreadystatechange?.();
         })();
