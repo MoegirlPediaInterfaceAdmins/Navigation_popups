@@ -14,14 +14,8 @@ import {
 } from "../../../src/title/namespaces.ts";
 
 // nsState 是模块级单例；各用例按需重置回「装配前」形态再触发 setter
+// （id 为硬编码常量初值即终值，重置其余装配态即可）
 const resetNsState = (): void => {
-    nsState.specialId = null;
-    nsState.mainspaceId = null;
-    nsState.imageId = null;
-    nsState.userId = null;
-    nsState.usertalkId = null;
-    nsState.categoryId = null;
-    nsState.templateId = null;
     nsState.interwiki = undefined;
     nsState.re.interwiki = null;
     nsState.re.redirect = null;
@@ -67,7 +61,8 @@ describe("nsRe", () => {
     });
 
     it("别名先 upcaseFirst 再转义", () => {
-        expect(nsRe(-1)).toBe("(?:Special|Special)");
+        // mockWw 默认 config 的 -1 键序：special, 特殊（shared helper 后补）
+        expect(nsRe(-1)).toBe("(?:Special|Special|特殊|%E7%89%B9%E6%AE%8A)");
     });
 
     it("含空格的别名把空格放宽为 [ _]", () => {
@@ -93,12 +88,8 @@ describe("nsRe", () => {
 });
 
 describe("nsReImage", () => {
-    it("setNamespaces 前退化为空模式", () => {
-        expect(nsReImage()).toBe("(?:)");
-    });
-
-    it("setNamespaces 后等于 nsRe(nsImageId)", () => {
-        setNamespaces();
+    it("初值即常量，等价于 nsRe(6)", () => {
+        // ns id 为硬编码常量（初值即终值），不再有「装配前退化」形态
         expect(nsReImage()).toBe(nsRe(6));
     });
 });

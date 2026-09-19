@@ -13,13 +13,15 @@
 // 由该域统一持有 → core 域 siteinfo 模块实现时）。
 
 export interface NamespaceState {
-    specialId: number | null;
-    mainspaceId: number | null;
-    imageId: number | null;
-    userId: number | null;
-    usertalkId: number | null;
-    categoryId: number | null;
-    templateId: number | null;
+    // 七个 id 是硬编码常量（legacy pg.nsXxxId），初值即终值——setNamespaces
+    // 重算覆盖同值；不以 null 表示「装配前」（消类型层 ?? 兜底的死分支）
+    specialId: number;
+    mainspaceId: number;
+    imageId: number;
+    userId: number;
+    usertalkId: number;
+    categoryId: number;
+    templateId: number;
     /** 萌百定制 interwiki 前缀表（"en|ja" 等）；表外语言保持 undefined */
     interwiki: string | undefined;
     re: {
@@ -29,13 +31,13 @@ export interface NamespaceState {
 }
 
 export const nsState: NamespaceState = {
-    specialId: null,
-    mainspaceId: null,
-    imageId: null,
-    userId: null,
-    usertalkId: null,
-    categoryId: null,
-    templateId: null,
+    specialId: -1,
+    mainspaceId: 0,
+    imageId: 6,
+    userId: 2,
+    usertalkId: 3,
+    categoryId: 14,
+    templateId: 10,
     interwiki: undefined,
     re: {
         interwiki: null,
@@ -138,4 +140,4 @@ export const nsRe = (namespaceId?: number): string => {
     return `(?:${imageNamespaceVariants.join("|")})`;
 };
 
-export const nsReImage = (): string => nsRe(nsState.imageId ?? undefined);
+export const nsReImage = (): string => nsRe(nsState.imageId);

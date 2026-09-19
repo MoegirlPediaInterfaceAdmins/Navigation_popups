@@ -54,8 +54,8 @@ const STUB_REGEXP_SOURCE = "(sect)?stub[}][}]|This .*-related article is a .*stu
 const buildTitleWikiFixtures = (mw: MockMw, wikiState: TitleModule["wiki"], nsMod: NamespacesModule): void => {
     const esc = mw.util.escapeRegExp;
     nsMod.setNamespaces();
-    const sp = nsMod.nsRe(nsMod.nsState.specialId ?? -1);
-    const userRe = nsMod.nsRe(nsMod.nsState.userId ?? -1);
+    const sp = nsMod.nsRe(nsMod.nsState.specialId);
+    const userRe = nsMod.nsRe(nsMod.nsState.userId);
     // setTitleBase（protocol/sitebase 取萌百 https 形态）
     wikiState.titlebase = TITLEBASE;
     wikiState.re.basenames = RegExp(`^(${esc(TITLEBASE)}|${esc(ARTICLEBASE)})`);
@@ -671,33 +671,6 @@ describe("isValidImageName / 命名空间谓词 / anchorContainsImage", () => {
         const withText = anchor("https://x/");
         withText.append(document.createTextNode("alt"));
         expect(anchorContainsImage(withText)).toBe(false);
-    });
-
-    // legacy 的 pg.nsXxxId 为可选字段，未装配时各处以 ?? -1 回退——重写版
-    // nsState 初始为 null，同样语义须保留（-1 命中 wgFormattedNamespaces 的
-    // Special 主题名）
-    it("toUserName 在 ns id 未装配时经 -1 回退把 Special 页当用户页", () => {
-        nsModuleRef.nsState.userId = null;
-        nsModuleRef.nsState.usertalkId = null;
-        const special = new Title("Special:Foo");
-        special.toUserName(true);
-        expect(special.value).toBe("Special:Foo");
-        const notUser = new Title("User:Foo");
-        notUser.toUserName();
-        expect(notUser.value).toBeNull();
-    });
-
-    it("fromURL 的 Special 页换算在 ns id 未装配时落到 Special 前缀", () => {
-        nsModuleRef.nsState.userId = null;
-        nsModuleRef.nsState.specialId = null;
-        expect(Title.fromURL(`https://${SITEBASE}/Special:Contributions/Foo`).value).toBe("Special:Foo");
-        expect(Title.fromURL(`https://${SITEBASE}/Special:Emailuser/Foo`).value).toBe("Special:Foo");
-        expect(Title.fromURL(`https://${SITEBASE}/Special:Diff/1/2`).value).toBe("Special:Diff");
-    });
-
-    it("stripNamespace 在 mainspaceId 未装配时对未知前缀也做剥离", () => {
-        nsModuleRef.nsState.mainspaceId = null;
-        expect(new Title("Notns:Foo").stripNamespace()).toBe("Foo");
     });
 });
 

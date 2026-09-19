@@ -6,7 +6,7 @@
 import { vi } from "vitest";
 
 export interface MockApiOptions {
-    ajax?: Record<string, unknown>;
+    ajax?: { headers?: Record<string, string> };
 }
 
 export interface MockApi {
@@ -74,6 +74,7 @@ const defaultConfig = (): Record<string, unknown> => ({
     },
     wgNamespaceIds: {
         special: -1,
+        特殊: -1,
         file: 6,
         image: 6,
         文件: 6,

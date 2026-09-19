@@ -38,6 +38,15 @@ export interface TitleWikiState {
         /** 消歧义/小作品检测正则（选项 popupDabRegexp/popupStubRegexp 派生） */
         disambig: RegExp | null;
         stub: RegExp | null;
+        /** wikitext 图片提取（setRegexps 派生，preview 域使用；括号组数随正则） */
+        image: RegExp | null;
+        imageBracketCount?: number;
+        /** wikitext 分类提取（preview 域统计使用） */
+        category: RegExp | null;
+        categoryBracketCount?: number;
+        /** URL 修订版本/差异参数（links/diffpreview 域使用） */
+        oldid: RegExp | null;
+        diff: RegExp | null;
     };
     /**
      * 选项读取缝：本域只读 popupOnlyArticleLinks / popupAllDabsStubs 两项，
@@ -71,6 +80,10 @@ export const wiki: TitleWikiState = {
         ipUser: null,
         disambig: null,
         stub: null,
+        image: null,
+        category: null,
+        oldid: null,
+        diff: null,
     },
     getOption: (name: string): unknown => titleOptionDefaults[name],
 };
@@ -189,11 +202,11 @@ export class Title extends Stringwrapper {
         return safeDecodeURI(this.value) as string;
     }
     toUserName(withNs?: boolean): void {
-        if (this.namespaceId() !== (nsState.userId ?? -1) && this.namespaceId() !== (nsState.usertalkId ?? -1)) {
+        if (this.namespaceId() !== nsState.userId && this.namespaceId() !== nsState.usertalkId) {
             this.value = null;
             return;
         }
-        this.value = (withNs ? `${mw.config.get("wgFormattedNamespaces")[nsState.userId ?? -1]}:` : "") + this.stripNamespace().split("/")[0];
+        this.value = (withNs ? `${mw.config.get("wgFormattedNamespaces")[nsState.userId]}:` : "") + this.stripNamespace().split("/")[0];
     }
     userName(withNs?: boolean): Title | null {
         const t = new Title(this.value);
@@ -302,7 +315,7 @@ export class Title extends Stringwrapper {
             return assume(this.value);
         }
         const namespaceId = this.namespaceId();
-        if (namespaceId === (nsState.mainspaceId ?? -1)) {
+        if (namespaceId === nsState.mainspaceId) {
             return assume(this.value);
         }
         return assume(this.value).substring(n + 1);
@@ -364,12 +377,12 @@ export class Title extends Stringwrapper {
                 contribs[3] = contribs[3].split("+").join(" ");
             }
             const u = new Title(contribs[3]);
-            this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[nsState.userId ?? -1]}:${u.stripNamespace()}`));
+            this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[nsState.userId]}:${u.stripNamespace()}`));
             return this;
         }
         const email = assume(wiki.re.email).exec(h);
         if (email) {
-            this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[nsState.userId ?? -1]}:${new Title(email[3]).stripNamespace()}`));
+            this.setUtf(this.decodeNasties(`${mw.config.get("wgFormattedNamespaces")[nsState.userId]}:${new Title(email[3]).stripNamespace()}`));
             return this;
         }
         const backlinks = assume(wiki.re.backlinks).exec(h);
@@ -379,7 +392,7 @@ export class Title extends Stringwrapper {
         }
         const specialdiff = assume(wiki.re.specialdiff).exec(h);
         if (specialdiff) {
-            this.setUtf(this.decodeNasties(new Title(`${mw.config.get("wgFormattedNamespaces")[nsState.specialId ?? -1]}:Diff`)));
+            this.setUtf(this.decodeNasties(new Title(`${mw.config.get("wgFormattedNamespaces")[nsState.specialId]}:Diff`)));
             return this;
         }
         const m = assume(wiki.re.main).exec(h);

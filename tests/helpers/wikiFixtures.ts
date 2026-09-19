@@ -24,8 +24,8 @@ export const SPECIAL_PAGE_ALIASES: { realname: string; aliases: string[] }[] = [
 export const buildTitleWikiFixtures = (mw: MockMw, wiki: Title["wiki"], nsMod: Namespaces): void => {
     const esc = mw.util.escapeRegExp;
     nsMod.setNamespaces();
-    const sp = nsMod.nsRe(nsMod.nsState.specialId ?? -1);
-    const userRe = nsMod.nsRe(nsMod.nsState.userId ?? -1);
+    const sp = nsMod.nsRe(nsMod.nsState.specialId);
+    const userRe = nsMod.nsRe(nsMod.nsState.userId);
     wiki.titlebase = TITLEBASE;
     const articleBase = `https://${SITEBASE}`;
     wiki.re.basenames = RegExp(`^(${esc(TITLEBASE)}|${esc(articleBase)})`);
