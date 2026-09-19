@@ -3,6 +3,16 @@
 // 重写版没有 pg 动态域，legacy 的 pg.option / pg.optionDefault 由本模块
 // 自持并导出（purge 重置等后续模块经导出的 optionStore 操作）。
 import { popupString } from "./strings.ts";
+import {
+    popupFilterCountCategories,
+    popupFilterCountImages,
+    popupFilterCountLinks,
+    popupFilterDisambigDetect,
+    popupFilterLastModified,
+    popupFilterPageSize,
+    popupFilterStubDetect,
+    popupFilterWikibaseItem,
+} from "../preview/pageinfo.ts";
 
 export type OptionValue = string | number | boolean | null | object | undefined;
 
@@ -143,8 +153,11 @@ export const setOptions = (): void => {
     newOption("popupRedlinkSummary", popupString("defaultpopupRedlinkSummary"));
     newOption("popupRmDabLinkSummary", popupString("defaultpopupRmDabLinkSummary"));
     newOption("popupHistoryLimit", 50);
-    // TODO(rewrite): 恢复 legacy 的 8 个 pageinfo 过滤器全集 → 阶段 3 pageinfo 模块落地时
-    newOption("popupFilters", []);
+    // 8 个 pageinfo 统计过滤器按 legacy 注册顺序进 popupData 槽：小作品 →
+    // 消歧义 → 页面大小 → 内链 → 图片 → 分类 → 最后修改 → wikibase。
+    // 与 pageinfo 模块互相 import（legacy 同款环引用）：双方顶层都只有函数
+    // 定义，首次实际取值发生在 setOptions() 调用时，环引用无碍
+    newOption("popupFilters", [popupFilterStubDetect, popupFilterDisambigDetect, popupFilterPageSize, popupFilterCountLinks, popupFilterCountImages, popupFilterCountCategories, popupFilterLastModified, popupFilterWikibaseItem]);
     newOption("extraPopupFilters", []);
     newOption("popupOnEditSelection", "cursor");
     newOption("popupPreviewHistory", true);

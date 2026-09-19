@@ -4,6 +4,16 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installMw } from "../../helpers/mockMw.ts";
 import { popupStrings } from "../../../src/i18n/popupStrings.ts";
 import {
+    popupFilterCountCategories,
+    popupFilterCountImages,
+    popupFilterCountLinks,
+    popupFilterDisambigDetect,
+    popupFilterLastModified,
+    popupFilterPageSize,
+    popupFilterStubDetect,
+    popupFilterWikibaseItem,
+} from "../../../src/preview/pageinfo.ts";
+import {
     getValueOf,
     optionDefault,
     optionStore,
@@ -63,8 +73,21 @@ describe("setOptions 默认值全集", () => {
         expect(getValueOf("popupLinksNewWindow")).toEqual({ lastContrib: true, sinceMe: true });
         expect(getValueOf("popupEditCounterTool")).toBe("supercount");
         expect(getValueOf("popupWatchDisambiggedPages")).toBeNull();
-        // TODO(rewrite): 阶段 3 pageinfo 落地后恢复 8 个过滤器全集，当前空数组占位
-        expect(getValueOf("popupFilters")).toEqual([]);
+        expect(getValueOf("extraPopupFilters")).toEqual([]);
+    });
+
+    it("popupFilters 默认注册 8 个 pageinfo 过滤器（legacy 注册顺序）", () => {
+        setOptions();
+        expect(getValueOf("popupFilters")).toEqual([
+            popupFilterStubDetect,
+            popupFilterDisambigDetect,
+            popupFilterPageSize,
+            popupFilterCountLinks,
+            popupFilterCountImages,
+            popupFilterCountCategories,
+            popupFilterLastModified,
+            popupFilterWikibaseItem,
+        ]);
     });
 
     it("三个 Intl Formatter 选项对象逐字段一致", () => {
