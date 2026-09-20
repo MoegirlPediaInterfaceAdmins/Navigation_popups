@@ -31,9 +31,9 @@
     },
     "dependencies": {
         "@annangela/eslint-config": "^15.0.0",
-        "eslint": "^10.9.1",
+        "eslint": "^10.10.0",
         "terser": "^5.51.2",
-        "typescript": "^6.0.3"
+        "typescript": "^7.0.2"
     },
     "devDependencies": {
         "@actions/core": "^3.0.1",
@@ -44,7 +44,7 @@
         "@csstools/postcss-is-pseudo-class": "^6.0.0",
         "@csstools/postcss-media-minmax": "^3.0.4",
         "@octokit/auth-action": "^6.0.3",
-        "@octokit/auth-unauthenticated": "^4.0.0",
+        "@octokit/auth-unauthenticated": "^7.0.5",
         "@octokit/plugin-retry": "^8.1.1",
         "@octokit/rest": "^22.0.1",
         "@types/jquery": "^4.0.1",
@@ -55,14 +55,14 @@
         "husky": "^9.1.7",
         "jquery": "^4.0.0",
         "jsdom": "^30.1.0",
-        "moment": "^2.30.1",
+        "moment": "^2.31.0",
         "postcss": "^8.5.28",
-        "postcss-discard-comments": "^9.0.2",
+        "postcss-discard-comments": "^9.0.3",
         "postcss-font-variant": "^5.0.0",
         "postcss-load-config": "^6.0.1",
         "postcss-logical": "^9.0.0",
         "postcss-selector-not": "^9.0.0",
-        "rollup": "^4.63.1",
+        "rollup": "^4.63.3",
         "rollup-plugin-esbuild": "^6.2.1",
         "sass": "^1.104.1",
         "simple-git": "^3.36.0",
