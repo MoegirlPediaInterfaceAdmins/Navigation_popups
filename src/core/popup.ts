@@ -6,6 +6,7 @@
 import { log } from "./log.ts";
 import { Drag } from "./drag.ts";
 import { Mousetracker } from "./mousetracker.ts";
+import type { Title } from "../title/title.ts";
 
 // 在途下载的最小中止接口：具体 Downloader（阶段 2 net 域）实现之
 export interface AbortableDownload {
@@ -60,11 +61,23 @@ export class Navpopup {
     top?: number;
     tooWide?: boolean;
     maxWidth?: number;
+    // 预览管线装配的条目态（legacy navpopup.ts 39-40）：article=当前条目
+    // （重定向跟随时被 loadPreviewFromRedir 换成目标）、originalArticle=首次
+    // loadPreview 时的原始条目。类型层比 legacy 多并一个 null：events 域的
+    // 模块增广（events.ts 的 declare module）已把该字段冻结为 Title | null，
+    // 接口合并要求两侧同型（运行时无人赋 null，行为与 legacy 一致）
+    article?: Title | null;
+    originalArticle?: Title;
     idNumber?: number;
     parentAnchor?: HTMLAnchorElement | null;
     mouseLeavingTime?: number | null;
     // ReturnType 形式兼容 DOM（number）与 Node（Timeout）两套定时器类型环境
     stopPopupTimer?: ReturnType<typeof setInterval>;
+    // redirect-following state driven by preview pipeline（legacy 注释同义）：
+    // redir=已跟随重定向次数、redirTarget=跟随后的目标——由 pipeline 域的
+    // loadPreviewFromRedir 驱动
+    redir = 0;
+    redirTarget?: Title;
 
     constructor() {
         this.createMainDiv();

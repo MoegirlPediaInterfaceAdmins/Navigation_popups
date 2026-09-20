@@ -21,6 +21,12 @@ export interface TitleWikiState {
     misc: {
         /** myDecodeURI 的后置映射表（legacy setMisc 的 decodeExtras） */
         decodeExtras: { from: string; to: string }[] | null;
+        /**
+         * 导航链接缺省 class（legacy pg.misc.defaultNavlinkClassname）：legacy
+         * 全仓只有 links.ts 一处读取、从未赋值，运行时恒 undefined——照搬，
+         * 只声明不赋值、不给默认（titledWikiLink 的 className 缺省源头）
+         */
+        defaultNavlinkClassname?: string;
     };
     re: {
         /** 站内链接白名单前缀（titlebase|articlebase，setTitleBase 派生） */
