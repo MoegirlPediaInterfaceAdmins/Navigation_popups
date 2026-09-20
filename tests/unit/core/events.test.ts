@@ -12,11 +12,22 @@ import { installMw } from "../../helpers/mockMw.ts";
 import { buildTitleWikiFixtures, TITLEBASE } from "../../helpers/wikiFixtures.ts";
 import type * as EventsNs from "../../../src/core/events.ts";
 import type * as OptionsNs from "../../../src/core/options.ts";
+import type * as QueriesNs from "../../../src/api/queries.ts";
 import type * as TitleNs from "../../../src/title/title.ts";
 import type * as NamespacesNs from "../../../src/title/namespaces.ts";
 import type * as PopupNs from "../../../src/core/popup.ts";
 import type * as HtmloutNs from "../../../src/core/htmlout.ts";
 import type * as StringsNs from "../../../src/core/strings.ts";
+
+// 预览分派段落位后，nonsimplePopupContent 会真实调用 queries 域的
+// loadAPIPreview。本文件只锁事件流域行为，网络层在此整体打桩（分派走向与参数
+// 由 tests/unit/preview/dispatch.test.ts 覆盖），避免真实 XHR 触网与 pending
+// 记账串扰事件域断言
+const loadAPIPreviewMock = vi.hoisted(() => vi.fn());
+vi.mock("../../../src/api/queries.ts", async (importOriginal) => {
+    const actual = await importOriginal<typeof QueriesNs>();
+    return { ...actual, loadAPIPreview: loadAPIPreviewMock };
+});
 
 type Events = typeof EventsNs;
 type Options = typeof OptionsNs;
@@ -39,6 +50,7 @@ interface Fresh {
 // fresh 模块图 + mw/选项/wiki 基址装配（每用例调用）
 const fresh = async (): Promise<Fresh> => {
     vi.resetModules();
+    loadAPIPreviewMock.mockReset();
     const events = await import("../../../src/core/events.ts");
     const options = await import("../../../src/core/options.ts");
     const title = await import("../../../src/title/title.ts");
@@ -327,8 +339,10 @@ describe("mouseOverWikiLink2 悬停主流程", () => {
         // 骨架已写入主 div（默认 shortmenus 结构，槽 id 后缀 = idNumber）
         expect(navpop.mainDiv.innerHTML).toContain('id="popupTopLinks1"');
         expect(navpop.mainDiv.innerHTML).toContain('id="popupPreview1"');
-        // 阶段 1 的 nonsimplePopupContent 桩只做 pending 记账
+        // 预览分派段：pending 归零后转入条目预览（revision 查询已发起；本文件
+        // 已打桩 loadAPIPreview，故 pending 记账不计入）
         expect(navpop.pending).toBe(0);
+        expect(loadAPIPreviewMock).toHaveBeenCalledWith("revision", expect.anything(), navpop);
         // removeTitles=true：暂存并清空原生 title
         expect(a.title).toBe("");
         expect(a.originalTitle).toBe("原生提示");
@@ -439,13 +453,14 @@ describe("mouseOverWikiLink2 悬停主流程", () => {
         }).not.toThrow();
     });
 
-    it("nonsimplePopupContent 对无弹窗锚点为 no-op（阶段 1 桩守卫）", async () => {
+    it("nonsimplePopupContent 对无弹窗锚点为 no-op（legacy 守卫）", async () => {
         const mod = await fresh();
         const a = wikiAnchor("Foo");
         document.body.append(a);
         expect(() => {
             mod.events.nonsimplePopupContent(a, mod.title.Title.fromAnchor(a));
         }).not.toThrow();
+        expect(loadAPIPreviewMock).not.toHaveBeenCalled();
     });
 });
 

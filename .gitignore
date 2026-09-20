@@ -5,3 +5,4 @@ coverage/
 .zcode/
 *.log
 .zcodeignore
+.vitest/

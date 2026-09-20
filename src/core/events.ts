@@ -15,7 +15,12 @@ import { setupDraggable } from "./drag.ts";
 import { Navpopup } from "./popup.ts";
 import { Title, isPopupLink } from "../title/title.ts";
 import { popupString } from "./strings.ts";
+import { doSelectionPopup } from "./selection.ts";
 import { addPopupShortcuts, rmPopupShortcuts } from "./shortcutkeys.ts";
+// 预览分派段（legacy actions.ts 160-335）落在 preview/dispatch 域：本域只保留
+// 调用点与同名入口的转发（见下方 nonsimplePopupContent）
+import { nonsimplePopupContent as dispatchNonsimplePopupContent } from "../preview/dispatch.ts";
+import { popupRedlinkHTML } from "../preview/dab.ts";
 
 // events 域在 Navpopup 实例上装配的跨域字段（legacy Navpopup 同名成员；popup
 // 域不感知标题/父子弹窗/延迟，由本域在 newNavpopup 时补齐）
@@ -87,9 +92,12 @@ export const setupTooltips = (root?: Element | Document | null, remove = false, 
     // eslint-disable-next-line @typescript-eslint/no-base-to-string -- 调试日志照搬 legacy 的 String(container) 形态
     log(`setupTooltips, container=${String(container)}, remove=${String(remove)}`);
     wireHtmloutSeams();
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- ??= 是 es2021 语法，产物目标 es2020 禁用
     if (!container) {
-        // TODO(rewrite): popupOnEditSelection 开启时把编辑框 onmouseup 接到选区弹窗（doSelectionPopup）→ 阶段 2 selection 域落地时补
+        // 编辑框选区的弹窗入口：编辑页上把 onmouseup 接到选区解析（legacy
+        // actions.ts :25-27；每轮无容器装配时都会重设，上游原样）
+        if (getValueOf("popupOnEditSelection") && document.editform?.wpTextbox1) {
+            document.editform.wpTextbox1.onmouseup = doSelectionPopup;
+        }
         container = defaultPopupsContainer();
     }
     if (!remove && !force && container.ranSetupTooltipsAlready) {
@@ -300,10 +308,8 @@ export const mouseOverWikiLink2 = (a: HTMLAnchorElement, evt?: MouseEvent): void
 };
 
 // 简版骨架渲染：结构骨架 + 逐槽填充 + 可拖拽装配（150ms 延迟绑定在
-// setupDraggable 内）；两处与 legacy 的差异均为阶段缝（见 nonsimplePopupContent
-// 的 TODO 与 simplePopupContent 内的 TODO）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- _article 阶段 2 预览装配启用（见下方 TODO）
-export const simplePopupContent = (a: HTMLAnchorElement, _article: Title): void => {
+// setupDraggable 内）+ 红链槽写入
+export const simplePopupContent = (a: HTMLAnchorElement, article: Title): void => {
     const navpop = a.navpopup;
     if (!navpop) {
         return;
@@ -312,20 +318,19 @@ export const simplePopupContent = (a: HTMLAnchorElement, _article: Title): void 
     navpop.setInnerHTML(popupHTML(a));
     fillEmptySpans({ navpopup: navpop });
     setupDraggable(navpop);
-    // TODO(rewrite): popupRedlinkRemoval 开启且锚点为红链时写 popupRedlink 槽（popupRedlinkHTML）→ 阶段 3 dab 域落地时补
+    // 红链槽（legacy :275-277）：popupRedlinkRemoval 开启且锚点 className 恰为
+    // "new" 时追加「移除该链接」入口。<br> 前缀与 className 严格相等判定
+    // （非 classList.contains）都是上游原样，照搬勿修
+    if (getValueOf("popupRedlinkRemoval") && a.className === "new") {
+        setPopupHTML(`<br>${popupRedlinkHTML(article)}`, "popupRedlink", navpop.idNumber);
+    }
 };
 
-// TODO(rewrite): 完整预览装配（footnoteTarget 引用预览 + diff/history/contribs/
-// backlinks/imagepage/category/userinfo/revision 分派，legacy nonsimplePopupContent
-// 全分支）→ 阶段 2 net/api 域与阶段 3 preview 域落地时照搬；阶段 1 仅保留
-// pending 记账（置 0 = 首轮装配完成，重复悬停不再重渲染骨架）
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- _article 阶段 2 预览装配启用（见下方 TODO）
-export const nonsimplePopupContent = (a: HTMLAnchorElement, _article: Title): void => {
-    const navpop = a.navpopup;
-    if (!navpop) {
-        return;
-    }
-    navpop.pending = 0;
+// 完整预览装配已整体迁至 preview/dispatch.ts（legacy actions.ts 160-335 的分派
+// 段照搬）；本域保留同名入口：mouseOverWikiLink2 的调用点与对外契约不变，实现
+// 原样转发（无行为差异）
+export const nonsimplePopupContent = (a: HTMLAnchorElement, article: Title): void => {
+    dispatchNonsimplePopupContent(a, article);
 };
 
 const registerHooks = (np: Navpopup): void => {

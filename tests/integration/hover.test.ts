@@ -11,6 +11,15 @@ import type * as TitleNs from "../../src/title/title.ts";
 import type * as NamespacesNs from "../../src/title/namespaces.ts";
 import type * as PopupNs from "../../src/core/popup.ts";
 import type * as HtmloutNs from "../../src/core/htmlout.ts";
+import type * as QueriesNs from "../../src/api/queries.ts";
+
+// 预览分派段落位后，悬停会真实调用 queries 域的 loadAPIPreview（发起 revision
+// 查询）。本文件只验悬停/隐藏的事件流域，网络层在此整体打桩，避免真实 XHR 触网
+const loadAPIPreviewMock = vi.hoisted(() => vi.fn());
+vi.mock("../../src/api/queries.ts", async (importOriginal) => {
+    const actual = await importOriginal<typeof QueriesNs>();
+    return { ...actual, loadAPIPreview: loadAPIPreviewMock };
+});
 
 type Events = typeof EventsNs;
 type Options = typeof OptionsNs;
@@ -32,6 +41,7 @@ let windowOptionKeys: string[] = [];
 
 const fresh = async (overrides: Record<string, unknown> = {}): Promise<Fresh> => {
     vi.resetModules();
+    loadAPIPreviewMock.mockReset();
     const events = await import("../../src/core/events.ts");
     const options = await import("../../src/core/options.ts");
     const title = await import("../../src/title/title.ts");
