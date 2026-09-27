@@ -1152,7 +1152,7 @@ describe("槽填充器注册面", () => {
         }
     });
 
-    it("结构表引用的槽键仅 original.popupImage 留给 preview 域，其余全部就位", async () => {
+    it("结构表引用的槽键全部就位（阶段 5 后原留给 preview 域的 original.popupImage 亦已注册）", async () => {
         const f = await fresh();
         const wanted = new Set<string>();
         for (const structure of Object.values(f.structures.structures)) {
@@ -1162,7 +1162,10 @@ describe("槽填充器注册面", () => {
                 }
             }
         }
-        expect([...wanted].filter((key) => typeof f.structures.getSlotFiller(key) === "undefined")).toEqual(["original.popupImage"]);
+        // 阶段 5 前此断言为 ["original.popupImage"]（唯一空缺槽，待 preview 域
+        // 注册）；preview/images.ts 现于模块顶层注册该键——本文件的模块图经
+        // events → dispatch → images 传递引入，注册随之可见
+        expect([...wanted].filter((key) => typeof f.structures.getSlotFiller(key) === "undefined")).toEqual([]);
     });
 
     it("经 htmlout 装配（original）：TopLinks 槽写入 popupNavLinks 渲染，Title 槽在 navlinks 开时为空", async () => {

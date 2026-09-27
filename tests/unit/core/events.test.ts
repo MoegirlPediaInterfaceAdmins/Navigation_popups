@@ -347,9 +347,12 @@ describe("mouseOverWikiLink2 悬停主流程", () => {
         expect(a.title).toBe("");
         expect(a.originalTitle).toBe("原生提示");
         // 静止检测 interval + 600ms 位置检查 interval + 150ms 拖拽装配 timeout
-        // （legacy actions.ts simplePopupContent 内联的 dragTimer，三定时器齐活）
+        // （legacy actions.ts simplePopupContent 内联的 dragTimer）+ 100ms 位置
+        // 检查 timeout（setPopupHTML 写入成功后的 legacy 直调；本用例中由
+        // preview 域注册的 original.popupImage 填充器产生——它是本文件模块图里
+        // 唯一已注册的槽键，navlink 填充器未引入）
         expect(navpop.isVisible()).toBe(false);
-        expect(vi.getTimerCount()).toBe(3);
+        expect(vi.getTimerCount()).toBe(4);
     });
 
     it("idNumber 计数器与 htmlout 当前弹窗 id 同步（setPopupHTML 缺省 id 回落）", async () => {

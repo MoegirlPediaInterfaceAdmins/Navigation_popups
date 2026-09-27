@@ -3,7 +3,10 @@
 // vitest 配置 unstubGlobals: true 保证测试文件间自动清理。
 // 需要断言/编程响应的成员（api.get、message().text 等）均为 vi.fn，
 // 其余（config.get、util.getParamValue）为真实语义的稳定实现。
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
+
+/** hook 成员的可调用 mock 形态（add/remove 登记与注销 handler，fire 逐个调用） */
+export type MockHookMember = Mock<(...data: unknown[]) => unknown>;
 
 export interface MockApiOptions {
     ajax?: { headers?: Record<string, string> };
@@ -26,8 +29,9 @@ export interface MockMessage {
 }
 
 export interface MockHook {
-    add: ReturnType<typeof vi.fn>;
-    fire: ReturnType<typeof vi.fn>;
+    add: MockHookMember;
+    fire: MockHookMember;
+    remove: MockHookMember;
 }
 
 export interface MockMw {
@@ -127,12 +131,37 @@ export const installMw = (options: InstallMwOptions = {}): InstalledMw => {
         parseDom: vi.fn(() => key),
     });
 
+    // 真实可编程的 Hook 形态：add 登记 handler、fire 逐个调用登记项（可反复
+    // fire）、remove 注销。成员签名取 (...data: unknown[]) 而非 handler 形参，
+    // 调用侧（fire($content) 传 JQuery、add(fn) 传函数）才都无需断言；
+    // add/remove 运行时过滤出函数项。不用真实 MW 的「后注册者补放到上次 fire
+    // 数据」记忆语义——本仓库只在 ready 装配期注册、之后 fire，该语义无用武之地。
     const getHook = (name: string): MockHook => {
-        let hook = hooks.get(name);
-        if (!hook) {
-            hook = { add: vi.fn(), fire: vi.fn() };
-            hooks.set(name, hook);
+        const existing = hooks.get(name);
+        if (existing) {
+            return existing;
         }
+        const registered: ((...data: unknown[]) => unknown)[] = [];
+        const handlers = (data: unknown[]): ((...data: unknown[]) => unknown)[] => data.filter((item): item is (...data: unknown[]) => unknown => typeof item === "function");
+        const hook: MockHook = {
+            add: vi.fn((...data: unknown[]) => {
+                registered.push(...handlers(data));
+            }),
+            fire: vi.fn((...data: unknown[]) => {
+                for (const fn of registered) {
+                    fn(...data);
+                }
+            }),
+            remove: vi.fn((...data: unknown[]) => {
+                for (const fn of handlers(data)) {
+                    const index = registered.indexOf(fn);
+                    if (index >= 0) {
+                        registered.splice(index, 1);
+                    }
+                }
+            }),
+        };
+        hooks.set(name, hook);
         return hook;
     };
 

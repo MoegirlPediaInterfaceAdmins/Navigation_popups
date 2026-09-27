@@ -99,6 +99,10 @@ export default [
                 wgULS: false,
                 wgUVS: false,
                 moment: false,
+                // runtime globals owned by the wikEd gadget when it is present
+                // (same entries as the src block)
+                wikEdUseWikEd: false,
+                WikEdUpdateFrame: false,
             },
         },
     },

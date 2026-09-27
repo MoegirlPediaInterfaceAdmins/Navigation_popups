@@ -1,7 +1,9 @@
 // 图片域：loadImage（图片信息查询发起）、popupsInsertImage（结果写入
 // #popupImg<N>/#popupImageLink<N> 槽）、toggleSize、getValidImageFromWikiText
-// （wikitext 图片提取）与 removeMatchesUnless。行为基准 = legacy
-// src/modules/images.ts（commit 02c8dec）全文件。
+// （wikitext 图片提取）、removeMatchesUnless，以及模块顶层的
+// original.popupImage 槽填充器注册（legacy domdrag.ts 的图片骨架填充器，
+// 属 imageHTML 消费域）。行为基准 = legacy src/modules/images.ts
+// （commit 02c8dec）全文件 + domdrag.ts 的结构填充器段。
 //
 // pg 动态域映射：pg.wiki.apiwikibase→siteState（api/siteinfo）、
 // pg.current.article→eventsState（core/events）、pg.nsImageId→nsState、
@@ -14,15 +16,27 @@ import { pendingNavpopTask } from "./pipeline.ts";
 import { getPageWithCaching } from "../net/cache.ts";
 import type { Downloader } from "../net/downloader.ts";
 import { eventsState } from "../core/events.ts";
-import { popTipsSoonFn } from "../core/htmlout.ts";
+import { imageHTML, popTipsSoonFn } from "../core/htmlout.ts";
 import { log } from "../core/log.ts";
 import { getValueOf } from "../core/options.ts";
+import { registerSlotFiller, type StructureContext } from "../core/structures.ts";
 import { popupString } from "../core/strings.ts";
 import { assume, anyChild, getJsObj } from "../core/tools.ts";
 import { siteState } from "../api/siteinfo.ts";
 import { nsState, upcaseFirst } from "../title/namespaces.ts";
 import { isValidImageName, parenSplit, wiki, type Title } from "../title/title.ts";
 import type { Navpopup } from "../core/popup.ts";
+
+// legacy domdrag.ts 的 original.popupImage 槽填充器（图片骨架 HTML）。
+// 该槽由全部结构经 copyStructure 继承（仅 original 声明、其余结构整表拷贝），
+// 故只需注册 original.popupImage 一个键。legacy 的 imageHTML(x.article, id) 首参
+// 恒被弃用（重写版 htmlout.imageHTML 已删该形参）；x.navpop?.idNumber 的可选链
+// 随 StructureContext 的 navpop 非空收窄而退化（回调恒由 fillEmptySpans 传入
+// 弹窗），日志文案逐字保留
+registerSlotFiller("original.popupImage", (x: StructureContext): string => {
+    log(`original.popupImage, x.article=${String(x.article)}, x.navpop?.idNumber=${String(x.navpop.idNumber)}`);
+    return imageHTML(x.navpop.idNumber);
+});
 
 export const loadImage = (image: Title, navpop: Navpopup): false | undefined => {
     // legacy 防御检查照搬：Title 原型方法恒为 function，条件恒假；真实

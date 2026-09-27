@@ -1,11 +1,27 @@
 // entry 的守卫与启动时序：window.pg 判定与立即装配、ready/load 两条路径。
 // entry 在 import 时即执行守卫逻辑，因此每个用例用 vi.resetModules +
 // 动态 import 重新求值模块；boot 以 vi.mock 替身断言调用。
-import { beforeEach, describe, expect, it, vi } from "vitest";
+//
+// entry 的 ready 回调现在还包含 hook 装配段（wikipage.content / Echo 浮层），
+// 需要 mw.hook 存在。jQuery 对已 ready 状态下的 $(fn) 用 setTimeout 异步派发
+// 回调，回调可能迟到下一用例——届时 mockMw 的 vi.stubGlobal 已被
+// unstubGlobals 摘除，装配段就会撞上未定义的 mw（jQuery.Deferred exception）。
+// 故此处用文件级常驻存根（非 vi.stubGlobal，不会被用例间清理）兜住装配段；
+// hook 行为断言在 entry-hooks.test.ts。
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { bootMock } = vi.hoisted(() => ({ bootMock: vi.fn() }));
+const { bootMock, setupPopupsMock } = vi.hoisted(() => ({
+    bootMock: vi.fn(),
+    setupPopupsMock: vi.fn(),
+}));
 
-vi.mock("../../src/boot.ts", () => ({ boot: bootMock }));
+vi.mock("../../src/boot.ts", () => ({ boot: bootMock, setupPopups: setupPopupsMock }));
+
+const fakeHook = {
+    add: (): void => undefined,
+    fire: (): void => undefined,
+    remove: (): void => undefined,
+};
 
 const loadEntry = async (): Promise<void> => {
     vi.resetModules();
@@ -25,6 +41,10 @@ const restoreReadyState = (): void => {
     Reflect.deleteProperty(document, "readyState");
 };
 
+beforeAll(() => {
+    (globalThis as unknown as Record<string, unknown>).mw = { hook: () => fakeHook };
+});
+
 beforeEach(async () => {
     // $(fn) 的 ready 回调是异步排队的，上一用例的回调可能迟到至此；
     // 先排空微任务再清理，避免迟到的 boot() 污染下一用例的计数。
@@ -33,6 +53,7 @@ beforeEach(async () => {
     });
     $(window).off("load");
     bootMock.mockClear();
+    setupPopupsMock.mockClear();
     Reflect.deleteProperty(window, "pg");
     restoreReadyState();
 });

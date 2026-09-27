@@ -4,34 +4,30 @@
 // trailer → Previewmaker/showPreview → insta.wiki2html，最终落弹窗槽位。
 // 唯一桩：installMw（mw 全局）与 installXhr（网络层）；queries/pipeline/
 // cache/downloader/previewmaker/insta/pageinfo 全部真实模块（无 vi.mock）。
-// 装配约定照 tests/integration/hover.test.ts（fresh 模块图 + wiki fixtures +
-// htmlout 回调注销）与 tests/unit/api/queries.test.ts（站点态直赋）；
-// 站点派生正则（image/category/disambig/stub/ipUser）按 legacy init.ts
-// setRegexps 公式就地装配。
+// 装配走 boot 真身（阶段 5）：fresh 模块图 + boot.setupPopups() 全序列——
+// location 桩把站点基址对齐 fixtures 的 zh.moegirl.org.cn，站点元数据/基址/
+// 全部派生正则/选项/命名空间/livepreview 配置由 boot 按 legacy init.ts 时序
+// 生产（此前本文件就地复刻的装配代码已删）。
 // 覆盖用例：普通条目完整预览、重定向跟随（二次 revision 查询）、history 表格
 // 预览、图片页 imagepagepreview+loadImage 双请求、两条惰性路径（下载/预览）。
 import moment from "moment";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { installMw, type MockMw } from "../helpers/mockMw.ts";
 import { installXhr, type MockXhrResponse } from "../helpers/mockXhr.ts";
-import { buildTitleWikiFixtures, SITEBASE, TITLEBASE } from "../helpers/wikiFixtures.ts";
+import { SITEBASE, SPECIAL_PAGE_ALIASES, TITLEBASE } from "../helpers/wikiFixtures.ts";
 import { assume } from "../../src/core/tools.ts";
+import type * as BootNs from "../../src/boot.ts";
 import type * as HtmloutNs from "../../src/core/htmlout.ts";
 import type * as ImagesNs from "../../src/preview/images.ts";
-import type * as InstaNs from "../../src/preview/insta.ts";
-import type * as NamespacesNs from "../../src/title/namespaces.ts";
-import type * as OptionsNs from "../../src/core/options.ts";
 import type * as PipelineNs from "../../src/preview/pipeline.ts";
 import type * as PopupNs from "../../src/core/popup.ts";
 import type * as QueriesNs from "../../src/api/queries.ts";
 import type * as SiteinfoNs from "../../src/api/siteinfo.ts";
 import type * as TitleNs from "../../src/title/title.ts";
 
+type Boot = typeof BootNs;
 type Htmlout = typeof HtmloutNs;
 type Images = typeof ImagesNs;
-type Insta = typeof InstaNs;
-type Namespaces = typeof NamespacesNs;
-type OptionsModule = typeof OptionsNs;
 type Pipeline = typeof PipelineNs;
 type Popup = typeof PopupNs;
 type Queries = typeof QueriesNs;
@@ -39,11 +35,9 @@ type Siteinfo = typeof SiteinfoNs;
 type TitleModule = typeof TitleNs;
 
 interface Fresh {
+    boot: Boot;
     htmlout: Htmlout;
     images: Images;
-    insta: Insta;
-    namespaces: Namespaces;
-    options: OptionsModule;
     pipeline: Pipeline;
     popup: Popup;
     queries: Queries;
@@ -60,15 +54,7 @@ interface FreshOptions {
 }
 
 const APIBASE = `https://${SITEBASE}/api.php`;
-const ARTICLEBASE = `https://${SITEBASE}/wiki`;
 const API_PREFIX = `${APIBASE}?format=json&formatversion=2&action=query&`;
-
-// legacy options.ts 的选项默认值（站点派生正则的模式源）
-const DAB_REGEXP_SOURCE = "disambiguation\\}\\}|\\{\\{\\s*(d(ab|isamb(ig(uation)?)?)|(((geo|hn|road?|school|number)dis)|[234][lc][acw]|(road|ship)index))\\s*(\\|[^}]*)?\\}\\}|is a .*disambiguation.*page";
-const STUB_REGEXP_SOURCE = "(sect)?stub[}][}]|This .*-related article is a .*stub";
-const IMAGE_VARS_REGEXP = "image|image_(?:file|skyline|name|flag|seal)|cover|badge|logo";
-// legacy init.ts setRegexps 的 IP 用户名匹配常量（editPreviewTable 的 IP 分支）
-const IP_USER_REGEXP_SOURCE = "^(?::(?::|(?::[0-9A-Fa-f]{1,4}){1,7})|[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4}){0,6}::|[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4}){7})|(((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9]))$";
 
 // 普通条目 wikitext：多句 + 管道内链 + 模板（无子页面/文件/分类链——正文
 // 无文件链时 insertPreviewNow 不发图查询，pending 只在 revision 一次上下浮动）
@@ -86,60 +72,45 @@ const fresh = async (opts: FreshOptions = {}): Promise<Fresh> => {
     vi.resetModules();
     // exactOptionalPropertyTypes：未给的键不能显式落 undefined
     const installed = installMw({
+        // 7: "File talk"：真实站点恒有该讨论命名空间，navlink 渲染 File 页的
+        // talk 段（Title.talkPage）依赖它；缺省表只列了主命名空间
+        config: { wgArticlePath: "/wiki/$1", wgFormattedNamespaces: { "-1": "Special", 0: "", 1: "Talk", 2: "User", 3: "User talk", 6: "File", 7: "File talk", 10: "Template", 14: "Category" } },
         ...opts.userOptions ? { userOptions: opts.userOptions } : {},
     });
     // 站点运行时由站点注入全局 moment；测试用 node_modules 里的真 moment
     // （getPageInfo 的「最后修改」过滤器必需）
     vi.stubGlobal("moment", moment);
-    const [htmlout, images, insta, namespaces, options, pipeline, popup, queries, siteinfo, title] = await Promise.all([
+    // location 桩：boot 的 setSiteInfo/setTitleBase 从 location 派生站点基址，
+    // jsdom 的 localhost 会与 fixtures 的 zh.moegirl.org.cn 基址错位
+    // （tests/unit/api/siteinfo.test.ts 同款手法；unstubGlobals 自动清理）
+    vi.stubGlobal("location", { hostname: SITEBASE, port: "", protocol: "https:", href: `https://${SITEBASE}/wiki/` });
+    // 用户覆盖必须先于 setupPopups：getValueOf 首读（setRegexps/预览管线）会把
+    // window.popupXxx 固化进选项缓存（legacy options.ts 的 defaultize 链）
+    for (const [key, value] of Object.entries(opts.windowOverrides ?? {})) {
+        (window as unknown as Record<string, unknown>)[key] = value;
+        windowOptionKeys.push(key);
+    }
+    // boot 必须经动态 import 取用：静态 import 绑定的是 resetModules 前的旧模块图，
+    // 其 siteinfo 单例（getMwApi 的 apiClient）与本轮 fresh 的实例不是同一个
+    // （boot.test.ts 同款形态）
+    const [boot, htmlout, images, pipeline, popup, queries, siteinfo, title] = await Promise.all([
+        import("../../src/boot.ts"),
         import("../../src/core/htmlout.ts"),
         import("../../src/preview/images.ts"),
-        import("../../src/preview/insta.ts"),
-        import("../../src/title/namespaces.ts"),
-        import("../../src/core/options.ts"),
         import("../../src/preview/pipeline.ts"),
         import("../../src/core/popup.ts"),
         import("../../src/api/queries.ts"),
         import("../../src/api/siteinfo.ts"),
         import("../../src/title/title.ts"),
     ]);
-    namespaces.setNamespaces();
-    namespaces.setRedirs();
-    options.setOptions();
-    buildTitleWikiFixtures(installed.mw, title.wiki, namespaces);
-    // 站点态直赋而非调 site.setSiteInfo/setTitleBase：setter 取 location.hostname
-    // （jsdom 的 localhost）会与 fixtures 的 zh.moegirl.org.cn 基址错位
-    siteinfo.siteState.apiwikibase = APIBASE;
-    siteinfo.siteState.articlebase = ARTICLEBASE;
-    siteinfo.siteState.titlebase = TITLEBASE;
-    // 站点派生正则（legacy init.ts setRegexps 公式）：image/category 供
-    // getPageInfo 统计与 getValidImageFromWikiText，disambig/stub 供过滤器，
-    // ipUser 供 editPreviewTable
-    const im = namespaces.nsRe(namespaces.nsState.imageId);
-    title.wiki.re.image = RegExp(
-        `(^|\\[\\[)${im}: *([^|\\]]*[^|\\] ])([^0-9\\]]*([0-9]+) *px)?|(?:\\n *[|]?|[|]) *(${IMAGE_VARS_REGEXP}) *= *(?:\\[\\[ *)?(?:${im}:)?([^|]*?)(?:\\]\\])? *[|]? *\\n`,
-        "img",
-    );
-    title.wiki.re.imageBracketCount = 6;
-    title.wiki.re.category = RegExp(`\\[\\[${namespaces.nsRe(namespaces.nsState.categoryId)}: *([^|\\]]*[^|\\] ]) *`, "i");
-    title.wiki.re.categoryBracketCount = 1;
-    title.wiki.re.disambig = RegExp(DAB_REGEXP_SOURCE, "im");
-    title.wiki.re.stub = RegExp(STUB_REGEXP_SOURCE, "im");
-    title.wiki.re.ipUser = RegExp(IP_USER_REGEXP_SOURCE);
-    // wiki2html 的条目链接基址（previewmaker 读 instaConf.paths.articles）
-    insta.setupLivePreview({
-        articlePath: "/wiki",
-        interwiki: "en|ja",
-        imageNamespace: "File",
-        categoryNamespace: "Category",
-    });
-    htmlout.registerPositionChecker(null);
-    htmlout.registerTooltipScanner(null);
-    for (const [key, value] of Object.entries(opts.windowOverrides ?? {})) {
-        (window as unknown as Record<string, unknown>)[key] = value;
-        windowOptionKeys.push(key);
-    }
-    return { htmlout, images, insta, namespaces, options, pipeline, popup, queries, siteinfo, title, mw: installed.mw };
+    // mw.Api 单例在 fetchSpecialPageNames 内惰性创建：先取句柄再编程响应
+    // （boot.test.ts 同款），随后跑 boot 的完整 15 步初始化序列——站点元数据、
+    // 基址族、全部派生正则、选项默认值、命名空间/interwiki/重定向、
+    // setMisc 重置、Insta 站点配置、setupTooltips、tracker 启用全部由真身完成
+    siteinfo.getMwApi();
+    assume(installed.apiInstances[0]).get.mockResolvedValue({ query: { specialpagealiases: SPECIAL_PAGE_ALIASES } });
+    await boot.setupPopups();
+    return { boot, htmlout, images, pipeline, popup, queries, siteinfo, title, mw: installed.mw };
 };
 
 // 弹窗夹具：Navpopup 实例 + 真实骨架（popupHTML 产出，槽 id 契约
@@ -398,11 +369,12 @@ describe("端到端：条目预览（阶段 2 验收）", () => {
             ? IMAGEINFO_JSON
             : IMAGEPAGE_JSON));
         const { navpop, article } = popupFor(f, "File:Example.jpg", true, "示例缩略图");
-        // popupImage 槽的 img 骨架：槽填充器（navlinks 域注册）尚未接线，按
-        // htmlout.imageHTML 的同一产物预置（id 双契约 popupImageLink/popupImg）
+        // popupImage 槽的 img 骨架：经真实槽填充链（阶段 5 起 original.popupImage
+        // 由 preview 域注册）落 id 双契约 popupImageLink/popupImg
+        f.htmlout.fillEmptySpans({ navpopup: { idNumber: 1, parentAnchor: navpop.parentAnchor ?? null } });
         const imageHost = document.getElementById("popupImage1");
         expect(imageHost).not.toBeNull();
-        assume(imageHost).innerHTML = f.htmlout.imageHTML(1);
+        expect(assume(imageHost).querySelector("#popupImg1")).not.toBeNull();
         f.queries.loadAPIPreview("imagepagepreview", article, navpop);
         f.images.loadImage(article, navpop);
         await vi.waitFor(() => {
