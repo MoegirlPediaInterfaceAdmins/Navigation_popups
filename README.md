@@ -143,12 +143,6 @@ lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://git
 
 明确不复制旧仓的：`v8r` + gadget JSON Schema、postCommit 全套生成器、`selectRegistry` 测速装依赖、`auto_assign`。
 
-## 历史沿革
-
-1. **移植版**（`02c8dec`，2026-09）：按上游片段 1:1 切分为 30 个 ESM 模块 + 工具链引入的 TypeScript 移植，已退役（代码留在 git 历史）。
-2. **独立仓库落地**（`e16d105`）：从旧仓 PR 复活脚手架，CSS SCSS 化、门禁完整化（acorn es2020 与部署链复刻、config-sync、CodeQL、release 工作流）。
-3. **推倒重写**（`b5c8761` 起）：删除移植版代码，按功能域从零重写（`f594e2a` 阶段 1 core/title → 阶段 2 net/api/preview → 阶段 3 diff/历史/贡献 → 阶段 4 navlinks/autoedit → 阶段 5 boot 装配 + 文档收尾）。重写原则：jQuery 保留、TS 严格模式、模块顶层零副作用、es2020 产物、coverage 四项 100% 常开。
-
 ## 贡献流程
 
 1. 修改 `src/**/*.ts`（保持既有代码风格：4 空格缩进、双引号、模板字符串、async/await；新代码必须全类型）；
