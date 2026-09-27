@@ -3,10 +3,9 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 
-// The banner carries the artifact's provenance and the do-not-copy warning.
-// The implementation is a from-scratch behavior-compatible rewrite (see
-// docs/semantic-notes.md), but it remains a derivative work of the upstream
-// gadget the behavior baseline points at, so the @source attribution stays.
+// The banner only carries the generated-file warning and the repo URL;
+// upstream provenance (the behavior-baseline oldid) lives in the README's
+// 来源与授权 section.
 // "use strict" is the artifact's only strict directive — build.js strips the
 // per-module prologues esbuild injects, so this one survives alone.
 // The artifact ships as bare top-level statements (format "es"): the gadget
@@ -35,10 +34,8 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 // disable list free of continuation `*` prefixes: eslint splits it on
 // commas and would read "* rule" as a rule name.
 const banner = `/**
- * @source 行为基准 https://en.wikipedia.org/_?oldid=1322962085
- * 本文件为 Navigation_popups 仓库的重写实现（behavior-compatible rewrite），
- * 功能与上述基准及萌百定制版一致，请勿直接复制粘贴到其他 wiki
- * 本文件由构建生成，请勿直接修改
+ * 本文件由 Navigation_popups 仓库构建生成，请勿直接修改
+ * 仓库地址：https://github.com/MoegirlPediaInterfaceAdmins/Navigation_popups
  */
 /* eslint-disable no-use-before-define, camelcase, no-unused-vars, no-lone-blocks, @stylistic/multiline-ternary -- flattened artifact shape: no-use-before-define (function-body references interleave with declaration order; zero top-level side effects keeps them runtime-safe); camelcase (upstream contract identifiers wpTextbox1/autoedit_version kept 1:1); no-unused-vars (tree-shaking drops the last use of some parameters); no-lone-blocks and @stylistic/multiline-ternary (rollup/esbuild scope wrapping and emitted formatting) */
 "use strict";`;

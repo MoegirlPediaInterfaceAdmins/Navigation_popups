@@ -5,16 +5,12 @@ import * as sass from "sass";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// The banner mirrors the JS artifact header: provenance (@source oldid) and
-// the do-not-copy / generated-file warnings.
+// The banner only carries the generated-file warning and the repo URL;
+// upstream provenance (the navpop oldid links) lives in the README's
+// 来源与授权 section.
 const banner = `/**
- * @source https://en.wikipedia.org/wiki/MediaWiki:Gadget-navpop.css?oldid=825269631
- * 更新后请同步更新上面链接到最新版本
- */
-/*
- * 样式内容引自 https://en.wikipedia.org/wiki/MediaWiki:Gadget-navpop.css
- * 当前版本相较于引述版本有大量定制，请不要直接复制粘贴新版本代码
  * 本文件由 Navigation_popups 仓库构建生成，请勿直接修改
+ * 仓库地址：https://github.com/MoegirlPediaInterfaceAdmins/Navigation_popups
  */
 `;
 
