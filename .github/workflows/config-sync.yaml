@@ -31,7 +31,9 @@ jobs:
         run: npm ci
       - name: Configure git identity
         run: |
-          # 与 release.yml 回传身份同款：过旧仓与本仓 mailmap 门禁的 bot 豁免
+          # 过旧仓与本仓 mailmap 门禁（emailmapChecker detectIfBot）的 bot 豁免：
+          # 仅放行名字以 "[bot]" 结尾或 github.com 邮箱域的提交，
+          # users.noreply.github.com 不在豁免之列，身份必须保持原样
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Detect drift and open sync PRs

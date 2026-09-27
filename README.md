@@ -1,6 +1,6 @@
 # Navigation popups
 
-[萌娘百科](https://zh.moegirl.org.cn/) [Navigation popups](https://zh.moegirl.org.cn/MediaWiki:Gadget-popups.js) 小工具（`Gadget-popups`）的源码仓库。JS 源码为 TypeScript（`src/`，按功能域分层），经 **Rollup + esbuild** 打包为单文件产物 `dist/Gadget-popups.js`；CSS 源码为 SCSS（`src/css/`），经 **sass** 编译为 `dist/Gadget-popups.css`。两份产物回传至 [MoegirlPediaInterfaceCodes](https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes) 的 `src/gadgets/Navigation_popups/` 目录，由旧仓库既有流水线完成校验与部署。
+[萌娘百科](https://zh.moegirl.org.cn/) [Navigation popups](https://zh.moegirl.org.cn/MediaWiki:Gadget-popups.js) 小工具（`Gadget-popups`）的源码仓库。JS 源码为 TypeScript（`src/`，按功能域分层），经 **Rollup + esbuild** 打包为单文件产物 `dist/Gadget-popups.js`；CSS 源码为 SCSS（`src/css/`），经 **sass** 编译为 `dist/Gadget-popups.css`。两份产物在发版时作为 GitHub Release 的 assets 发布，向 [MoegirlPediaInterfaceCodes](https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes) 的同步由人工从 Release assets 获取完成。
 
 > [!WARNING]
 > **产物是编译生成的，请勿手改，也不要把上游新版代码直接复制粘贴进来。**
@@ -98,12 +98,12 @@ npm test   # 全部门禁，按序：
 - 仅有的全局豁免：src 的 `no-use-before-define` 与 `camelcase`（上游自底向上的辅助函数排序与 wiki/DOM 契约标识符 1:1 保留）。**零 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`**。
 - 提交信息与 PR 标题受 commitlint 约束（Conventional Commits，type 额外放行 `npm`/`gha`）——本地 husky（commit-msg / pre-commit / post-merge / post-rewrite）+ CI 侧 `commitLint.yaml`（push 提交 + PR 标题）双层把关。
 
-## 发布与回传
+## 发布
 
 1. 修改源码，`npm test` 全绿后合并到 `master`（CI 对 master push 与 PR 跑同一套门禁）。
-2. 打 tag（`v*`）或手动触发 **Release** 工作流：
+2. 打 tag（`v*`）触发 **Release** 工作流（手动触发只跑构建门禁与 artifact 上传，不发 release）：
    - `build-and-gate`：重跑全部门禁，将 `dist/Gadget-popups.js`、`dist/Gadget-popups.css` 与 sha256 清单作为 artifact 上传；
-   - `sync-back`：向旧仓库推分支并开 PR 的回传任务（js + css 两文件），**当前以 falsy 条件停用**（`.github/workflows/release.yml` 注释写明启用步骤：fine-grained PAT → secret `OLD_REPO_TOKEN` → 改 `if` 条件）。回传提交身份固定为 `github-actions[bot]`（旧仓 mailmap 门禁的 bot 豁免要求）。
+   - `release`：下载 artifact 并校验 sha256 后创建 GitHub Release，`Gadget-popups.js`、`Gadget-popups.css`、`sha256sums.txt` 三份文件作为 release assets 上传；workflow 重跑幂等（release 已存在时仅 `--clobber` 重传 assets）。本仓库不向旧仓库推送产物，旧仓侧同步由人工从 Release assets 获取。
 3. 产物部署后按 [docs/smoke-test.md](./docs/smoke-test.md) 在真站点人工验证（静态门禁不含运行时行为对照）。
 
 ## 上游同步
@@ -127,7 +127,7 @@ lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://git
 | 本仓门禁 | 对应旧仓检查 |
 | --- | --- |
 | src TS 严集 eslint（strict-type-checked） | —（超出旧仓，加强项） |
-| dist 产物 browser 预设 eslint `--max-warnings 0` | `test:eslint`（对回传文件） |
+| dist 产物 browser 预设 eslint `--max-warnings 0` | `test:eslint`（对 dist 产物） |
 | scripts/ + .husky/ + 根配置 node 预设 eslint | `lint:scripts` |
 | dist CSS stylelint（standard + use-baseline，警告计败） | `test:stylelint` |
 | dist CSS postcss 0 警告（同款 .postcssrc.yaml 插件链） | `scripts/postcss` 检查 |
