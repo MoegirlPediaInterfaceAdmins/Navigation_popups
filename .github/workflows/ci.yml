@@ -25,3 +25,14 @@ jobs:
         run: npm ci
       - name: Build artifact and run all gates (eslint / tsc / terser / idempotency)
         run: npm test
+      - name: Compute sha256
+        run: cd dist && sha256sum Gadget-popups.js Gadget-popups.css > sha256sums.txt && cd .. && cat dist/sha256sums.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gadget-popups
+          path: |
+            dist/Gadget-popups.js
+            dist/Gadget-popups.css
+            dist/sha256sums.txt
+          if-no-files-found: error
