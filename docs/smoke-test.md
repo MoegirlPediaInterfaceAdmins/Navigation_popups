@@ -6,8 +6,8 @@
 > 部署到站点后，即可按本清单验证。
 
 本清单用于**真站点部署后的人工验证**：静态门禁（eslint/tsc/terser/acorn/coverage）只保证
-构建期正确性，运行时行为一致性与萌百定制只能靠人工过一遍核心路径。每次产物变更并部署后，
-请按本清单逐项执行；不通过的项记入发布说明并回开修复任务。
+构建期正确性，运行时行为是否一致、萌百定制是否正常，只能靠人工逐项检查核心路径。每次产物
+变更并部署后，请按本清单逐项执行；不通过的项记入发布说明并创建修复任务。
 
 - 前置：产物已部署（`Gadget-popups.js` + `Gadget-popups.css`），浏览器开发者工具已打开，
   网络面板与 Console 可见。
@@ -16,21 +16,21 @@
 - 弹窗插桩查看：静态规则为 `.navpopup`（每个弹窗一个 `div.navpopup`，
   id 形如 `navpopup_maindiv<N>`），槽位 id 形如 `popupPreview<N>`、`popupData<N>`、
   `popupWarnRedir<N>`、`popupImg<N>`、`popupImageLink<N>`。用
-  `document.querySelectorAll(".navpopup")` 观察存活弹窗。
+  `document.querySelectorAll(".navpopup")` 查看当前打开的弹窗。
 
 ## 1. 悬停普通条目链接
 
 - [ ] **弹窗出现**：悬停正文中的蓝链（条目名字空间），等待 `popupDelay`（默认 0.5s）内保持
       静止 → 出现弹窗。
-- [ ] **结构完整**（默认结构 `shortmenus`）：弹窗上部有 `popupTopLinks<N>`（菜单式顶链，
+- [ ] **结构完整**（默认结构 `shortmenus`）：弹窗上部有 `popupTopLinks<N>`（菜单式顶部链接，
       默认含 `actions` / `user`（登录用户）/ `popupsMenu` 三个下拉）与 `popupTitle<N>`；
       中部 `popupData<N>` 有统计摘要；下部 `popupPreview<N>` 有正文预览。
-- [ ] **顶链菜单**：**悬停**（CSS `.popup_drop:hover .popup_menu` 的纯 CSS 展开，非点击）
+- [ ] **顶部链接菜单**：**悬停**（CSS `.popup_drop:hover .popup_menu` 的纯 CSS 展开，非点击）
       `actions` 下拉标题 → 菜单显示（`.popup_menu`），含编辑/历史/监视等项；
       `user` 下拉含用户页/贡献/日志等；`popupsMenu` 下拉含 切换预览 / 重置 / 禁用 三项。
 - [ ] **预览 wikitext 渲染**：预览区出现正文文本、内链可点、首段截断处有 `more...` 链接；
       点击后预览增长（+2000 字符 / +20 句）。
-- [ ] **移出消失**：鼠标移出弹窗与锚点（默认 0.5s 隐藏延迟）后弹窗消失；快速掠过不弹窗
+- [ ] **移出消失**：鼠标移出弹窗与锚点（默认 0.5s 隐藏延迟）后弹窗消失；快速掠过时不出现弹窗
       （静止检测）；拖拽弹窗（默认开启 `popupDraggable`，无把手时按住 Shift 拖动）后位置保持。
 - [ ] **截图与渲染对照**：预览区字体/行距正常（CSS 已加载：渲染后
       `getComputedStyle(document.querySelector(".navpopup")).fontSize` 为 `11px`）。
@@ -53,9 +53,9 @@
 - [ ] **分类页**：悬停 `Category:` 链接 → `popupPostPreview<N>` 出现成员列表 + 「以及其他页面」；
       空分类显示空提示。
 - [ ] **图片页 / 文件页**：悬停 `File:` 链接 → `popupImg<N>` 显示缩略图、
-      `popupImageLink<N>` 可点（默认 `popupThumbAction=imagepage`：点击进描述页）、
+      `popupImageLink<N>` 可点（默认 `popupThumbAction=imagepage`：点击进入描述页）、
       统计摘要 + 文件链接列表（`popupImageLinks` 默认开）。
-- [ ] **commons 共享资源二段查询**：触发条件为 API 返回 `imagerepository === "shared"`（本地仓库返回 `local`，萌百主站通常不触发），因此在萌百上改为**验证接线存在**：
+- [ ] **commons 共享资源二段查询**：触发条件为 API 返回 `imagerepository === "shared"`（本地仓库返回 `local`，萌百主站通常不触发），因此在萌百上改为**验证对应代码存在**：
       Console 执行 `typeof pg.fn.APIsharedImagePagePreviewHTML` 应为 `"function"`。
       若在 wikimedia 站点（`commons` 字段非 null）验证：悬停共享文件页 → Network 出现对
       `commons.wikimedia.org` API 的 JSONP 请求，参数含
@@ -64,14 +64,14 @@
 
 ## 4. diff 预览
 
-- [ ] **历史页链接悬停出 diff**：在历史页悬停某行的 `cur`/`last`/`prev`/`next` 差异链接
+- [ ] **历史页链接悬停后显示 diff**：在历史页悬停某行的 `cur`/`last`/`prev`/`next` 差异链接
       （URL 含 `diff=…`）→ 弹窗出现差异渲染：
       `ins.popupDiff`（新增，亮色下背景 `#AFE`）与 `del.popupDiff`（删除，亮色下 `#FFE6E6`）；
       默认顶部有 `table.popup_diff_dates`（新旧版本日期，`popupDiffDates` 默认开）。
 - [ ] **截断提示**：对超过 `popupDiffMaxLines`（默认 100 行）的差异，底部出现
       `出于性能考虑，差异已被截断`。
-- [ ] **oldid 悬停（无 diff 参数）**：悬停纯 `&oldid=…` 的时间戳链接 → 不是 diff，而是
-      该**旧版本**的页面预览（revision 查询按 `revids=`）。若要看 diff，须悬停带
+- [ ] **oldid 悬停（无 diff 参数）**：悬停纯 `&oldid=…` 的时间戳链接 → 弹窗显示
+      该**旧版本**的页面预览（revision 查询按 `revids=`）；要查看 diff，须悬停带
       `diff=` 的链接。
 - [ ] **Special:Diff 链接**：悬停 `Special:Diff/<oldid>[/<diff>]` → 正常出 diff 预览。
 - [ ] **巡查链接（可选，需 `review` 权限）**：设置 `window.popupReview = true` 后刷新，
@@ -84,12 +84,12 @@
       无摘要行的显示为普通文本。
 - [ ] **日期本地化**：时间戳按用户时区与界面语言渲染（未设置时区或 `date=ISO 8601`
       时为 ISO 形态；否则 `Intl.DateTimeFormat`）；`timecorrection` 非 `ZoneInfo|…` 形态时
-      走偏移量修正路径。
+      使用偏移量修正路径。
 
 ## 6. autoedit URL 协议
 
 前置：打开任意 `?action=edit` 编辑页（此时 `document.editform` 存在）。
-`actoken` 必须等于当前会话 id，请在 Console 取 `mw.user.sessionId()` 拼进 URL。
+`actoken` 必须等于当前会话 id，请在 Console 获取 `mw.user.sessionId()` 后拼进 URL。
 
 - [ ] **命令引擎**：打开形如
       `…?action=edit&autoedit=s/foo/bar/g;&autoclick=wpDiff&actoken=<sessionId>&autoimpl=np20140416`
@@ -107,7 +107,7 @@
 - [ ] **wpChangeTags 注入**：编辑页 URL 含 `wpChangeTags=Popups` 时，表单内出现
       hidden input `wpChangeTags=Popups`，且 form action 追加该参数；
       若同时 `autoclick=wpSave`，值变为 `Popups,Automation tool`。
-- [ ] **萌百定制追标签**：上述 `autoclick=wpSave` 场景保存后，编辑记录中的标签应含
+- [ ] **萌百定制追加标签**：上述 `autoclick=wpSave` 场景保存后，编辑记录中的标签应含
       `Popups` 与 `Automation tool`。
 
 ## 7. `javascript:pg.fn.*` 内联 URL
@@ -116,16 +116,16 @@
       `typeof pg.fn.purgePopups`、`typeof pg.fn.disablePopups`、`typeof pg.fn.togglePreviews`、
       `typeof pg.fn.modifyWatchlist`、`typeof pg.fn.getLastContrib`、
       `typeof pg.fn.getDiffSinceMyEdit`、`typeof pg.fn.APIsharedImagePagePreviewHTML`。
-- [ ] **togglePreviews**：先悬停出一正常弹窗 → 执行 `pg.fn.togglePreviews()` → 再次悬停应出
+- [ ] **togglePreviews**：先通过悬停打开一个正常弹窗 → 执行 `pg.fn.togglePreviews()` → 再次悬停应出现
       **简易弹窗**（仅骨架 + `show preview` 按钮，`simplePopups` 被翻转）；再执行一次恢复。
 - [ ] **purgePopups**：执行 `pg.fn.purgePopups()` → 页面缓存清空、在途下载中止、
       `pg.option` 重置（随后悬停会按默认值重新初始化）。
-- [ ] **disablePopups**：执行 `pg.fn.disablePopups()` → 现有弹窗消失，此后悬停**不再**弹窗
+- [ ] **disablePopups**：执行 `pg.fn.disablePopups()` → 现有弹窗消失，此后悬停**不再**出现弹窗
       （解绑），刷新页面恢复。
 - [ ] **链接形态**：打开弹窗的 `popupsMenu` 下拉，其中 切换预览 / 重置 / 禁用 三项的
       `href` 应为 `javascript:pg.fn.togglePreviews()` / `pg.fn.purgePopups()` /
       `pg.fn.disablePopups()`（构造器 `popupMenuLink`）。
-- [ ] **modifyWatchlist**：悬停条目点监视/取消监视项 → Network 出现 `action=watch`
+- [ ] **modifyWatchlist**：悬停条目并点击监视/取消监视项 → Network 出现 `action=watch`
       请求，并有 `mw.notify` 提示。
 
 ## 8. 暗色模式（萌百定制）
@@ -148,11 +148,11 @@ CSS 变体已在 `dist/Gadget-popups.css` 展开；用开发者工具切换根�
 `.skin-vector-2022 .vector-body` → `#mw_content` → `#content` → `#article` →
 裸 `<article>`（Moeskin）→ `document`，逐级回落、命中即止：
 
-- [ ] **Vector 2022**：正文（`.vector-body` 内）链接悬停出弹窗。
-- [ ] **Moeskin**：页面正文位于裸 `<article>` 内时同样出弹窗。
+- [ ] **Vector 2022**：正文（`.vector-body` 内）链接悬停后出现弹窗。
+- [ ] **Moeskin**：页面正文位于裸 `<article>` 内时同样出现弹窗。
 - [ ] **范围外不弹**：点击/悬停**侧边栏、页脚**（容器链之外）的链接 → 不出现弹窗。
 - [ ] **全站绑定**：Console 执行 `window.popupOnlyArticleLinks = false;` 后刷新 →
-      侧边栏链接也获得弹窗（回落 `document`）。
+      侧边栏链接也能弹出弹窗（回落到 `document`）。
 
 ## 10. 双载入守卫与遗留键清理
 
@@ -175,7 +175,7 @@ CSS 变体已在 `dist/Gadget-popups.css` 展开；用开发者工具切换根�
 - [ ] **选区弹窗**（编辑页）：`window.popupOnEditSelection` 默认 `cursor` —— 在 `wpTextbox1`
       中选中含 `[[链接]]` 的文本 → 弹窗跟随光标出现；设为 `boxpreview` 时改为在编辑框上方
       `#selectionPreview` 容器内直接渲染。
-- [ ] **巡检日志**：`window.popupDebug = true` + 悬停 → Console 依次出现
+- [ ] **调试日志**：`window.popupDebug = true` + 悬停 → Console 依次出现
       `setupTooltips, container=…`、`running popup<槽名>({article:…})` 等日志；
       `window.popupDebugging = true` 时弹窗内 `popupError<N>` 槽显示
       `idNumber=…, pending=…` 调试串。

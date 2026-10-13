@@ -17,7 +17,7 @@
 > [!IMPORTANT]
 > **实现状态**：推倒重写已全部完成（阶段 1–5）——core/title/net/api/preview/navlinks/actions
 > 全部功能域 + boot/entry 装配（含 `mw.hook` 动态内容重扫与 `window.pg` 四域兼容面）均已落地，
-> 全量测试与构建门禁全绿、coverage 四项 100%。验收以 `npm test` + 真站点冒烟
+> 全量测试与构建门禁全部通过、coverage 四项 100%。验收以 `npm test` + 真站点冒烟
 > （[docs/smoke-test.md](./docs/smoke-test.md)）为准；已知语义差异见
 > [docs/semantic-notes.md](./docs/semantic-notes.md)。
 
@@ -61,7 +61,7 @@ dist/                   # 构建产物（不入库）
 ## 架构约束
 
 1. **模块顶层零副作用**——模块顶层只做定义（含纯数据表构建与模块内注册表写入：`structures.ts` 的 7 种结构定义、`navlinks.ts`/`images.ts` 向槽填充器注册表 `registerSlotFiller` 的注册，都只写模块内状态）；**只有 `entry.ts` 在模块顶层触碰外部世界**（守卫 + `window.pg = state` + jQuery-ready 注册）。一切初始化经 ready/load 回调调用 `boot()` 显式展开。这是可测性基础（测试可直接 import 任意模块），也是与 legacy「全部代码在 DOM ready 回调内求值」等价性的来源。
-2. **循环依赖白名单**——`rollup.config.js` 的 `onwarn` 对 `CIRCULAR_DEPENDENCY` 做白名单判定：环中模块全部落在 `KNOWN_CYCLE_MODULES`（options/events/selection/shortcutkeys/queries/pipeline/images/pageinfo/dispatch/dab/diffpreview/links 十二个）内则放行，**任一模块越出白名单即抛错**；其余 rollup 警告一律 fatal。续期依据是「模块顶层零副作用」约束（顶层从不求值跨模块绑定），故函数级环在运行期安全，且 preview/event 各域本就相互递归（上游原始设计）；把环全部拆掉需要在五个已冻结的域之间引入注册缝、无运行期收益。跨域解耦仍优先走显式注册缝（`registerAbortAll`/`registerSetupPopups`/`registerModifyWatchlist`/`registerPositionChecker`/`registerTooltipScanner`/`registerSlotFiller`），**新代码不应扩大环**。
+2. **循环依赖白名单**——`rollup.config.js` 的 `onwarn` 对 `CIRCULAR_DEPENDENCY` 做白名单判定：环中模块全部在 `KNOWN_CYCLE_MODULES`（options/events/selection/shortcutkeys/queries/pipeline/images/pageinfo/dispatch/dab/diffpreview/links 十二个）内则放行，**任一模块越出白名单即抛错**；其余 rollup 警告一律 fatal。保留该白名单的依据是「模块顶层零副作用」约束（顶层从不求值跨模块绑定），故函数级环在运行期安全，且 preview/event 各域本就相互递归（上游原始设计）；把环全部拆掉需要在五个已定型的域之间引入注册接口，且没有运行期收益。跨域解耦仍优先走显式注册接口（`registerAbortAll`/`registerSetupPopups`/`registerModifyWatchlist`/`registerPositionChecker`/`registerTooltipScanner`/`registerSlotFiller`），**新代码不应扩大环**。
 3. **状态收敛**——legacy 的 `pg` 动态域拆为各域模块级单例（`eventsState`/`optionStore`/`nsState`/`siteState`/`userState`），`window.pg` 只保留对外兼容四域（`fn`/`option`/`string`/`wiki`，函数值与模块导出引用相等）。
 4. **保持 legacy 行为语义**：DOM0 事件属性接管、`setPopupHTML` 轮询重试、`javascript:` URL 菜单项、XHR 直连下载器等按原行为实现（功能一致优先，不为现代化改变行为）；legacy 的怪癖按注释「照搬勿修」保留。
 5. **不可测防御按「不过度防御」删除**，不写 coverage ignore；legacy 结构性不可达的防御分支经评审后保留的，逐条配 `// istanbul ignore …` 与理由（现状 25 处，清单见 `docs/semantic-notes.md` §B）。
@@ -83,10 +83,10 @@ npm test   # 全部门禁，按序：
            #   test:unit       vitest run --coverage（jsdom + 真 jQuery；四项 100% 阈值常开，不达标即失败）
            #   test:terser     ①acorn ecmaVersion 2020 parse 产物（拦 es2021+ 语法泄漏——tsc emit 会静默降级、
            #                   terser 解析器放行现代语法，二者均不拦，acorn 是精确边界）；
-           #                   ②复刻旧仓部署顺序：tsc es2020 emit → 对 emit 产物按部署同款 terser 参数试压缩（结果丢弃）
+           #                   ②复刻旧仓部署顺序：tsc es2020 emit → 对 emit 产物按与部署一致的 terser 参数试压缩（结果丢弃）
            #   test:idempotent 连续两次构建字节一致，且与磁盘 dist 一致
            #   test:css        CSS 构建幂等检查
-           #   test:postcss    按旧仓同款 .postcssrc.yaml 插件链处理产物，0 警告
+           #   test:postcss    按与旧仓一致的 .postcssrc.yaml 插件链处理产物，0 警告
            #   test:mailmap    提交身份须在 .mailmap（bot 豁免逻辑与旧仓一致）
 ```
 
@@ -95,12 +95,12 @@ npm test   # 全部门禁，按序：
 - **vitest + jsdom + 真 jQuery**（非 mock，保证 `trigger("focus")` 等行为一致）。`setupFiles`（`tests/helpers/setup.ts`）先于任何 src 模块 import 装好 `wgULS`（简体直通）与 `$`；`moment` 等其余站点全局由各测试文件经 `vi.stubGlobal` 注入 **node_modules 里的真 moment**（`unstubGlobals: true`，测试文件间自动卸载）。`mw` 由 `tests/helpers/mockMw.ts` 的可编程工厂提供。
 - **coverage 四项（lines/branches/functions/statements）100% 阈值常开**（`vitest.config.ts`，istanbul provider——v8 对 `typeof` 收窄等形态会产生永不计数的合成边）。当前用例数 **1370**（随阶段收尾持续增加）；不达标时 `npm test` 直接失败。
 - 断言写法：上游运行时不变量用 `core/tools.ts` 的 `assume<T>()`（恒等函数、运行时零开销），不用 `!`（被 `no-non-null-assertion` 禁）；与上游行为冲突的规则点用**单行 scoped `eslint-disable-… -- 理由`**（本文修订时 28 处 next-line + 1 处文件级：`core/shortcutkeys.ts` 整文件构建在 legacy `keypress`/`keyCode`/`window.event` API 之上）；理由必须写明上游行为依据，禁止无理由 disable。数量随代码演进，以 `grep -rn "eslint-disable" src/` 为准。
-- 仅有的全局豁免：src 的 `no-use-before-define` 与 `camelcase`（上游自底向上的辅助函数排序与 wiki/DOM 契约标识符 1:1 保留）。**零 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`**。
+- 仅有的全局豁免：src 的 `no-use-before-define` 与 `camelcase`（上游自底向上的辅助函数排序与 wiki/DOM 约定标识符 1:1 保留）。**零 `@ts-ignore`/`@ts-nocheck`/`@ts-expect-error`**。
 - 提交信息与 PR 标题受 commitlint 约束（Conventional Commits，type 额外放行 `npm`/`gha`）——本地 husky（commit-msg / pre-commit / post-merge / post-rewrite）+ CI 侧 `commitLint.yaml`（push 提交 + PR 标题）双层把关。
 
 ## 发布
 
-1. 修改源码，`npm test` 全绿后合并到 `master`（CI 对 master push 与 PR 跑同一套门禁）。
+1. 修改源码，`npm test` 全部通过后合并到 `master`（CI 对 master push 与 PR 跑同一套门禁）。
 2. 打 tag（`v*`）触发 **Release** 工作流（手动触发只跑构建门禁与 artifact 上传，不发 release）：
    - `build-and-gate`：重跑全部门禁，将 `dist/Gadget-popups.js`、`dist/Gadget-popups.css` 与 sha256 清单作为 artifact 上传；
    - `release`：下载 artifact 并校验 sha256 后创建 GitHub Release，`Gadget-popups.js`、`Gadget-popups.css`、`sha256sums.txt` 三份文件作为 release assets 上传；workflow 重跑幂等（release 已存在时仅 `--clobber` 重传 assets）。本仓库不向旧仓库推送产物，旧仓侧同步由人工从 Release assets 获取。
@@ -116,11 +116,11 @@ npm test   # 全部门禁，按序：
 
 ## 工具链与旧仓同步
 
-lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes)（共享基座为 npm 包 `@annangela/eslint-config`）。与旧仓的配置一致性由 **config-sync** 机制维护：
+lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://github.com/MoegirlPediaInterfaceAdmins/MoegirlPediaInterfaceCodes)（共享基础为 npm 包 `@annangela/eslint-config`）。与旧仓的配置一致性由 **config-sync** 机制维护：
 
 - 清单 `build/config-sync-manifest.json`：28 项（24 `byte-equal` 逐字节一致 / 4 `adapted` 有意偏差 + 注记），各带 `lastSyncedHash` 锚点；`.mailmap` 为种子拷贝（两仓各自演进）不登记，`eslint.config.js` 为本仓独立结构不登记；
 - 工作流 `.github/workflows/config-sync.yaml`：每周二 07:30（CST）+ 手动，检测漂移自动开 PR——byte-equal 项直接覆盖；adapted 项存档旧仓新版并附适配指引，须人工完成适配后合并；同文件已有 open PR 时去重评论；
-- 开 PR 用 PAT（secret `CONFIG_SYNC_TOKEN`：fine-grained，仅本仓库 Contents RW + Pull requests RW）——`GITHUB_TOKEN` 创建的 PR 不触发 CI/commitLint。secret 未配置时工作流会红并提示。
+- 开 PR 用 PAT（secret `CONFIG_SYNC_TOKEN`：fine-grained，仅本仓库 Contents RW + Pull requests RW）——`GITHUB_TOKEN` 创建的 PR 不触发 CI/commitLint。secret 未配置时工作流会失败并提示。
 
 ### 新旧仓门禁对照
 
@@ -130,7 +130,7 @@ lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://git
 | dist 产物 browser 预设 eslint `--max-warnings 0` | `test:eslint`（对 dist 产物） |
 | scripts/ + .husky/ + 根配置 node 预设 eslint | `lint:scripts` |
 | dist CSS stylelint（standard + use-baseline，警告计败） | `test:stylelint` |
-| dist CSS postcss 0 警告（同款 .postcssrc.yaml 插件链） | `scripts/postcss` 检查 |
+| dist CSS postcss 0 警告（与旧仓相同的 .postcssrc.yaml 插件链） | `scripts/postcss` 检查 |
 | tsc `--noEmit`（strict，src） | —（旧仓不做，加强项） |
 | acorn ecma2020 parse 产物（拦 es2021+ 泄漏） | —（新机制，守卫 es2020 目标） |
 | tsc es2020 **emit** 编译 dist → 对 emit 产物 terser 试压缩 | 部署编译链（tsc es2020 → terser） |
@@ -145,7 +145,7 @@ lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://git
 
 ## 贡献流程
 
-1. 修改 `src/**/*.ts`（保持既有代码风格：4 空格缩进、双引号、模板字符串、async/await；新代码必须全类型）；
-2. `npm test` 全绿；行为变更同步更新 `docs/functional-spec.md`，有意偏差登记 `docs/semantic-notes.md`；
+1. 修改 `src/**/*.ts`（保持既有代码风格：4 空格缩进、双引号、模板字符串、async/await；新代码必须完整标注类型）；
+2. `npm test` 全部通过；行为变更同步更新 `docs/functional-spec.md`，有意偏差登记 `docs/semantic-notes.md`；
 3. PR 描述附上产物相对上一版的功能性变更摘要；
 4. 合并后按需打 tag 触发 Release，并按 `docs/smoke-test.md` 人工验证。
