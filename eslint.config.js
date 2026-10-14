@@ -67,8 +67,7 @@ export default [
     {
         // The event/XHR flow is callback-driven by design; the
         // interface codes repo turns this rule off for all browser files, so
-        // both the sources and the artifact follow suit (keeping it off in
-        // the banner would surface as an unused directive over there).
+        // both the sources and the artifact follow suit.
         files: [
             "src/**/*.ts",
             "tests/**/*.ts",
@@ -79,13 +78,32 @@ export default [
         },
     },
     {
-        // The bundled artifact keeps the browser-preset gate. The interface
-        // codes repo ignores its own **/dist/** but lints the synced-back
-        // artifact (which lands under src/gadgets/Navigation_popups/) with
-        // base+browser settings, so this entry mirrors that; every rule the
-        // generated output cannot satisfy is disabled in the artifact banner
-        // instead (config and banner must not both carry a rule — the losing
-        // side would be an unused directive).
+        // The bundled artifact keeps the browser-preset gate as this repo's
+        // own build lint: the interface codes deploy side auto-creates an
+        // .eslintignore for the synced artifact (it lands under
+        // src/gadgets/Navigation_popups/), so nothing downstream lints it —
+        // build.js's fix/verify passes are the only consumers of this entry.
+        // Every rule the flattened output cannot satisfy is disabled here
+        // (migrated out of the artifact banner in 2026-10; the set was
+        // verified by aggregating the verifier's full output, not by
+        // guesswork):
+        // - no-use-before-define: rollup flattening makes function bodies
+        //   reference module-level singletons (and mutually recursive
+        //   helpers across the whitelisted cycle set) in an order the rule
+        //   cannot accept, while the zero-top-level-side-effects constraint
+        //   keeps every reference inside function bodies — runtime-safe by
+        //   construction.
+        // - camelcase: upstream contract identifiers are kept 1:1 (same
+        //   rationale as the src block above).
+        // - no-unused-vars: tree-shaking legitimately drops the last use of
+        //   some parameters.
+        // - no-lone-blocks / @stylistic/multiline-ternary: rollup/esbuild
+        //   output shape (scope wrapping, emitted formatting).
+        // If a future edit genuinely needs another exemption, add it here;
+        // every listed rule must keep at least one real violation (that is
+        // why the old port's no-var/prefer-const/
+        // logical-assignment-operators entries are NOT carried over: this
+        // artifact has no such violations).
         ...configs.browser,
         files: [
             "dist/**/*",
@@ -104,6 +122,13 @@ export default [
                 wikEdUseWikEd: false,
                 WikEdUpdateFrame: false,
             },
+        },
+        rules: {
+            "no-use-before-define": "off",
+            camelcase: "off",
+            "no-unused-vars": "off",
+            "no-lone-blocks": "off",
+            "@stylistic/multiline-ternary": "off",
         },
     },
     {

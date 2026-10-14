@@ -10,8 +10,9 @@ const distFile = rollupOptions.output.file;
 const { input, plugins, treeshake, onwarn, output } = rollupOptions;
 
 // Holds the artifact to the repo's own lint config (the dist/** block of
-// eslint.config.js): the build fixes and then verifies the artifact, so the
-// banner only needs to carry exemptions that are structurally unavoidable.
+// eslint.config.js): the build fixes and then verifies the artifact; the
+// exemptions the generated shape cannot avoid are carried by that config
+// block, so the artifact itself ships with zero eslint directives.
 const artifactFixer = new ESLint({ cwd: root, fix: true });
 const artifactVerifier = new ESLint({ cwd: root });
 
@@ -46,15 +47,15 @@ export const build = async () => {
     let artifact = bannerPrefix + body.replace(/^let ([A-Z]\w*) = (_[A-Z]\w*);$/gm, "const $1 = $2;");
     // esbuild prints its own formatting; run the repo eslint with fix over
     // the artifact so it satisfies the same stylistic rules as the sources
-    // instead of exempting them in the banner. The banner comment rides
-    // along untouched (fixers never edit comments), keeping its directives
-    // in effect for the pass.
+    // instead of exempting them in the config. Comments ride along
+    // untouched (fixers never edit comments).
     const [fixed] = await artifactFixer.lintText(artifact, { filePath: distFile });
     if (typeof fixed.output === "string") {
         artifact = fixed.output;
     }
     // Re-lint without fix: the build itself is the artifact's lint gate —
-    // anything the banner does not legitimately disable fails the build.
+    // anything the dist config block does not legitimately disable fails
+    // the build.
     const [verify] = await artifactVerifier.lintText(artifact, { filePath: distFile });
     if (verify.errorCount > 0) {
         const first = verify.messages[0];

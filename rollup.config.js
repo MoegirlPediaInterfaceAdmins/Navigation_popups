@@ -3,41 +3,25 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 
-// The banner only carries the generated-file warning and the repo URL;
-// upstream provenance (the behavior-baseline oldid) lives in the README's
-// 来源与授权 section.
+// The banner only carries the generated-file warning, the repo URL and the
+// strict directive; upstream provenance (the behavior-baseline oldid) lives
+// in the README's 来源与授权 section.
 // "use strict" is the artifact's only strict directive — build.js strips the
 // per-module prologues esbuild injects, so this one survives alone.
 // The artifact ships as bare top-level statements (format "es"): the gadget
 // always reaches the wiki through mw.loader.implement, whose function scope
 // isolates top-level names (var declarations included), so no IIFE wrapper
 // is needed and the entry module has no imports/exports left to keep.
-// Disable directives: no-use-before-define, camelcase, no-unused-vars,
-// no-lone-blocks and @stylistic/multiline-ternary — exactly the rules the
-// flattened artifact violates (verified by aggregating the verifier's full
-// output, not by guesswork). Once rollup flattens the module graph, function
-// bodies reference module-level singletons (and mutually recursive helpers
-// across the whitelisted cycle set) in an order no-use-before-define cannot
-// accept, while the zero-top-level-side-effects constraint keeps every
-// reference inside function bodies — safe at runtime by construction.
-// camelcase stays off because upstream contract identifiers are kept 1:1
-// (same rationale as the src block in eslint.config.js); no-unused-vars
-// because tree-shaking legitimately drops the last use of some parameters;
-// the last two are rollup/esbuild output shape (scope wrapping, emitted
-// formatting). The old port's banner carried the same mechanism with its
-// own rule set (eslint.config.js's dist comment: rules the artifact cannot
-// satisfy live in the banner). If a future edit genuinely needs another
-// exemption, add it here — every rule listed must keep at least one real
-// violation (an unused disable directive is itself an error; that is why
-// the old port's no-var/prefer-const/logical-assignment-operators entries
-// are NOT carried over: this artifact has no such violations). Keep the
-// disable list free of continuation `*` prefixes: eslint splits it on
-// commas and would read "* rule" as a rule name.
+// No eslint directives ride in the banner: the interface codes deploy side
+// auto-creates an .eslintignore covering the synced artifact, so nothing
+// downstream ever lints it. The rules the flattened output cannot satisfy
+// (no-use-before-define, camelcase, no-unused-vars, no-lone-blocks,
+// @stylistic/multiline-ternary) live in the dist/** block of
+// eslint.config.js, which is what build.js's fix/verify passes lint through.
 const banner = `/**
  * 本文件由 Navigation_popups 仓库构建生成，请勿直接修改
  * 仓库地址：https://github.com/MoegirlPediaInterfaceAdmins/Navigation_popups
  */
-/* eslint-disable no-use-before-define, camelcase, no-unused-vars, no-lone-blocks, @stylistic/multiline-ternary -- flattened artifact shape: no-use-before-define (function-body references interleave with declaration order; zero top-level side effects keeps them runtime-safe); camelcase (upstream contract identifiers wpTextbox1/autoedit_version kept 1:1); no-unused-vars (tree-shaking drops the last use of some parameters); no-lone-blocks and @stylistic/multiline-ternary (rollup/esbuild scope wrapping and emitted formatting) */
 "use strict";`;
 
 // Modules allowed to participate in rollup-reported cycles (see onwarn).
