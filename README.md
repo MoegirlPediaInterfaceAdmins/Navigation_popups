@@ -78,7 +78,8 @@ npm test   # 全部门禁，按序：
            #   test:eslint     eslint . --max-warnings 0：src 严集（@annangela/eslint-config typescript：
            #                   strict-type-checked + stylistic-type-checked）+ 产物（browser 预设）+
            #                   脚本/钩子/配置（node 预设）；禁用 Boolean()/Number() 构造函数（用 !! / 一元 +）
-           #   test:stylelint  产物 CSS 过 standard + use-baseline（警告计失败，与旧仓同规集）
+           #   test:stylelint  SCSS 源 + 产物 CSS 过 standard + use-baseline（警告计失败，规集与旧仓一致；
+           #                   源文件走 postcss-scss 语法 overrides，超出旧仓）
            #   test:tsc        tsconfig.json 单 program：src 全 strict 类型检查 + 产物语法检查
            #   test:unit       vitest run --coverage（jsdom + 真 jQuery；四项 100% 阈值常开，不达标即失败）
            #   test:terser     ①acorn ecmaVersion 2020 parse 产物（拦 es2021+ 语法泄漏——tsc emit 会静默降级、
@@ -129,7 +130,8 @@ lint/commit/格式化工具链复制自 [MoegirlPediaInterfaceCodes](https://git
 | src TS 严集 eslint（strict-type-checked） | —（超出旧仓，加强项） |
 | dist 产物 browser 预设 eslint `--max-warnings 0` | `test:eslint`（对 dist 产物） |
 | scripts/ + .husky/ + 根配置 node 预设 eslint | `lint:scripts` |
-| dist CSS stylelint（standard + use-baseline，警告计败） | `test:stylelint` |
+| dist CSS stylelint（standard + use-baseline，警告计败） | `test:stylelint`（对 dist 产物） |
+| src SCSS stylelint（postcss-scss 语法，规集同产物侧） | —（超出旧仓，加强项） |
 | dist CSS postcss 0 警告（与旧仓相同的 .postcssrc.yaml 插件链） | `scripts/postcss` 检查 |
 | tsc `--noEmit`（strict，src） | —（旧仓不做，加强项） |
 | acorn ecma2020 parse 产物（拦 es2021+ 泄漏） | —（新机制，守卫 es2020 目标） |

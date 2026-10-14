@@ -13,6 +13,7 @@
             @content;
         }
     }
+
     @media screen and (prefers-color-scheme: dark) {
         html.skin-theme-clientpref-os {
             @content;

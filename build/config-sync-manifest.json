@@ -182,7 +182,7 @@
             "oldPath": ".stylelintrc.yaml",
             "newPath": ".stylelintrc.yaml",
             "strategy": "adapted",
-            "note": "规则集原样；ignoreFiles 重写（本仓产物在 dist/ 必须受检，旧仓忽略 dist；旧仓 prism gadget 忽略项不存在于本仓）",
+            "note": "规则集原样；ignoreFiles 重写（本仓产物在 dist/ 必须受检，旧仓忽略 dist；旧仓 prism gadget 忽略项不存在于本仓）；另加 scss overrides（postcss-scss 语法 + at-rule-no-unknown/no-invalid-double-slash-comments 适配，本仓源文件 lint 超出旧仓范围）",
             "lastSyncedHash": "29d254f7cd82340ade1774b18147d39fa15b6968"
         },
         {
